@@ -3,8 +3,8 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "node16",
-    "moduleResolution": "node16",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -17,9 +17,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    },
-    "allowImportingTsExtensions": true
+    }
   },
-  "include": ["src"],
+  "include": ["src", "src/types.d.ts", "src/global.d.ts", "src/index.d.ts"],
   "references": [{ "path": "./tsconfig.node.json", "composite": true }]
 }
