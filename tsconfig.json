@@ -17,7 +17,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json", "composite": true }]
