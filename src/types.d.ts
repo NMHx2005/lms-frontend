@@ -52,3 +52,10 @@ declare module '*.webp' {
   const content: string;
   export default content;
 } 
+
+
+export enum UserRole {
+  Admin = 'admin',
+  User = 'user',
+  Teacher = 'teacher',
+}

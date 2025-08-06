@@ -5,20 +5,21 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-import { store } from './store';
-import ProtectedRoute from './components/common/ProtectedRoute';
-import Layout from './components/Layout/client/Layout';
+import { store } from '@/store/index.ts';
+import ProtectedRoute from './components/common/ProtectedRoute.tsx';
+import Layout from './components/Layout/client/Layout.tsx';
 
 // Pages
-import Home from './pages/client/Home/Home';
-import Login from './pages/client/Login/Login';
-import Register from './pages/client/Register/Register';
-import Courses from './pages/client/Courses/Coures';
-import CourseDetail from './pages/client/CourseDetail/CourseDetail';
-import Learning from './pages/client/Learning/Learning';
-import Dashboard from './pages/client/Dashboard/Dashboard';
-import Profile from './pages/client/Profile/Profile';
-import Admin from './pages/admin/Admin/Admin';
+import Home from './pages/client/Home/Home.tsx';
+import Login from './pages/client/Login/Login.tsx';
+import Register from './pages/client/Register/Register.tsx';
+import CourseDetail from './pages/client/CourseDetail/CourseDetail.tsx';
+import Learning from './pages/client/Learning/Learning.tsx';
+import { UserRole } from './components/common/ProtectedRoute.tsx';
+import Dashboard from './pages/client/Dashboard/Dashboard.tsx';
+import Profile from './pages/client/Profile/Profile.tsx';
+import Admin from './pages/admin/Admin/Admin.tsx';
+import Courses from './pages/client/Courses/Coures.tsx';
 
 const queryClient = new QueryClient();
 
@@ -74,7 +75,7 @@ function App() {
                 <Route
                   path="/admin"
                   element={
-                    <ProtectedRoute roles={['admin']}>
+                    <ProtectedRoute roles={[UserRole.Admin]}>
                       <Admin />
                     </ProtectedRoute>
                   }
