@@ -185,6 +185,7 @@
   
   .course-filters__search-icon {
     width: 40px;
+    display: none;
     height: 40px;
     color: #d35400;
   }
