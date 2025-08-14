@@ -1,0 +1,54 @@
+/* Courses page specific styles */
+.courses-page {
+  min-height: 100vh;
+  background-color: #fff;
+}
+
+.courses-page__container {
+  /* max-width: 1200px; */
+  margin: 0 auto;
+}
+
+/* Ensure proper spacing between sections */
+.course-header + .course-filters {
+  margin-top: 0;
+}
+
+.course-filters + .course-grid {
+  margin-top: 0;
+}
+
+.course-grid + .pagination {
+  margin-top: 0;
+}
+
+/* Loading state for the entire page */
+.courses-page--loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .courses-page__container {
+    margin: 0 40px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .courses-page__container {
+    margin: 0 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .courses-page__container {
+    margin: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .courses-page__container {
+    margin: 0 16px;
+  }
+}

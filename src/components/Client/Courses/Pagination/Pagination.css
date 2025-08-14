@@ -1,0 +1,143 @@
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.pagination__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pagination__item:hover {
+  border-color: #d35400;
+  color: #d35400;
+  background-color: #fff1eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(211, 84, 0, 0.15);
+}
+
+.pagination__item--active {
+  background-color: #d35400;
+  border-color: #d35400;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(211, 84, 0, 0.2);
+}
+
+.pagination__item--active:hover {
+  background-color: #a03e00;
+  border-color: #a03e00;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(211, 84, 0, 0.25);
+}
+
+.pagination__item--disabled {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pagination__item--disabled:hover {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  transform: none;
+  box-shadow: none;
+}
+
+.pagination__ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 14px;
+  user-select: none;
+}
+
+.pagination__info {
+  margin-top: 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pagination {
+    margin-top: 32px;
+    gap: 6px;
+  }
+  
+  .pagination__item {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+  
+  .pagination__ellipsis {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  
+  .pagination__info {
+    margin-top: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pagination {
+    margin-top: 24px;
+    gap: 4px;
+  }
+  
+  .pagination__item {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+  
+  .pagination__ellipsis {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+  
+  .pagination__info {
+    margin-top: 8px;
+    font-size: 12px;
+  }
+}

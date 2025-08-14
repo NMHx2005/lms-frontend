@@ -28,7 +28,7 @@ button {
 
 /* Utility Classes */
 .container {
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin-left: auto;
   margin-right: auto;
   padding-left: 16px;

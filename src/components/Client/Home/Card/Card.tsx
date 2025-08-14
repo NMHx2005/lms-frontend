@@ -12,7 +12,7 @@ interface CardProps {
 const Card = ({ category, title, desc, imgSrc, imgAlt, btnText, linkText, linkHref }: CardProps) => {
     return (
         <article className="card">
-            <img src={imgSrc} alt={imgAlt || `Image for ${title}`} className="card__image" style={{ width: '280px', height: '160px' }} />
+            <img src={imgSrc} alt={imgAlt || `Image for ${title}`} className="card__image" />
             <div className="card__content">
                 <div className="card__category">{category}</div>
                 <h3 className="card__title">{title}</h3>

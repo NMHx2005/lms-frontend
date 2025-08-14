@@ -74,16 +74,22 @@ const Testimonials = () => {
         </h2>
       </div>
           <Swiper
-                    modules={[Autoplay]}
-              spaceBetween={24}
-              slidesPerView={5}
-              autoplay={{ delay: 1000, disableOnInteraction: false }}
-              loop={true}
-              grabCursor={true}
-              breakpoints={{
-                  900: { slidesPerView: 5 },
-                  600: { slidesPerView: 1 }
-              }}
+        modules={[Autoplay]}
+        spaceBetween={24}
+        slidesPerView={1}
+        autoplay={{ delay: 3000, disableOnInteraction: false }}
+        loop={true}
+        grabCursor={true}
+        watchOverflow={true}
+        breakpoints={{
+          320: { slidesPerView: 1, spaceBetween: 16 },
+          480: { slidesPerView: 1, spaceBetween: 16 },
+          640: { slidesPerView: 2, spaceBetween: 20 },
+          768: { slidesPerView: 2, spaceBetween: 20 },
+          1024: { slidesPerView: 3, spaceBetween: 24 },
+          1280: { slidesPerView: 4, spaceBetween: 24 },
+          1536: { slidesPerView: 5, spaceBetween: 24 },
+        }}
               className="testimonials-section__slider"
           >
         {testimonials.map((testimonial, index) => (
