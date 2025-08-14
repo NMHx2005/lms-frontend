@@ -7,6 +7,7 @@ import "swiper/css/autoplay";
 const FeaturedPrograms = () => {
     const programs = [
         {
+            id: '1',
             category: "Kỹ năng",
             title: "Đào tạo lập trình viên quốc tế",
             desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
@@ -17,6 +18,7 @@ const FeaturedPrograms = () => {
             linkHref: "#",
         },
         {
+            id: '2',
             category: "Career & Academic",
             title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
             desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
@@ -27,16 +29,18 @@ const FeaturedPrograms = () => {
             linkHref: "#",
         },
         {
+            id: '3',
             category: "Career & Academic",
             title: "Những kiến thức cơ bản để hiểu về AI",
             desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/f9dbcea8-f19d-4f64-2eac-72bed0506370.jpg",
+            imgSrc: "https://storage.googleapis.com/a1aa/image/f9dbcea8-f19d-4f64-2aac-72bed0506370.jpg",
             imgAlt: "Group of people in meeting room discussing",
             btnText: "Đăng ký",
             linkText: "Chi tiết →",
             linkHref: "#",
         },
         {
+            id: '4',
             category: "Kỹ năng",
             title: "Đào tạo lập trình viên quốc tế",
             desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
@@ -47,6 +51,7 @@ const FeaturedPrograms = () => {
             linkHref: "#",
         },
         {
+            id: '5',
             category: "Career & Academic",
             title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
             desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
@@ -57,10 +62,11 @@ const FeaturedPrograms = () => {
             linkHref: "#",
         },
         {
+            id: '6',
             category: "Career & Academic",
             title: "Những kiến thức cơ bản để hiểu về AI",
             desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/f9dbcea8-f19d-4f64-2eac-72bed0506370.jpg",
+            imgSrc: "https://storage.googleapis.com/a1aa/image/f9dbcea8-f19d-4f64-2aac-72bed0506370.jpg",
             imgAlt: "Group of people in meeting room discussing",
             btnText: "Đăng ký",
             linkText: "Chi tiết →",

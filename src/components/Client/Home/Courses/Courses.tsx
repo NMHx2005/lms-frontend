@@ -7,6 +7,7 @@ import "swiper/css/autoplay";
 const Courses = () => {
     const courses = [
         {
+            id: '1',
             category: "Khoa học máy tính",
             title: "Đào tạo lập trình viên quốc tế",
             desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
@@ -17,6 +18,7 @@ const Courses = () => {
             linkHref: "#",
         },
         {
+            id: '2',
             category: "Khoa học máy tính",
             title: "Đào tạo lập trình viên quốc tế",
             desc: "Chương trình đào tạo lập trình viên chuyên nghiệp với giáo trình quốc tế.",
@@ -27,6 +29,7 @@ const Courses = () => {
             linkHref: "#",
         },
         {
+            id: '3',
             category: "Data Science",
             title: "Những kiến thức cơ bản để hiểu về AI",
             desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
@@ -37,6 +40,7 @@ const Courses = () => {
             linkHref: "#",
         },
         {
+            id: '4',
             category: "Business & Accounting",
             title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
             desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
@@ -46,46 +50,50 @@ const Courses = () => {
             linkText: "Chi tiết →",
             linkHref: "#",
         },
-{
-        category: "Khoa học máy tính",
-        title: "Đào tạo lập trình viên quốc tế",
-        desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
-        imgSrc: "https://storage.googleapis.com/a1aa/image/2acdcf6b-7987-4e03-25b9-3a37878e436d.jpg",
-        imgAlt: "Person working on laptop in office",
-        btnText: "Offline",
-        linkText: "Chi tiết →",
-        linkHref: "#",
+        {
+            id: '5',
+            category: "Khoa học máy tính",
+            title: "Đào tạo lập trình viên quốc tế",
+            desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
+            imgSrc: "https://storage.googleapis.com/a1aa/image/2acdcf6b-7987-4e03-25b9-3a37878e436d.jpg",
+            imgAlt: "Person working on laptop in office",
+            btnText: "Offline",
+            linkText: "Chi tiết →",
+            linkHref: "#",
         },
-    {
-        category: "Khoa học máy tính",
-        title: "Đào tạo lập trình viên quốc tế",
-        desc: "Chương trình đào tạo lập trình viên chuyên nghiệp với giáo trình quốc tế.",
-        imgSrc: "https://storage.googleapis.com/a1aa/image/9e55681f-7af2-45da-31a6-d5f109a91ca6.jpg",
-        imgAlt: "Group of students in classroom",
-        btnText: "Offline",
-        linkText: "Chi tiết →",
-        linkHref: "#",
-    },
-    {
-        category: "Data Science",
-        title: "Những kiến thức cơ bản để hiểu về AI",
-        desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-        imgSrc: "https://storage.googleapis.com/a1aa/image/9bfd7db9-44e6-4720-9a72-3bf6d26f126d.jpg",
-        imgAlt: "Man working with data on computer",
-        btnText: "Xem thử",
-        linkText: "Chi tiết →",
-        linkHref: "#",
-    },
-    {
-        category: "Business & Accounting",
-        title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
-        desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
-        imgSrc: "https://storage.googleapis.com/a1aa/image/0820ec3b-33e6-468b-cc54-d7317c4a00fd.jpg",
-        imgAlt: "People in meeting room discussing",
-        btnText: "Offline",
-        linkText: "Chi tiết →",
-        linkHref: "#",
-    }
+        {
+            id: '6',
+            category: "Khoa học máy tính",
+            title: "Đào tạo lập trình viên quốc tế",
+            desc: "Chương trình đào tạo lập trình viên chuyên nghiệp với giáo trình quốc tế.",
+            imgSrc: "https://storage.googleapis.com/a1aa/image/9e55681f-7af2-45da-31a6-d5f109a91ca6.jpg",
+            imgAlt: "Group of students in classroom",
+            btnText: "Offline",
+            linkText: "Chi tiết →",
+            linkHref: "#",
+        },
+        {
+            id: '7',
+            category: "Data Science",
+            title: "Những kiến thức cơ bản để hiểu về AI",
+            desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
+            imgSrc: "https://storage.googleapis.com/a1aa/image/9bfd7db9-44e6-4720-9a72-3bf6d26f126d.jpg",
+            imgAlt: "Man working with data on computer",
+            btnText: "Xem thử",
+            linkText: "Chi tiết →",
+            linkHref: "#",
+        },
+        {
+            id: '8',
+            category: "Business & Accounting",
+            title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
+            desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
+            imgSrc: "https://storage.googleapis.com/a1aa/image/0820ec3b-33e6-468b-cc54-d7317c4a00fd.jpg",
+            imgAlt: "People in meeting room discussing",
+            btnText: "Offline",
+            linkText: "Chi tiết →",
+            linkHref: "#",
+        }
     ];
 
     return (

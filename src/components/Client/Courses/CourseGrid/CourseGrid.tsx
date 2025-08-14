@@ -66,7 +66,7 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses, loading = false }) => 
       <div className="course-grid__container">
         {courses.map((course) => (
           <div key={course.id} className="course-grid__item">
-            <Card {...course} />
+            <Card {...course} id={course.id} />
           </div>
         ))}
       </div>

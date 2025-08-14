@@ -20,7 +20,7 @@ const Header = () => {
         <div className="header__left">
           {/* Logo */}
           <Link to="/" className="header__logo" aria-label="Logo" onClick={closeMobileMenu}>
-            <img src="./images/logo.png" alt="Logo" width={142} height={32} />
+            <img src="/images/logo.png" alt="Logo" width={142} height={32} />
           </Link>
           
           {/* Desktop Navigation */}

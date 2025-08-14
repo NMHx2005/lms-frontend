@@ -1,4 +1,7 @@
+import { Link } from 'react-router-dom';
+
 interface CardProps {
+    id?: string;
     category: string;
     title: string;
     desc: string;
@@ -9,7 +12,7 @@ interface CardProps {
     linkHref: string;
 }
 
-const Card = ({ category, title, desc, imgSrc, imgAlt, btnText, linkText, linkHref }: CardProps) => {
+const Card = ({ id, category, title, desc, imgSrc, imgAlt, btnText, linkText, linkHref }: CardProps) => {
     return (
         <article className="card">
             <img src={imgSrc} alt={imgAlt || `Image for ${title}`} className="card__image" />
@@ -25,13 +28,13 @@ const Card = ({ category, title, desc, imgSrc, imgAlt, btnText, linkText, linkHr
                     </button>
                 )}
                 {linkText?.trim() && (
-                    <a
-                        href={linkHref ? linkHref : "#"}
+                    <Link
+                        to={id ? `/courses/${id}` : linkHref || "#"}
                         className="card__link"
                         aria-label={`Read more about ${title}`}
                     >
                         {linkText}
-                    </a>
+                    </Link>
                 )}
             </div>
         </article>
