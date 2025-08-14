@@ -22,12 +22,12 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({ onFiltersChange }) => {
 
   const domains = [
     { value: '', label: 'Tất cả lĩnh vực' },
-    { value: 'khoa học máy tính', label: 'Khoa học máy tính' },
-    { value: 'data science', label: 'Data Science' },
-    { value: 'business & accounting', label: 'Kinh doanh & Kế toán' },
-    { value: 'thiết kế & sáng tạo', label: 'Thiết kế & Sáng tạo' },
-    { value: 'marketing & truyền thông', label: 'Marketing & Truyền thông' },
-    { value: 'ngoại ngữ', label: 'Ngoại ngữ' }
+    { value: 'IT', label: 'Công nghệ thông tin' },
+    { value: 'Marketing', label: 'Marketing' },
+    { value: 'Design', label: 'Thiết kế' },
+    { value: 'Economics', label: 'Kinh tế' },
+    { value: 'Education', label: 'Giáo dục' },
+    { value: 'Healthcare', label: 'Y tế' }
   ];
 
   const levels = [

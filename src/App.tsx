@@ -28,6 +28,7 @@ import ForgotPassword from './pages/client/ForgotPassword/ForgotPassword.tsx';
 import Checkout from './pages/client/Checkout/Checkout.tsx';
 import LearningPlayer from './pages/client/LearningPlayer/LearningPlayer.tsx';
 import AssignmentWorkspace from './pages/client/AssignmentWorkspace/AssignmentWorkspace.tsx';
+import MyCourses from './pages/client/Dashboard/Courses';
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/checkout/:courseId" element={<Checkout />} />
                 <Route path="/learning/:courseId" element={<LearningPlayer />} />
                 <Route path="/assignments/:id" element={<AssignmentWorkspace />} />
+                <Route path="/dashboard/courses" element={<MyCourses />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
                 <Route

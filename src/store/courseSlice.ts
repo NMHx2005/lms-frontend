@@ -1,13 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  instructor: string;
-  price: number;
-  image?: string;
-}
+import { Course } from '@/components/Client/Dashboard/types';
 
 interface CourseState {
   courses: Course[];
@@ -18,11 +10,11 @@ interface CourseState {
 const initialState: CourseState = {
   courses: [],
   loading: false,
-  error: null,
+  error: null
 };
 
 const courseSlice = createSlice({
-  name: 'course',
+  name: 'courses',
   initialState,
   reducers: {
     setCourses: (state, action: PayloadAction<Course[]>) => {
@@ -34,8 +26,28 @@ const courseSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-  },
+    addCourse: (state, action: PayloadAction<Course>) => {
+      state.courses.push(action.payload);
+    },
+    updateCourse: (state, action: PayloadAction<Course>) => {
+      const index = state.courses.findIndex(course => course._id === action.payload._id);
+      if (index !== -1) {
+        state.courses[index] = action.payload;
+      }
+    },
+    removeCourse: (state, action: PayloadAction<string>) => {
+      state.courses = state.courses.filter(course => course._id !== action.payload);
+    }
+  }
 });
 
-export const { setCourses, setLoading, setError } = courseSlice.actions;
+export const { 
+  setCourses, 
+  setLoading, 
+  setError, 
+  addCourse, 
+  updateCourse, 
+  removeCourse 
+} = courseSlice.actions;
+
 export default courseSlice.reducer; 

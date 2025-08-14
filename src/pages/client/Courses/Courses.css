@@ -32,6 +32,9 @@
   max-width: 800px;
   margin: 0 auto;
 }
+.course-grid__empty {
+  text-align: center;
+}
 
 .pagination__info {
   background: #f8fafc;
