@@ -9,7 +9,7 @@ interface GradingStatusProps {
 
 const GradingStatus: React.FC<GradingStatusProps> = ({ submissions, maxScore }) => {
   const [selectedSubmission, setSelectedSubmission] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
+  // const [showFeedback, setShowFeedback] = useState(false);
 
   const getStatusIcon = (status: string): string => {
     switch (status) {
