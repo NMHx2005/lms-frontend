@@ -19,7 +19,7 @@ interface LearningContentProps {
 const LearningContent: React.FC<LearningContentProps> = ({
   lesson,
   onComplete,
-  onProgressUpdate
+  // onProgressUpdate
 }) => {
   const [videoProgress, setVideoProgress] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
