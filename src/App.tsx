@@ -11,6 +11,7 @@ import '@/styles/auth.css';
 import { store } from '@/store/index.ts';
 import ProtectedRoute from './components/common/ProtectedRoute.tsx';
 import Layout from './components/Layout/client/Layout.tsx';
+import ScrollToTop from './components/common/ScrollToTop.tsx';
 
 // Pages
 import Home from './pages/client/Home/Home.tsx';
@@ -24,6 +25,7 @@ import Profile from './pages/client/Profile/Profile.tsx';
 import Admin from './pages/admin/Admin/Admin.tsx';
 import Courses from './pages/client/Courses/Coures.tsx';
 import ForgotPassword from './pages/client/ForgotPassword/ForgotPassword.tsx';
+import Checkout from './pages/client/Checkout/Checkout.tsx';
 
 const queryClient = new QueryClient();
 
@@ -45,12 +47,14 @@ function App() {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <Router>
+            <ScrollToTop />
             <Layout>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/checkout/:courseId" element={<Checkout />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
                 <Route

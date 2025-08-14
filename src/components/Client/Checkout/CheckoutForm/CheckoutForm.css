@@ -1,0 +1,293 @@
+.checkout-form {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.checkout-form__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.checkout-form__form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.checkout-form__section {
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 20px;
+}
+
+.checkout-form__section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.checkout-form__section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.checkout-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.checkout-form__group {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-form__label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.checkout-form__label .required {
+  color: #dc2626;
+}
+
+.checkout-form__input {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.checkout-form__input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.checkout-form__input::placeholder {
+  color: #9ca3af;
+}
+
+.checkout-form__coupon-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkout-form__coupon-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.checkout-form__coupon-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.checkout-form__coupon-input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.checkout-form__coupon-button {
+  padding: 10px 16px;
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.checkout-form__coupon-button:hover:not(:disabled) {
+  background: #047857;
+}
+
+.checkout-form__coupon-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.checkout-form__coupon-error {
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.checkout-form__coupon-success {
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #059669;
+  font-size: 0.85rem;
+}
+
+.checkout-form__coupon-applied {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.checkout-form__coupon-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkout-form__coupon-code {
+  font-weight: 600;
+  color: #059669;
+  font-size: 0.9rem;
+}
+
+.checkout-form__coupon-discount {
+  color: #047857;
+  font-size: 0.85rem;
+}
+
+.checkout-form__remove-coupon {
+  padding: 6px 12px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.checkout-form__remove-coupon:hover {
+  background: #b91c1c;
+}
+
+.checkout-form__terms {
+  margin-top: 8px;
+}
+
+.checkout-form__checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.checkout-form__checkbox-input {
+  display: none;
+}
+
+.checkout-form__checkbox-custom {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.checkout-form__checkbox-input:checked + .checkout-form__checkbox-custom {
+  background: #059669;
+  border-color: #059669;
+}
+
+.checkout-form__checkbox-input:checked + .checkout-form__checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.checkout-form__checkbox-text a {
+  color: #059669;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.checkout-form__checkbox-text a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .checkout-form {
+    padding: 20px;
+  }
+  
+  .checkout-form__title {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+  }
+  
+  .checkout-form__row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .checkout-form__coupon-input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .checkout-form__coupon-button {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkout-form {
+    padding: 16px;
+  }
+  
+  .checkout-form__title {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+  }
+  
+  .checkout-form__section {
+    padding-bottom: 16px;
+  }
+  
+  .checkout-form__coupon-applied {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .checkout-form__remove-coupon {
+    align-self: flex-end;
+  }
+}
