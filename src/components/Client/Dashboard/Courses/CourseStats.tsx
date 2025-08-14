@@ -1,5 +1,5 @@
 import React from 'react';
-import { Course, DashboardStats } from '../types';
+import { Course } from '../types';
 import './CourseStats.css';
 
 interface CourseStatsProps {
