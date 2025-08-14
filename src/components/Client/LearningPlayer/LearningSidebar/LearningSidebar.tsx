@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
 import './LearningSidebar.css';
 
 interface Lesson {
@@ -26,7 +26,7 @@ interface LearningSidebarProps {
 }
 
 const LearningSidebar: React.FC<LearningSidebarProps> = ({
-  courseId,
+  // courseId,
   currentLessonId,
   onLessonSelect,
   sections,

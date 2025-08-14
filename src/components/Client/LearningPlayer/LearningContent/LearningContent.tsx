@@ -32,15 +32,15 @@ const LearningContent: React.FC<LearningContentProps> = ({
     setIsVideoPlaying(false);
   }, [lesson.id]);
 
-  const handleVideoProgress = (progress: number) => {
-    setVideoProgress(progress);
-    onProgressUpdate(lesson.id, progress);
+  // const handleVideoProgress = (progress: number) => {
+  //   setVideoProgress(progress);
+  //   onProgressUpdate(lesson.id, progress);
     
-    // Mark as completed when video is 90% watched
-    if (progress >= 90 && !lesson.isCompleted) {
-      onComplete(lesson.id);
-    }
-  };
+  //   // Mark as completed when video is 90% watched
+  //   if (progress >= 90 && !lesson.isCompleted) {
+  //     onComplete(lesson.id);
+  //   }
+  // };
 
   const handleComplete = () => {
     if (!lesson.isCompleted) {
