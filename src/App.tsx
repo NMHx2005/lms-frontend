@@ -26,6 +26,7 @@ import Admin from './pages/admin/Admin/Admin.tsx';
 import Courses from './pages/client/Courses/Coures.tsx';
 import ForgotPassword from './pages/client/ForgotPassword/ForgotPassword.tsx';
 import Checkout from './pages/client/Checkout/Checkout.tsx';
+import LearningPlayer from './pages/client/LearningPlayer/LearningPlayer.tsx';
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/checkout/:courseId" element={<Checkout />} />
+                <Route path="/learning/:courseId" element={<LearningPlayer />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
                 <Route

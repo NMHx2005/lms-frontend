@@ -1,0 +1,256 @@
+.learning-player-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+}
+
+.learning-player__main {
+  flex: 1;
+  min-height: calc(100vh - 140px); /* Adjust based on header/footer height */
+}
+
+.learning-player__container {
+  max-width: 100%;
+  margin: 0 auto;
+  height: 100%;
+}
+
+.learning-player__header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 24px;
+}
+
+.learning-player__course-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.learning-player__course-image {
+  width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.learning-player__course-details h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.learning-player__course-instructor {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.learning-player__content {
+  display: flex;
+  height: calc(100vh - 200px); /* Adjust based on header height */
+}
+
+.learning-player__no-lesson {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  background: #fff;
+}
+
+.learning-player__no-lesson-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.learning-player__no-lesson h3 {
+  font-size: 1.5rem;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+}
+
+.learning-player__no-lesson p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.learning-player__loading,
+.learning-player__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  background: #fff;
+  margin: 20px;
+  border-radius: 12px;
+  padding: 40px;
+}
+
+.learning-player__spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #059669;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.learning-player__loading p {
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.learning-player__error h2 {
+  font-size: 1.5rem;
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.learning-player__error p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.learning-player__back-btn {
+  padding: 12px 24px;
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.learning-player__back-btn:hover {
+  background: #047857;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .learning-player__header {
+    padding: 16px 20px;
+  }
+  
+  .learning-player__course-info {
+    gap: 16px;
+  }
+  
+  .learning-player__course-image {
+    width: 70px;
+    height: 52px;
+  }
+  
+  .learning-player__course-details h1 {
+    font-size: 1.3rem;
+  }
+  
+  .learning-player__content {
+    height: calc(100vh - 180px);
+  }
+}
+
+@media (max-width: 768px) {
+  .learning-player__main {
+    min-height: calc(100vh - 120px);
+  }
+  
+  .learning-player__header {
+    padding: 12px 16px;
+  }
+  
+  .learning-player__course-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .learning-player__course-image {
+    width: 100px;
+    height: 75px;
+  }
+  
+  .learning-player__course-details h1 {
+    font-size: 1.2rem;
+  }
+  
+  .learning-player__content {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .learning-player__no-lesson {
+    padding: 24px;
+  }
+  
+  .learning-player__no-lesson-icon {
+    font-size: 3rem;
+  }
+  
+  .learning-player__no-lesson h3 {
+    font-size: 1.3rem;
+  }
+  
+  .learning-player__loading,
+  .learning-player__error {
+    margin: 12px;
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .learning-player__header {
+    padding: 12px;
+  }
+  
+  .learning-player__course-info {
+    gap: 8px;
+  }
+  
+  .learning-player__course-image {
+    width: 80px;
+    height: 60px;
+  }
+  
+  .learning-player__course-details h1 {
+    font-size: 1.1rem;
+  }
+  
+  .learning-player__course-instructor {
+    font-size: 0.9rem;
+  }
+  
+  .learning-player__no-lesson {
+    padding: 20px;
+  }
+  
+  .learning-player__no-lesson h3 {
+    font-size: 1.2rem;
+  }
+  
+  .learning-player__no-lesson p {
+    font-size: 0.9rem;
+  }
+}
