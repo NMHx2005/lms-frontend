@@ -142,6 +142,10 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header__btn-login {

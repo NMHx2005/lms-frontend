@@ -71,12 +71,12 @@ const Header = () => {
 
           {/* Desktop Buttons */}
           <div className="header__buttons">
-            <button className="header__btn-login btn btn--outline-orange" type="button">
+            <Link to="/login" className="header__btn-login btn btn--outline-orange">
               Đăng nhập
-            </button>
-            <button className="header__btn-register btn btn--orange" type="button">
+            </Link>
+            <Link to="/register" className="header__btn-register btn btn--orange">
               Đăng ký
-            </button>
+            </Link>
           </div>
 
           {/* Language Switcher */}
@@ -142,12 +142,12 @@ const Header = () => {
 
           {/* Mobile Buttons */}
           <div className="header__mobile-buttons">
-            <button className="header__mobile-btn-login btn btn--outline-orange" type="button">
+            <Link to="/login" className="header__mobile-btn-login btn btn--outline-orange">
               Đăng nhập
-            </button>
-            <button className="header__mobile-btn-register btn btn--orange" type="button">
+            </Link>
+            <Link to="/register" className="header__mobile-btn-register btn btn--orange">
               Đăng ký
-            </button>
+            </Link>
           </div>
         </div>
       </div>

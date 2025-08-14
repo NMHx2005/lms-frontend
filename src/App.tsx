@@ -5,6 +5,9 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
+// Styles
+import '@/styles/auth.css';
+
 import { store } from '@/store/index.ts';
 import ProtectedRoute from './components/common/ProtectedRoute.tsx';
 import Layout from './components/Layout/client/Layout.tsx';
@@ -20,6 +23,7 @@ import Dashboard from './pages/client/Dashboard/Dashboard.tsx';
 import Profile from './pages/client/Profile/Profile.tsx';
 import Admin from './pages/admin/Admin/Admin.tsx';
 import Courses from './pages/client/Courses/Coures.tsx';
+import ForgotPassword from './pages/client/ForgotPassword/ForgotPassword.tsx';
 
 const queryClient = new QueryClient();
 
@@ -46,6 +50,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
                 <Route
