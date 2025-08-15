@@ -16,6 +16,14 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles = [] }) => {
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth, shallowEqual);
     const location = useLocation();
+    
+    // Dùng tạm biến này để cho qua việc bắt phải đăng nhập, do chỉ đang triển khai giao diện, chưa có tính năng đăng nhập nhé
+    const test = true;
+    
+    // Nếu test = true, bypass authentication hoàn toàn
+    if (test) {
+        return <>{children}</>;
+    }
 
     if (!isAuthenticated) {
         return <Navigate to="/login" state={{ from: location }} replace />;

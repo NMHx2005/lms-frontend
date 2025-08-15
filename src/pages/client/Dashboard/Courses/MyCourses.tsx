@@ -196,101 +196,6 @@ const MyCourses: React.FC = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="dashboard__sidebar">
-          <div className="dashboard__sidebar-header">
-            <div className="dashboard__logo">
-              <img src="/images/logo.png" alt="Logo" />
-              <span>LMS Platform</span>
-            </div>
-          </div>
-          <nav className="dashboard__nav">
-            <div className="dashboard__nav-item active">
-              <span className="dashboard__nav-icon">📚</span>
-              <span>Khóa học của tôi</span>
-            </div>
-            <div className="dashboard__nav-item">
-              <span className="dashboard__nav-icon">📊</span>
-              <span>Thống kê</span>
-            </div>
-            <div className="dashboard__nav-item">
-              <span className="dashboard__nav-icon">⚙️</span>
-              <span>Cài đặt</span>
-            </div>
-          </nav>
-        </div>
-        
-        <div className="dashboard__main">
-          <div className="dashboard__header">
-            <div className="dashboard__breadcrumbs">
-              <span>Dashboard</span>
-              <span>/</span>
-              <span>Khóa học của tôi</span>
-            </div>
-            <h1 className="dashboard__title">Khóa học của tôi</h1>
-          </div>
-          
-          <div className="dashboard__content">
-            <div className="dashboard__tabs">
-              <button className="dashboard__tab active">Tất cả</button>
-              <button className="dashboard__tab">Đã xuất bản</button>
-              <button className="dashboard__tab">Đã duyệt</button>
-              <button className="dashboard__tab">Bản nháp</button>
-            </div>
-            
-            <div className="dashboard__filter-bar">
-              <div className="dashboard__search">
-                <input type="text" placeholder="Tìm kiếm khóa học..." />
-                <button>🔍</button>
-              </div>
-              <div className="dashboard__filters">
-                <select>
-                  <option>Lĩnh vực</option>
-                </select>
-                <select>
-                  <option>Cấp độ</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="dashboard__loading">
-              <div className="dashboard__loading-spinner"></div>
-              <p>Đang tải khóa học...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="dashboard">
-      {/* Sidebar */}
-      <div className="dashboard__sidebar">
-        <div className="dashboard__sidebar-header">
-          <div className="dashboard__logo">
-            <img src="/images/logo.png" alt="Logo" />
-            <span>LMS Platform</span>
-          </div>
-        </div>
-        <nav className="dashboard__nav">
-          <div className="dashboard__nav-item active">
-            <span className="dashboard__nav-icon">📚</span>
-            <span>Khóa học của tôi</span>
-          </div>
-          <div className="dashboard__nav-item">
-            <span className="dashboard__nav-icon">📊</span>
-            <span>Thống kê</span>
-          </div>
-          <div className="dashboard__nav-item">
-            <span className="dashboard__nav-icon">⚙️</span>
-            <span>Cài đặt</span>
-          </div>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <div className="dashboard__main">
-        {/* Header */}
         <div className="dashboard__header">
           <div className="dashboard__breadcrumbs">
             <span>Dashboard</span>
@@ -299,174 +204,195 @@ const MyCourses: React.FC = () => {
           </div>
           <h1 className="dashboard__title">Khóa học của tôi</h1>
         </div>
-
-        {/* Content */}
+        
         <div className="dashboard__content">
-          {/* Tabs */}
-          <div className="dashboard__tabs">
-            <button 
-              className={`dashboard__tab ${activeTab === 'all' ? 'active' : ''}`}
-              onClick={() => handleTabChange('all')}
-            >
-              Tất cả ({getTabCount('all')})
-            </button>
-            <button 
-              className={`dashboard__tab ${activeTab === 'published' ? 'active' : ''}`}
-              onClick={() => handleTabChange('published')}
-            >
-              Đã xuất bản ({getTabCount('published')})
-            </button>
-            <button 
-              className={`dashboard__tab ${activeTab === 'approved' ? 'active' : ''}`}
-              onClick={() => handleTabChange('approved')}
-            >
-              Đã duyệt ({getTabCount('approved')})
-            </button>
-            <button 
-              className={`dashboard__tab ${activeTab === 'draft' ? 'active' : ''}`}
-              onClick={() => handleTabChange('draft')}
-            >
-              Bản nháp ({getTabCount('draft')})
-            </button>
+          <div className="dashboard__loading">
+            <div className="dashboard__loading-spinner"></div>
+            <p>Đang tải khóa học...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Filter Bar */}
-          <div className="dashboard__filter-bar">
-            <div className="dashboard__search">
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm khóa học..." 
-                value={filters.search}
-                onChange={(e) => handleFilterChange({ search: e.target.value })}
-              />
-              <button>🔍</button>
+  return (
+    <div className="dashboard">
+      {/* Header */}
+      <div className="dashboard__header">
+        <div className="dashboard__breadcrumbs">
+          <span>Dashboard</span>
+          <span>/</span>
+          <span>Khóa học của tôi</span>
+        </div>
+        <h1 className="dashboard__title">Khóa học của tôi</h1>
+      </div>
+
+      {/* Content */}
+      <div className="dashboard__content">
+        {/* Tabs */}
+        <div className="dashboard__tabs">
+          <button 
+            className={`dashboard__tab ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => handleTabChange('all')}
+          >
+            Tất cả ({getTabCount('all')})
+          </button>
+          <button 
+            className={`dashboard__tab ${activeTab === 'published' ? 'active' : ''}`}
+            onClick={() => handleTabChange('published')}
+          >
+            Đã xuất bản ({getTabCount('published')})
+          </button>
+          <button 
+            className={`dashboard__tab ${activeTab === 'approved' ? 'active' : ''}`}
+            onClick={() => handleTabChange('approved')}
+          >
+            Đã duyệt ({getTabCount('approved')})
+          </button>
+          <button 
+            className={`dashboard__tab ${activeTab === 'draft' ? 'active' : ''}`}
+            onClick={() => handleTabChange('draft')}
+          >
+            Bản nháp ({getTabCount('draft')})
+          </button>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="dashboard__filter-bar">
+          <div className="dashboard__search">
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm khóa học..." 
+              value={filters.search}
+              onChange={(e) => handleFilterChange({ search: e.target.value })}
+            />
+            <button>🔍</button>
+          </div>
+          <div className="dashboard__filters">
+            <select 
+              value={filters.domain}
+              onChange={(e) => handleFilterChange({ domain: e.target.value })}
+            >
+              <option value="all">Tất cả lĩnh vực</option>
+              <option value="IT">IT</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Design">Design</option>
+              <option value="Economics">Economics</option>
+            </select>
+            <select 
+              value={filters.level}
+              onChange={(e) => handleFilterChange({ level: e.target.value as 'all' | 'beginner' | 'intermediate' | 'advanced' })}
+            >
+              <option value="all">Tất cả cấp độ</option>
+              <option value="beginner">Cơ bản</option>
+              <option value="intermediate">Trung cấp</option>
+              <option value="advanced">Nâng cao</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="dashboard__stats">
+          <CourseStats courses={courses} />
+        </div>
+
+        {/* Course Cards */}
+        <div className="dashboard__courses">
+          {getFilteredCoursesByTab().length === 0 ? (
+            <div className="dashboard__empty">
+              <div className="dashboard__empty-icon">📚</div>
+              <h3>Không tìm thấy khóa học</h3>
+              <p>Hãy thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác</p>
             </div>
-            <div className="dashboard__filters">
-              <select 
-                value={filters.domain}
-                onChange={(e) => handleFilterChange({ domain: e.target.value })}
-              >
-                <option value="all">Tất cả lĩnh vực</option>
-                <option value="IT">IT</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Design">Design</option>
-                <option value="Economics">Economics</option>
-              </select>
-              <select 
-                value={filters.level}
-                onChange={(e) => handleFilterChange({ level: e.target.value as 'all' | 'beginner' | 'intermediate' | 'advanced' })}
-              >
-                <option value="all">Tất cả cấp độ</option>
-                <option value="beginner">Cơ bản</option>
-                <option value="intermediate">Trung cấp</option>
-                <option value="advanced">Nâng cao</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Stats Overview */}
-          <div className="dashboard__stats">
-            <CourseStats courses={courses} />
-          </div>
-
-          {/* Course Cards */}
-          <div className="dashboard__courses">
-            {getFilteredCoursesByTab().length === 0 ? (
-              <div className="dashboard__empty">
-                <div className="dashboard__empty-icon">📚</div>
-                <h3>Không tìm thấy khóa học</h3>
-                <p>Hãy thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác</p>
-              </div>
-            ) : (
-              <div className="dashboard__courses-grid">
-                {getFilteredCoursesByTab().map(course => (
-                  <div key={course._id} className="dashboard__course-card">
-                    <div className="dashboard__course-image">
-                      <img 
-                        src={course.thumbnail || '/images/default-course.jpg'} 
-                        alt={course.title} 
-                      />
-                      <div className="dashboard__course-status">
-                        {course.isPublished ? (
-                          <span className="dashboard__status-badge dashboard__status-badge--published">
-                            Đã xuất bản
-                          </span>
-                        ) : (
-                          <span className="dashboard__status-badge dashboard__status-badge--draft">
-                            Bản nháp
-                          </span>
-                        )}
-                        {course.isApproved && (
-                          <span className="dashboard__status-badge dashboard__status-badge--approved">
-                            Đã duyệt
-                          </span>
-                        )}
+          ) : (
+            <div className="dashboard__courses-grid">
+              {getFilteredCoursesByTab().map(course => (
+                <div key={course._id} className="dashboard__course-card">
+                  <div className="dashboard__course-image">
+                    <img 
+                      src={course.thumbnail || '/images/default-course.jpg'} 
+                      alt={course.title} 
+                    />
+                    <div className="dashboard__course-status">
+                      {course.isPublished ? (
+                        <span className="dashboard__status-badge dashboard__status-badge--published">
+                          Đã xuất bản
+                        </span>
+                      ) : (
+                        <span className="dashboard__status-badge dashboard__status-badge--draft">
+                          Bản nháp
+                        </span>
+                      )}
+                      {course.isApproved && (
+                        <span className="dashboard__status-badge dashboard__status-badge--approved">
+                          Đã duyệt
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="dashboard__course-content">
+                    <div className="dashboard__course-header">
+                      <h3 className="dashboard__course-title">{course.title}</h3>
+                      <div className="dashboard__course-meta">
+                        <span className="dashboard__course-domain">{course.domain}</span>
+                        <span className="dashboard__course-level">{getLevelLabel(course.level)}</span>
                       </div>
                     </div>
                     
-                    <div className="dashboard__course-content">
-                      <div className="dashboard__course-header">
-                        <h3 className="dashboard__course-title">{course.title}</h3>
-                        <div className="dashboard__course-meta">
-                          <span className="dashboard__course-domain">{course.domain}</span>
-                          <span className="dashboard__course-level">{getLevelLabel(course.level)}</span>
+                    <p className="dashboard__course-description">{course.description}</p>
+                    
+                    <div className="dashboard__course-details">
+                      <div className="dashboard__course-prerequisites">
+                        <strong>Yêu cầu:</strong>
+                        <div className="dashboard__course-tags">
+                          {course.prerequisites.slice(0, 2).map((prereq, index) => (
+                            <span key={index} className="dashboard__course-tag">
+                              {prereq}
+                            </span>
+                          ))}
+                          {course.prerequisites.length > 2 && (
+                            <span className="dashboard__course-tag dashboard__course-tag--more">
+                              +{course.prerequisites.length - 2}
+                            </span>
+                          )}
                         </div>
                       </div>
                       
-                      <p className="dashboard__course-description">{course.description}</p>
-                      
-                      <div className="dashboard__course-details">
-                        <div className="dashboard__course-prerequisites">
-                          <strong>Yêu cầu:</strong>
-                          <div className="dashboard__course-tags">
-                            {course.prerequisites.slice(0, 2).map((prereq, index) => (
-                              <span key={index} className="dashboard__course-tag">
-                                {prereq}
-                              </span>
-                            ))}
-                            {course.prerequisites.length > 2 && (
-                              <span className="dashboard__course-tag dashboard__course-tag--more">
-                                +{course.prerequisites.length - 2}
-                              </span>
-                            )}
-                          </div>
+                      <div className="dashboard__course-stats">
+                        <div className="dashboard__course-stat">
+                          <span className="dashboard__course-stat-icon">👍</span>
+                          <span>{course.upvotes}</span>
                         </div>
-                        
-                        <div className="dashboard__course-stats">
-                          <div className="dashboard__course-stat">
-                            <span className="dashboard__course-stat-icon">👍</span>
-                            <span>{course.upvotes}</span>
-                          </div>
-                          <div className="dashboard__course-stat">
-                            <span className="dashboard__course-stat-icon">💰</span>
-                            <span>{formatPrice(course.price)}</span>
-                          </div>
-                          <div className="dashboard__course-stat">
-                            <span className="dashboard__course-stat-icon">📅</span>
-                            <span>{formatDate(course.createdAt)}</span>
-                          </div>
+                        <div className="dashboard__course-stat">
+                          <span className="dashboard__course-stat-icon">💰</span>
+                          <span>{formatPrice(course.price)}</span>
                         </div>
-                      </div>
-                      
-                      <div className="dashboard__course-actions">
-                        <button className="dashboard__btn dashboard__btn--primary">
-                          Chỉnh sửa
-                        </button>
-                        <button className="dashboard__btn dashboard__btn--outline">
-                          Xem chi tiết
-                        </button>
-                        {!course.isPublished && (
-                          <button className="dashboard__btn dashboard__btn--secondary">
-                            Xuất bản
-                          </button>
-                        )}
+                        <div className="dashboard__course-stat">
+                          <span className="dashboard__course-stat-icon">📅</span>
+                          <span>{formatDate(course.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="dashboard__course-actions">
+                      <button className="dashboard__btn dashboard__btn--primary">
+                        Chỉnh sửa
+                      </button>
+                      <button className="dashboard__btn dashboard__btn--outline">
+                        Xem chi tiết
+                      </button>
+                      {!course.isPublished && (
+                        <button className="dashboard__btn dashboard__btn--secondary">
+                          Xuất bản
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,273 @@
+/* Progress-specific styles for dashboard layout */
+
+/* Progress Overview */
+.dashboard__progress-overview {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard__progress-main {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dashboard__progress-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.dashboard__progress-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    rgba(255, 255, 255, 0.8) 0deg,
+    rgba(255, 255, 255, 0.8) calc(var(--progress, 0) * 3.6deg),
+    rgba(255, 255, 255, 0.2) calc(var(--progress, 0) * 3.6deg),
+    rgba(255, 255, 255, 0.2) 360deg
+  );
+}
+
+.dashboard__progress-circle__inner {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard__progress-percentage {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.dashboard__progress-info h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.dashboard__progress-info p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.dashboard__progress-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.dashboard__progress-stat {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.dashboard__progress-stat:hover {
+  background: #f7fafc;
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.dashboard__progress-stat-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.dashboard__progress-stat-content h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #718096;
+  margin: 0 0 0.25rem 0;
+}
+
+.dashboard__progress-stat-content span {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+/* Certificates Grid */
+.dashboard__certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard__certificate-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.dashboard__certificate-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+}
+
+.dashboard__certificate-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard__certificate-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.dashboard__certificate-info h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 0.5rem 0;
+}
+
+.dashboard__certificate-info p {
+  color: #718096;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.dashboard__certificate-grade {
+  display: inline-block;
+  background: #f0fff4;
+  color: #38a169;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dashboard__certificate-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Activity List */
+.dashboard__activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard__activity-item {
+  background: white;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.dashboard__activity-item:hover {
+  background: #f7fafc;
+}
+
+.dashboard__activity-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.dashboard__activity-content h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 0.25rem 0;
+}
+
+.dashboard__activity-content p {
+  color: #718096;
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.dashboard__activity-time {
+  color: #a0aec0;
+  font-size: 0.8rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .dashboard__progress-overview {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .dashboard__progress-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard__progress-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard__certificates-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard__certificate-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard__progress-main {
+    padding: 1.5rem;
+  }
+  
+  .dashboard__progress-circle {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .dashboard__progress-circle__inner {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .dashboard__progress-percentage {
+    font-size: 1.25rem;
+  }
+  
+  .dashboard__progress-stat {
+    padding: 1rem;
+  }
+}

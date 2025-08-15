@@ -13,7 +13,6 @@
   background: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
   position: relative;
@@ -52,7 +51,8 @@
 
 .dashboard-stats__card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #f8fafc;
+  border-color: #667eea;
 }
 
 .dashboard-stats__icon {
@@ -91,7 +91,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #f8fafc;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   font-size: 14px;
@@ -100,7 +100,7 @@
 }
 
 .dashboard-stats__insight--warning {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  background: #fef2f2;
   border-color: #fecaca;
   color: #991b1b;
 }

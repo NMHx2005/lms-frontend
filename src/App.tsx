@@ -11,6 +11,7 @@ import '@/styles/auth.css';
 import { store } from '@/store/index.ts';
 import ProtectedRoute from './components/common/ProtectedRoute.tsx';
 import Layout from './components/Layout/client/Layout.tsx';
+import DashboardLayout from './components/Layout/client/DashboardLayout.tsx';
 import ScrollToTop from './components/common/ScrollToTop.tsx';
 
 // Pages
@@ -29,6 +30,12 @@ import Checkout from './pages/client/Checkout/Checkout.tsx';
 import LearningPlayer from './pages/client/LearningPlayer/LearningPlayer.tsx';
 import AssignmentWorkspace from './pages/client/AssignmentWorkspace/AssignmentWorkspace.tsx';
 import MyCourses from './pages/client/Dashboard/Courses';
+import Progress from './pages/client/Dashboard/Progress/Progress';
+import Bills from './pages/client/Dashboard/Bills/Bills';
+import Refunds from './pages/client/Dashboard/Refunds/Refunds';
+import Ratings from './pages/client/Dashboard/Ratings/Ratings';
+import ProfileDashboard from './pages/client/Dashboard/Profile/Profile';
+import Notifications from './pages/client/Dashboard/Notifications/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -60,7 +67,26 @@ function App() {
                 <Route path="/checkout/:courseId" element={<Checkout />} />
                 <Route path="/learning/:courseId" element={<LearningPlayer />} />
                 <Route path="/assignments/:id" element={<AssignmentWorkspace />} />
-                <Route path="/dashboard/courses" element={<MyCourses />} />
+                
+                {/* Dashboard Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                  <Route path="courses" element={<MyCourses />} />
+                  <Route path="progress" element={<Progress />} />
+                  <Route path="bills" element={<Bills />} />
+                  <Route path="refunds" element={<Refunds />} />
+                  <Route path="ratings" element={<Ratings />} />
+                  <Route path="profile" element={<ProfileDashboard />} />
+                  <Route path="notifications" element={<Notifications />} />
+                </Route>
+                
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
                 <Route
@@ -68,14 +94,6 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Learning />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
                     </ProtectedRoute>
                   }
                 />

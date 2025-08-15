@@ -1,7 +1,9 @@
 /* Dashboard Layout */
 .dashboard {
   display: flex;
-  min-height: 100vh;
+  /* min-height: 100vh; */
+      padding: 20px;
+    flex-wrap: wrap;
   background-color: #f8fafc;
 }
 
@@ -56,7 +58,7 @@
 }
 
 .dashboard__nav-item.active {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(59, 130, 246, 0.2);
   border-left-color: #3b82f6;
 }
 
@@ -81,6 +83,7 @@
 /* Header */
 .dashboard__header {
   margin-bottom: 32px;
+  width: 100%;
 }
 
 .dashboard__breadcrumbs {
@@ -108,8 +111,10 @@
 /* Content */
 .dashboard__content {
   background: white;
+  width: 100%;
+  padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
   overflow: hidden;
 }
 
@@ -149,42 +154,53 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid #e2e8f0;
   background-color: white;
+  gap: 20px;
 }
 
 .dashboard__search {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex: 1;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .dashboard__search input {
   flex: 1;
   padding: 12px 16px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 8px 0 0 8px;
   font-size: 14px;
+  background: white;
+  color: #1a202c;
   outline: none;
   transition: border-color 0.2s ease;
+  border-right: none;
 }
 
 .dashboard__search input:focus {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dashboard__search input::placeholder {
+  color: #9ca3af;
 }
 
 .dashboard__search button {
   padding: 12px 16px;
   background: #3b82f6;
   color: white;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid #3b82f6;
+  border-radius: 0 8px 8px 0;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
 }
 
 .dashboard__search button:hover {
@@ -202,6 +218,7 @@
   border-radius: 8px;
   font-size: 14px;
   background: white;
+  color: #1a202c;
   outline: none;
   cursor: pointer;
   min-width: 140px;
@@ -211,15 +228,22 @@
   border-color: #3b82f6;
 }
 
+.dashboard__filters option {
+  background: white;
+  color: #1a202c;
+}
+
 /* Stats */
 .dashboard__stats {
   padding: 24px;
   border-bottom: 1px solid #e2e8f0;
+  background: white;
 }
 
 /* Course Cards */
 .dashboard__courses {
   padding: 24px;
+  background: white;
 }
 
 .dashboard__courses-grid {
@@ -234,13 +258,12 @@
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard__course-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: #3b82f6;
+  background: #f8fafc;
 }
 
 .dashboard__course-image {
