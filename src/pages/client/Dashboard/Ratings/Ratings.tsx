@@ -7,7 +7,7 @@ interface RatingAction {
   courseId: string;
   courseName: string;
   courseImage: string;
-  actionType: 'upvote' | 'report';
+  actionType: 'upvotes' | 'reports';
   action: 'added' | 'removed';
   reason?: string;
   createdAt: string;
@@ -25,7 +25,7 @@ const Ratings: React.FC = () => {
       courseId: '1',
       courseName: 'React Advanced Patterns',
       courseImage: '/images/apollo.png',
-      actionType: 'upvote',
+      actionType: 'upvotes',
       action: 'added',
       createdAt: '2024-01-15T10:30:00Z',
       canUndo: true
@@ -35,7 +35,7 @@ const Ratings: React.FC = () => {
       courseId: '2',
       courseName: 'Node.js Backend Development',
       courseImage: '/images/aptech.png',
-      actionType: 'upvote',
+      actionType: 'upvotes',
       action: 'removed',
       createdAt: '2024-01-14T14:20:00Z',
       canUndo: false
@@ -45,7 +45,7 @@ const Ratings: React.FC = () => {
       courseId: '3',
       courseName: 'UI/UX Design Fundamentals',
       courseImage: '/images/codegym.png',
-      actionType: 'report',
+      actionType: 'reports',
       action: 'added',
       reason: 'Nội dung không phù hợp với lứa tuổi',
       createdAt: '2024-01-13T16:45:00Z',
@@ -56,7 +56,7 @@ const Ratings: React.FC = () => {
       courseId: '4',
       courseName: 'Python Data Science',
       courseImage: '/images/funix.png',
-      actionType: 'upvote',
+      actionType: 'upvotes',
       action: 'added',
       createdAt: '2024-01-12T08:15:00Z',
       canUndo: true
@@ -66,7 +66,7 @@ const Ratings: React.FC = () => {
       courseId: '5',
       courseName: 'Machine Learning Basics',
       courseImage: '/images/rikedu.png',
-      actionType: 'report',
+      actionType: 'reports',
       action: 'removed',
       reason: 'Báo cáo sai, nội dung hoàn toàn phù hợp',
       createdAt: '2024-01-11T11:30:00Z',
@@ -77,7 +77,7 @@ const Ratings: React.FC = () => {
       courseId: '6',
       courseName: 'Web Development Bootcamp',
       courseImage: '/images/logo.png',
-      actionType: 'upvote',
+      actionType: 'upvotes',
       action: 'added',
       createdAt: '2024-01-10T09:45:00Z',
       canUndo: true
@@ -91,7 +91,7 @@ const Ratings: React.FC = () => {
   });
 
   const getActionIcon = (actionType: string, action: string) => {
-    if (actionType === 'upvote') {
+    if (actionType === 'upvotes') {
       return action === 'added' ? '👍' : '👎';
     } else {
       return action === 'added' ? '🚨' : '✅';
@@ -99,7 +99,7 @@ const Ratings: React.FC = () => {
   };
 
   const getActionLabel = (actionType: string, action: string) => {
-    if (actionType === 'upvote') {
+    if (actionType === 'upvotes') {
       return action === 'added' ? 'Đã upvote' : 'Đã bỏ upvote';
     } else {
       return action === 'added' ? 'Đã báo cáo' : 'Đã hủy báo cáo';
@@ -107,7 +107,7 @@ const Ratings: React.FC = () => {
   };
 
   const getActionClass = (actionType: string, action: string) => {
-    if (actionType === 'upvote') {
+    if (actionType === 'upvotes') {
       return action === 'added' ? 'action-badge--upvote-added' : 'action-badge--upvote-removed';
     } else {
       return action === 'added' ? 'action-badge--report-added' : 'action-badge--report-removed';
@@ -177,11 +177,11 @@ const Ratings: React.FC = () => {
           <div className="dashboard__stats-summary">
             <div className="stat-item">
               <span className="stat-label">Tổng upvotes:</span>
-              <span className="stat-value">{ratingActions.filter(a => a.actionType === 'upvote' && a.action === 'added').length}</span>
+              <span className="stat-value">{ratingActions.filter(a => a.actionType === 'upvotes' && a.action === 'added').length}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Tổng báo cáo:</span>
-              <span className="stat-value">{ratingActions.filter(a => a.actionType === 'report' && a.action === 'added').length}</span>
+              <span className="stat-value">{ratingActions.filter(a => a.actionType === 'reports' && a.action === 'added').length}</span>
             </div>
           </div>
         </div>
@@ -238,7 +238,7 @@ const Ratings: React.FC = () => {
                   <div className="rating-card__footer">
                     <div className="rating-card__meta">
                       <span className="meta-item">
-                        <strong>Loại:</strong> {action.actionType === 'upvote' ? 'Upvote' : 'Báo cáo'}
+                        <strong>Loại:</strong> {action.actionType === 'upvotes' ? 'Upvote' : 'Báo cáo'}
                       </span>
                       <span className="meta-item">
                         <strong>Hành động:</strong> {action.action === 'added' ? 'Thêm' : 'Xóa'}

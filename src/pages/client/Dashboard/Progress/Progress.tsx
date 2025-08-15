@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Course, Enrollment } from '@/components/Client/Dashboard/types';
 import './Progress.css';
 
 interface ProgressData {
