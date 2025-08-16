@@ -24,7 +24,24 @@ import Learning from './pages/client/Learning/Learning.tsx';
 import { UserRole } from './components/common/ProtectedRoute.tsx';
 import Dashboard from './pages/client/Dashboard/Dashboard.tsx';
 import Profile from './pages/client/Profile/Profile.tsx';
-import Admin from './pages/admin/Admin/Admin.tsx';
+import AdminLayout from './components/Layout/admin/AdminLayout.tsx';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import CourseModeration from './pages/admin/CourseModeration';
+import CourseDirectory from './pages/admin/CourseDirectory';
+import RefundCenter from './pages/admin/RefundCenter';
+import BillsPayments from './pages/admin/BillsPayments';
+import AIModeration from './pages/admin/AIModeration';
+import AdminAnalytics from './pages/admin/Analytics';
+import SystemSettings from './pages/admin/SystemSettings';
+import PermissionsManagement from './pages/admin/PermissionsManagement';
+import AuditLogs from './pages/admin/AuditLogs';
+import CategoryManagement from './pages/admin/CategoryManagement';
+import SupportCenter from './pages/admin/SupportCenter/SupportCenter.tsx';
+import Announcements from './pages/admin/Announcements';
+import PerformanceMonitoring from './pages/admin/PerformanceMonitoring';
+import BackupRestore from './pages/admin/BackupRestore';
 import Courses from './pages/client/Courses/Coures.tsx';
 import ForgotPassword from './pages/client/ForgotPassword/ForgotPassword.tsx';
 import Checkout from './pages/client/Checkout/Checkout.tsx';
@@ -166,14 +183,33 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
                 <Route
                   path="/admin"
                   element={
                     <ProtectedRoute roles={[UserRole.Admin]}>
-                      <Admin />
+                      <AdminLayout />
                     </ProtectedRoute>
                   }
-                />
+                >
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="users" element={<UserManagement />} />
+                  <Route path="courses/review" element={<CourseModeration />} />
+                  <Route path="courses" element={<CourseDirectory />} />
+                  <Route path="refunds" element={<RefundCenter />} />
+                  <Route path="bills" element={<BillsPayments />} />
+                  <Route path="ai" element={<AIModeration />} />
+                  <Route path="reports" element={<AdminAnalytics />} />
+                  <Route path="settings" element={<SystemSettings />} />
+                  <Route path="permissions" element={<PermissionsManagement />} />
+                  <Route path="audit-logs" element={<AuditLogs />} />
+                  <Route path="category-management" element={<CategoryManagement />} />
+                  <Route path="support-center" element={<SupportCenter />} />
+                  <Route path="announcements" element={<Announcements />} />
+                  <Route path="performance" element={<PerformanceMonitoring />} />
+                  <Route path="backup" element={<BackupRestore />} />
+                </Route>
                 <Route path='*' element={<NotFound />} />
               </Routes>
             </Layout>

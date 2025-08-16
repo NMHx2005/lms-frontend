@@ -1,0 +1,1036 @@
+.backup-restore {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.backup-restore.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.backup-restore .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.backup-restore .header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.backup-restore .header p {
+  color: #6b7280;
+  font-size: 16px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.backup-restore .header-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.backup-restore .stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.backup-restore .stats-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border-left: 4px solid #3b82f6;
+}
+
+.backup-restore .stats-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.backup-restore .stats-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.backup-restore .stats-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .tabs {
+  display: flex;
+  background: white;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  overflow-x: auto;
+  gap: 4px;
+}
+
+.backup-restore .tab {
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+  font-size: 14px;
+  min-width: fit-content;
+}
+
+.backup-restore .tab.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.backup-restore .tab:hover:not(.active) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Backups Tab */
+.backup-restore .backups-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backup-restore .backups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backup-restore .backup-item {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.backup-restore .backup-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.backup-restore .backup-header {
+  padding: 20px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.backup-restore .backup-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.backup-restore .backup-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.backup-restore .backup-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.backup-restore .backup-type {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .backup-type-database {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.backup-restore .backup-type-files {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.backup-restore .backup-type-full {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .backup-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .backup-status-pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.backup-restore .backup-status-running {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.backup-restore .backup-status-completed {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .backup-status-failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.backup-restore .backup-status-cancelled {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.backup-restore .backup-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.backup-restore .backup-details {
+  padding: 20px;
+}
+
+.backup-restore .backup-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.backup-restore .stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backup-restore .stat-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .stat-value {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.backup-restore .backup-properties {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.backup-restore .property {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backup-restore .property-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .property-value {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.backup-restore .backup-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border-left: 4px solid #dc2626;
+}
+
+.backup-restore .error-icon {
+  font-size: 16px;
+}
+
+.backup-restore .error-message {
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Restore Tab */
+.backup-restore .restore-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backup-restore .restore-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backup-restore .restore-job-item {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.backup-restore .restore-job-header {
+  padding: 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.backup-restore .restore-job-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.backup-restore .restore-job-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.backup-restore .restore-job-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.backup-restore .restore-job-type {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .restore-job-type-database {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.backup-restore .restore-job-type-files {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.backup-restore .restore-job-type-full {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .restore-job-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .restore-job-status-pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.backup-restore .restore-job-status-running {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.backup-restore .restore-job-status-completed {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .restore-job-status-failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.backup-restore .restore-job-status-cancelled {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.backup-restore .restore-job-details {
+  padding: 20px;
+}
+
+.backup-restore .restore-job-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.backup-restore .restore-job-validation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.backup-restore .validation-label {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.backup-restore .validation-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .validation-passed {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .validation-failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.backup-restore .validation-pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.backup-restore .restore-job-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border-left: 4px solid #dc2626;
+}
+
+/* Schedules Tab */
+.backup-restore .schedules-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.backup-restore .schedules-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.backup-restore .schedules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.backup-restore .schedule-item {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.backup-restore .schedule-header {
+  padding: 20px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.backup-restore .schedule-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.backup-restore .schedule-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.backup-restore .schedule-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.backup-restore .schedule-type {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .schedule-type-database {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.backup-restore .schedule-type-files {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.backup-restore .schedule-type-full {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .schedule-frequency {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .schedule-frequency-hourly {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.backup-restore .schedule-frequency-daily {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.backup-restore .schedule-frequency-weekly {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .schedule-frequency-monthly {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.backup-restore .schedule-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .schedule-status.active {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.backup-restore .schedule-status.inactive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.backup-restore .schedule-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.backup-restore .schedule-details {
+  padding: 20px;
+}
+
+.backup-restore .schedule-timing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.backup-restore .timing-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backup-restore .timing-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .timing-value {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.backup-restore .schedule-properties {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.backup-restore .schedule-runs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background: #fef3c7;
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+}
+
+.backup-restore .run-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backup-restore .run-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.backup-restore .run-value {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Settings Tab */
+.backup-restore .settings-tab {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.backup-restore .settings-placeholder h3 {
+  color: #6b7280;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.backup-restore .settings-placeholder p {
+  color: #9ca3af;
+  font-size: 16px;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.backup-restore .settings-placeholder ul {
+  text-align: left;
+  max-width: 500px;
+  margin: 0 auto;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.backup-restore .settings-placeholder li {
+  margin-bottom: 8px;
+}
+
+/* Buttons */
+.backup-restore .btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backup-restore .btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.backup-restore .btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.backup-restore .btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.backup-restore .btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.backup-restore .btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.backup-restore .btn-success:hover {
+  background: #059669;
+}
+
+.backup-restore .btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.backup-restore .btn-warning:hover {
+  background: #d97706;
+}
+
+.backup-restore .btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.backup-restore .btn-danger:hover {
+  background: #dc2626;
+}
+
+/* Modal */
+.backup-restore .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.backup-restore .modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.backup-restore .modal-header {
+  padding: 24px 24px 0;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 24px;
+}
+
+.backup-restore .modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.backup-restore .modal-subtitle {
+  color: #6b7280;
+  font-size: 16px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.backup-restore .modal-content {
+  padding: 0 24px 24px;
+}
+
+.backup-restore .modal-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.backup-restore .modal-placeholder h3 {
+  color: #6b7280;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.backup-restore .modal-placeholder p {
+  color: #9ca3af;
+  font-size: 16px;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.backup-restore .modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .backup-restore {
+    padding: 20px;
+  }
+  
+  .backup-restore .header h1 {
+    font-size: 24px;
+  }
+  
+  .backup-restore .stats {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .backup-restore .stats-card {
+    padding: 20px;
+  }
+  
+  .backup-restore .stats-value {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .backup-restore {
+    padding: 16px;
+  }
+  
+  .backup-restore .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+  
+  .backup-restore .header h1 {
+    text-align: center;
+  }
+  
+  .backup-restore .header-actions {
+    justify-content: center;
+  }
+  
+  .backup-restore .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .backup-restore .stats-card {
+    padding: 16px;
+  }
+  
+  .backup-restore .stats-value {
+    font-size: 24px;
+  }
+  
+  .backup-restore .tabs {
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .backup-restore .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .backup-restore .backup-header,
+  .backup-restore .schedule-header {
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .backup-restore .backup-actions,
+  .backup-restore .schedule-actions {
+    justify-content: center;
+  }
+  
+  .backup-restore .backup-details,
+  .backup-restore .restore-job-details,
+  .backup-restore .schedule-details {
+    padding: 16px;
+  }
+  
+  .backup-restore .backup-stats,
+  .backup-restore .restore-job-stats,
+  .backup-restore .schedule-timing {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .backup-restore .backup-properties,
+  .backup-restore .schedule-properties {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .backup-restore .schedule-runs {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .backup-restore .settings-tab {
+    padding: 24px;
+  }
+  
+  .backup-restore .modal {
+    margin: 20px;
+    max-height: calc(100vh - 40px);
+  }
+  
+  .backup-restore .modal-header,
+  .backup-restore .modal-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .backup-restore .stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .backup-restore .stats-card {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  
+  .backup-restore .tabs {
+    flex-direction: column;
+    padding: 8px;
+  }
+  
+  .backup-restore .tab {
+    text-align: center;
+  }
+  
+  .backup-restore .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .backup-restore .backup-actions,
+  .backup-restore .schedule-actions {
+    flex-direction: column;
+  }
+  
+  .backup-restore .header-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,736 @@
+.performance-monitoring {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.performance-monitoring.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.performance-monitoring.error {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.performance-monitoring.error h3 {
+  font-size: 24px;
+  margin-bottom: 16px;
+  color: #dc2626;
+}
+
+.performance-monitoring.error p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.performance-monitoring .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 24px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.performance-monitoring .header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.performance-monitoring .header p {
+  color: #6b7280;
+  font-size: 16px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.performance-monitoring .header-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.performance-monitoring .time-range-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-range-selector--nomargin {
+  margin: 0!important;
+}
+.performance-monitoring .time-range-selector label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.performance-monitoring .time-range-selector select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  min-width: 120px;
+}
+
+.performance-monitoring .auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.performance-monitoring .auto-refresh-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.performance-monitoring .tabs {
+  display: flex;
+  background: white;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  overflow-x: auto;
+  gap: 4px;
+}
+
+.performance-monitoring .tab {
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+  font-size: 14px;
+  min-width: fit-content;
+}
+
+.performance-monitoring .tab.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.performance-monitoring .tab:hover:not(.active) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Overview Tab */
+.performance-monitoring .overview-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.performance-monitoring .metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.performance-monitoring .metric-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.performance-monitoring .metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.performance-monitoring .metric-card.critical {
+  border-left-color: #dc2626;
+}
+
+.performance-monitoring .metric-card.warning {
+  border-left-color: #f59e0b;
+}
+
+.performance-monitoring .metric-card.normal {
+  border-left-color: #10b981;
+}
+
+.performance-monitoring .metric-card.info {
+  border-left-color: #3b82f6;
+}
+
+.performance-monitoring .metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.performance-monitoring .metric-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.performance-monitoring .metric-header .status {
+  font-size: 20px;
+}
+
+.performance-monitoring .metric-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.performance-monitoring .metric-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.performance-monitoring .metric-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.performance-monitoring .charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.performance-monitoring .chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.performance-monitoring .chart-container h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 20px 0;
+}
+
+.performance-monitoring .chart-placeholder {
+  height: 200px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+}
+
+.performance-monitoring .chart-line {
+  width: 40px;
+  background: linear-gradient(to top, #3b82f6, #60a5fa);
+  border-radius: 4px 4px 0 0;
+  animation: chartAnimation 2s ease-in-out infinite alternate;
+}
+
+.performance-monitoring .chart-bar {
+  width: 50px;
+  background: linear-gradient(to top, #10b981, #34d399);
+  border-radius: 4px 4px 0 0;
+  animation: chartAnimation 2s ease-in-out infinite alternate;
+}
+
+@keyframes chartAnimation {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.performance-monitoring .chart-container p {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Server Tab */
+.performance-monitoring .server-tab {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.performance-monitoring .server-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.performance-monitoring .metric-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.performance-monitoring .metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.performance-monitoring .metric-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.performance-monitoring .metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.performance-monitoring .metric-bar {
+  width: 100%;
+  height: 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.performance-monitoring .metric-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.performance-monitoring .server-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.performance-monitoring .stat-card {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.performance-monitoring .stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.performance-monitoring .stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.performance-monitoring .stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Database Tab */
+.performance-monitoring .database-tab {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.performance-monitoring .database-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.performance-monitoring .database-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* User Experience Tab */
+.performance-monitoring .ux-tab {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.performance-monitoring .ux-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.performance-monitoring .ux-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* Alerts Tab */
+.performance-monitoring .alerts-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.performance-monitoring .alerts-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.performance-monitoring .alert-stat {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-top: 4px solid;
+}
+
+.performance-monitoring .alert-stat.critical {
+  border-top-color: #dc2626;
+}
+
+.performance-monitoring .alert-stat.warning {
+  border-top-color: #f59e0b;
+}
+
+.performance-monitoring .alert-stat.info {
+  border-top-color: #3b82f6;
+}
+
+.performance-monitoring .alert-stat.resolved {
+  border-top-color: #10b981;
+}
+
+.performance-monitoring .alert-count {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.performance-monitoring .alert-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.performance-monitoring .alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.performance-monitoring .alert-item {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid;
+}
+
+.performance-monitoring .alert-item.critical {
+  border-left-color: #dc2626;
+}
+
+.performance-monitoring .alert-item.warning {
+  border-left-color: #f59e0b;
+}
+
+.performance-monitoring .alert-item.info {
+  border-left-color: #3b82f6;
+}
+
+.performance-monitoring .alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.performance-monitoring .alert-type {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.performance-monitoring .alert-item.critical .alert-type {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.performance-monitoring .alert-item.warning .alert-type {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.performance-monitoring .alert-item.info .alert-type {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.performance-monitoring .alert-time {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.performance-monitoring .alert-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.performance-monitoring .alert-description {
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.performance-monitoring .alert-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.performance-monitoring .alert-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.performance-monitoring .btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.performance-monitoring .btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.performance-monitoring .btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.performance-monitoring .btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.performance-monitoring .btn-success:hover {
+  background: #059669;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .performance-monitoring {
+    padding: 20px;
+  }
+  
+  .performance-monitoring .header h1 {
+    font-size: 24px;
+  }
+  
+  .performance-monitoring .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .performance-monitoring .charts-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .performance-monitoring .metric-value {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .performance-monitoring {
+    padding: 16px;
+  }
+  
+  .performance-monitoring .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+  
+  .performance-monitoring .header h1 {
+    text-align: center;
+  }
+  
+  .performance-monitoring .header-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .performance-monitoring .time-range-selector {
+    justify-content: center;
+  }
+  
+  .performance-monitoring .auto-refresh-toggle {
+    justify-content: center;
+  }
+  
+  .performance-monitoring .tabs {
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .performance-monitoring .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .performance-monitoring .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .performance-monitoring .metric-card {
+    padding: 20px;
+  }
+  
+  .performance-monitoring .metric-value {
+    font-size: 24px;
+  }
+  
+  .performance-monitoring .metric-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .performance-monitoring .server-stats,
+  .performance-monitoring .database-stats,
+  .performance-monitoring .ux-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .performance-monitoring .alerts-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .performance-monitoring .alert-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .performance-monitoring .alert-actions {
+    flex-direction: column;
+  }
+  
+  .performance-monitoring .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-monitoring .server-stats,
+  .performance-monitoring .database-stats,
+  .performance-monitoring .ux-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-monitoring .alerts-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-monitoring .tabs {
+    flex-direction: column;
+    padding: 8px;
+  }
+  
+  .performance-monitoring .tab {
+    text-align: center;
+  }
+  
+  .performance-monitoring .chart-placeholder {
+    height: 150px;
+    padding: 16px;
+  }
+  
+  .performance-monitoring .chart-line {
+    width: 30px;
+  }
+  
+  .performance-monitoring .chart-bar {
+    width: 40px;
+  }
+}
