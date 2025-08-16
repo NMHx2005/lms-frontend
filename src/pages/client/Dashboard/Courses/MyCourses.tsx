@@ -1,191 +1,170 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Course, CourseFilter } from '@/components/Client/Dashboard/types';
+import React, { useState, useEffect } from 'react';
 import CourseStats from '@/components/Client/Dashboard/Courses/CourseStats';
 import './MyCourses.css';
+import { Course } from '@/types/index';
+
+// Thêm interface CourseFilter
+interface CourseFilter {
+  search: string;
+  domain: string;
+  level: string;
+}
 
 const MyCourses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [filters, setFilters] = useState<CourseFilter>({
-    status: 'all',
-    domain: 'all',
-    level: 'all',
-    search: ''
-  });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
+  const [filters, setFilters] = useState<CourseFilter>({
+    search: '',
+    domain: 'all',
+    level: 'all'
+  });
 
-  // Mock data theo cấu trúc MongoDB chuẩn
+
   useEffect(() => {
-    const mockCourses: Course[] = [
-      {
-        _id: '64f0d1234567890abcdef123',
-        title: 'React Fundamentals',
-        description: 'Khóa học React từ cơ bản đến nâng cao, học cách xây dựng ứng dụng web hiện đại với React hooks, context API và best practices. Khóa học bao gồm 24 bài học thực hành và 3 dự án thực tế.',
-        thumbnail: '/images/course-1.jpg',
-        domain: 'IT',
-        level: 'beginner',
-        prerequisites: ['HTML cơ bản', 'CSS cơ bản', 'JavaScript cơ bản', 'ES6+ syntax'],
-        benefits: ['Xây dựng ứng dụng web hiện đại', 'Hiểu sâu về React ecosystem', 'Có thể apply vào dự án thực tế', 'Nắm vững React hooks và context'],
-        relatedLinks: ['https://reactjs.org', 'https://github.com/facebook/react', 'https://react.dev'],
-        instructorId: '64f0c1234567890abcdef123',
-        price: 500000,
-        isPublished: true,
-        isApproved: true,
-        upvotes: 25,
-        reports: 0,
-        createdAt: '2025-08-02T03:00:00.000Z',
-        updatedAt: '2025-08-02T03:00:00.000Z',
-        enrolledStudents: ["64f0c1234567890abcdef123"],
-      },
-      {
-        _id: '64f0d1234567890abcdef124',
-        title: 'Advanced Node.js Development',
-        description: 'Khóa học nâng cao về Node.js, bao gồm microservices, testing, deployment và performance optimization. Học cách xây dựng backend scalable và maintainable.',
-        thumbnail: '/images/course-2.jpg',
-        domain: 'IT',
-        level: 'advanced',
-        prerequisites: ['Node.js cơ bản', 'JavaScript ES6+', 'Database knowledge', 'REST API concepts'],
-        benefits: ['Xây dựng microservices', 'Testing và deployment', 'Performance optimization', 'Architecture patterns'],
-        relatedLinks: ['https://nodejs.org', 'https://expressjs.com', 'https://jestjs.io'],
-        instructorId: '64f0c1234567890abcdef124',
-        price: 800000,
-        isPublished: true,
-        isApproved: true,
-        upvotes: 18,
-        reports: 1,
-        createdAt: '2025-08-01T03:00:00.000Z',
-        updatedAt: '2025-08-01T03:00:00.000Z',
-        enrolledStudents: ["64f0c1234567890abcdef124"],
-      },
-      {
-        _id: '64f0d1234567890abcdef125',
-        title: 'Digital Marketing Strategy',
-        description: 'Chiến lược marketing số toàn diện cho doanh nghiệp, bao gồm SEO, social media, content marketing và analytics. Học cách tối ưu hóa ROI và xây dựng brand.',
-        thumbnail: '/images/course-3.jpg',
-        domain: 'Marketing',
-        level: 'intermediate',
-        prerequisites: ['Marketing cơ bản', 'Hiểu về digital landscape', 'Google Analytics cơ bản'],
-        benefits: ['Xây dựng chiến lược marketing số', 'Tối ưu hóa ROI', 'Phân tích dữ liệu marketing', 'Content strategy'],
-        relatedLinks: ['https://google.com/analytics', 'https://ads.google.com', 'https://business.facebook.com'],
-        instructorId: '64f0c1234567890abcdef125',
-        price: 600000,
-        isPublished: true,
-        isApproved: false,
-        upvotes: 12,
-        reports: 0,
-        createdAt: '2025-07-30T03:00:00.000Z',
-        updatedAt: '2025-07-30T03:00:00.000Z',
-        enrolledStudents: ["64f0c1234567890abcdef125"],
-      },
-      {
-        _id: '64f0d1234567890abcdef126',
-        title: 'UI/UX Design Principles',
-        description: 'Nguyên lý thiết kế giao diện người dùng và trải nghiệm người dùng cho web và mobile applications. Học design thinking và user-centered design.',
-        thumbnail: '/images/course-4.jpg',
-        domain: 'Design',
-        level: 'beginner',
-        prerequisites: ['Không yêu cầu kiến thức trước', 'Có thể sử dụng máy tính cơ bản'],
-        benefits: ['Thiết kế giao diện đẹp', 'Tạo trải nghiệm người dùng tốt', 'Sử dụng design tools', 'Design thinking'],
-        relatedLinks: ['https://figma.com', 'https://sketch.com', 'https://www.adobe.com/products/xd.html'],
-        instructorId: '64f0c1234567890abcdef126',
-        price: 450000,
-        isPublished: false,
-        isApproved: false,
-        upvotes: 8,
-        reports: 0,
-        createdAt: '2025-07-28T03:00:00.000Z',
-        updatedAt: '2025-07-28T03:00:00.000Z',
-        enrolledStudents: ["64f0c1234567890abcdef126"],
-      },
-      {
-        _id: '64f0d1234567890abcdef127',
-        title: 'Python Data Science',
-        description: 'Khóa học Python cho Data Science, bao gồm pandas, numpy, matplotlib và scikit-learn. Học cách phân tích dữ liệu và xây dựng machine learning models.',
-        thumbnail: '/images/course-5.jpg',
-        domain: 'IT',
-        level: 'intermediate',
-        prerequisites: ['Python cơ bản', 'Toán học cơ bản', 'Thống kê cơ bản'],
-        benefits: ['Phân tích dữ liệu', 'Machine learning', 'Data visualization', 'Statistical analysis'],
-        relatedLinks: ['https://python.org', 'https://pandas.pydata.org', 'https://scikit-learn.org'],
-        instructorId: '64f0c1234567890abcdef127',
-        price: 750000,
-        isPublished: true,
-        isApproved: true,
-        upvotes: 32,
-        reports: 0,
-        createdAt: '2025-07-25T03:00:00.000Z',
-        updatedAt: '2025-07-25T03:00:00.000Z',
-        enrolledStudents: ["64f0c1234567890abcdef127"],
-      }
-    ];
-
+    // Simulate API call
     setTimeout(() => {
+      const mockCourses: Course[] = [
+        {
+          _id: '1',
+          title: 'React Fundamentals',
+          description: 'Học React từ cơ bản đến nâng cao',
+          thumbnail: '/images/react-course.jpg',
+          domain: 'IT',
+          level: 'beginner',
+          prerequisites: ['HTML', 'CSS', 'JavaScript'],
+          benefits: ['Xây dựng ứng dụng web', 'Hiểu về component-based architecture'],
+          relatedLinks: ['https://reactjs.org', 'https://react.dev'],
+          instructorId: 'instructor1',
+          price: 299000,
+          isPublished: true,
+          isApproved: true,
+          upvotes: 45,
+          reports: 0,
+          enrolledStudents: ['student1', 'student2', 'student3'], // Array of user IDs
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z'
+        },
+        {
+          _id: '2',
+          title: 'Advanced JavaScript',
+          description: 'Nâng cao kỹ năng JavaScript',
+          thumbnail: '/images/js-course.jpg',
+          domain: 'IT',
+          level: 'advanced',
+          prerequisites: ['JavaScript basics'],
+          benefits: ['Hiểu sâu về JavaScript', 'ES6+ features'],
+          relatedLinks: ['https://developer.mozilla.org'],
+          instructorId: 'instructor2',
+          price: 399000,
+          isPublished: true,
+          isApproved: true,
+          upvotes: 32,
+          reports: 1,
+          enrolledStudents: ['student1', 'student4', 'student5'],
+          createdAt: '2024-01-02T00:00:00Z',
+          updatedAt: '2024-01-02T00:00:00Z'
+        },
+        {
+          _id: '3',
+          title: 'Python Data Science',
+          description: 'Phân tích dữ liệu với Python',
+          thumbnail: '/images/python-course.jpg',
+          domain: 'IT',
+          level: 'intermediate',
+          prerequisites: ['Python basics'],
+          benefits: ['Phân tích dữ liệu', 'Machine Learning cơ bản'],
+          relatedLinks: ['https://python.org'],
+          instructorId: 'instructor3',
+          price: 499000,
+          isPublished: true,
+          isApproved: true,
+          upvotes: 67,
+          reports: 0,
+          enrolledStudents: ['student1', 'student6', 'student7', 'student8'],
+          createdAt: '2024-01-03T00:00:00Z',
+          updatedAt: '2024-01-03T00:00:00Z'
+        },
+        {
+          _id: '4',
+          title: 'UI/UX Design',
+          description: 'Thiết kế giao diện người dùng',
+          thumbnail: '/images/design-course.jpg',
+          domain: 'Design',
+          level: 'beginner',
+          prerequisites: ['Không yêu cầu'],
+          benefits: ['Thiết kế UI/UX', 'Prototyping'],
+          relatedLinks: ['https://figma.com'],
+          instructorId: 'instructor4',
+          price: 199000,
+          isPublished: true,
+          isApproved: true,
+          upvotes: 28,
+          reports: 0,
+          enrolledStudents: ['student9', 'student10'],
+          createdAt: '2024-01-04T00:00:00Z',
+          updatedAt: '2024-01-04T00:00:00Z'
+        },
+        {
+          _id: '5',
+          title: 'Mobile App Development',
+          description: 'Phát triển ứng dụng di động',
+          thumbnail: '/images/mobile-course.jpg',
+          domain: 'IT',
+          level: 'intermediate',
+          prerequisites: ['JavaScript', 'React basics'],
+          benefits: ['React Native', 'Mobile app development'],
+          relatedLinks: ['https://reactnative.dev'],
+          instructorId: 'instructor5',
+          price: 599000,
+          isPublished: true,
+          isApproved: true,
+          upvotes: 41,
+          reports: 2,
+          enrolledStudents: ['student11', 'student12', 'student13'],
+          createdAt: '2024-01-05T00:00:00Z',
+          updatedAt: '2024-01-05T00:00:00Z'
+        }
+      ];
       setCourses(mockCourses);
       setLoading(false);
     }, 1000);
   }, []);
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter(course => {
-      const matchesDomain = filters.domain === 'all' || course.domain === filters.domain;
-      const matchesLevel = filters.level === 'all' || course.level === filters.level;
-      const matchesSearch = course.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           course.description.toLowerCase().includes(filters.search.toLowerCase());
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+      course.description.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesDomain = filters.domain === 'all' || course.domain === filters.domain;
+    const matchesLevel = filters.level === 'all' || course.level === filters.level;
 
-      return matchesDomain && matchesLevel && matchesSearch;
-    });
-  }, [courses, filters]);
+    return matchesSearch && matchesDomain && matchesLevel;
+  });
 
+  // Sửa type cho prev parameter
   const handleFilterChange = (newFilters: Partial<CourseFilter>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  const handleTabChange = (tab: 'all' | 'published' | 'approved' | 'draft') => {
-    setActiveTab(tab);
-  };
-
-  const getTabCount = (tab: string) => {
-    switch (tab) {
-      case 'published':
-        return courses.filter(course => course.isPublished).length;
-      case 'approved':
-        return courses.filter(course => course.isApproved).length;
-      case 'draft':
-        return courses.filter(course => !course.isPublished).length;
-      default:
-        return courses.length;
-    }
-  };
-
-  const getFilteredCoursesByTab = () => {
-    switch (activeTab) {
-      case 'published':
-        return filteredCourses.filter(course => course.isPublished);
-      case 'approved':
-        return filteredCourses.filter(course => course.isApproved);
-      case 'draft':
-        return filteredCourses.filter(course => !course.isPublished);
-      default:
-        return filteredCourses;
-    }
   };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'VND'
+      currency: 'VND',
     }).format(price);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'beginner':
+        return '#10B981';
+      case 'intermediate':
+        return '#F59E0B';
+      case 'advanced':
+        return '#EF4444';
+      default:
+        return '#6B7280';
+    }
   };
 
-  const getLevelLabel = (level: string) => {
+  const getLevelText = (level: string) => {
     switch (level) {
       case 'beginner':
         return 'Cơ bản';
@@ -209,11 +188,10 @@ const MyCourses: React.FC = () => {
           </div>
           <h1 className="dashboard__title">Khóa học của tôi</h1>
         </div>
-        
         <div className="dashboard__content">
           <div className="dashboard__loading">
             <div className="dashboard__loading-spinner"></div>
-            <p>Đang tải khóa học...</p>
+            <p>Đang tải dữ liệu...</p>
           </div>
         </div>
       </div>
@@ -234,164 +212,100 @@ const MyCourses: React.FC = () => {
 
       {/* Content */}
       <div className="dashboard__content">
-        {/* Tabs */}
-        <div className="dashboard__tabs">
-          <button 
-            className={`dashboard__tab ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => handleTabChange('all')}
-          >
-            Tất cả ({getTabCount('all')})
-          </button>
-          <button 
-            className={`dashboard__tab ${activeTab === 'published' ? 'active' : ''}`}
-            onClick={() => handleTabChange('published')}
-          >
-            Đã xuất bản ({getTabCount('published')})
-          </button>
-          <button 
-            className={`dashboard__tab ${activeTab === 'approved' ? 'active' : ''}`}
-            onClick={() => handleTabChange('approved')}
-          >
-            Đã duyệt ({getTabCount('approved')})
-          </button>
-          <button 
-            className={`dashboard__tab ${activeTab === 'draft' ? 'active' : ''}`}
-            onClick={() => handleTabChange('draft')}
-          >
-            Bản nháp ({getTabCount('draft')})
-          </button>
-        </div>
+        {/* Stats */}
+        <CourseStats courses={courses} />
 
-        {/* Filter Bar */}
-        <div className="dashboard__filter-bar">
-          <div className="dashboard__search">
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm khóa học..." 
-              value={filters.search}
-              onChange={(e) => handleFilterChange({ search: e.target.value })}
-            />
-            <button>🔍</button>
+        {/* Filters */}
+        <div className="dashboard__section">
+          <div className="dashboard__section-header">
+            <h2>Bộ lọc</h2>
+            <p>Tìm kiếm và lọc khóa học theo nhu cầu</p>
           </div>
+
           <div className="dashboard__filters">
-            <select 
-              value={filters.domain}
-              onChange={(e) => handleFilterChange({ domain: e.target.value })}
-            >
-              <option value="all">Tất cả lĩnh vực</option>
-              <option value="IT">IT</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Design">Design</option>
-              <option value="Economics">Economics</option>
-            </select>
-            <select 
-              value={filters.level}
-              onChange={(e) => handleFilterChange({ level: e.target.value as 'all' | 'beginner' | 'intermediate' | 'advanced' })}
-            >
-              <option value="all">Tất cả cấp độ</option>
-              <option value="beginner">Cơ bản</option>
-              <option value="intermediate">Trung cấp</option>
-              <option value="advanced">Nâng cao</option>
-            </select>
+            <div className="filter-group">
+              <input
+                type="text"
+                placeholder="Tìm kiếm khóa học..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange({ search: e.target.value })}
+              />
+              <button>🔍</button>
+            </div>
+
+            <div className="filter-group">
+              <select
+                value={filters.domain}
+                onChange={(e) => handleFilterChange({ domain: e.target.value })}
+              >
+                <option value="all">Tất cả lĩnh vực</option>
+                <option value="Web Development">Web Development</option>
+                <option value="Programming">Programming</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Design">Design</option>
+                <option value="Mobile Development">Mobile Development</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <select
+                value={filters.level}
+                onChange={(e) => handleFilterChange({ level: e.target.value as 'all' | 'beginner' | 'intermediate' | 'advanced' })}
+              >
+                <option value="all">Tất cả cấp độ</option>
+                <option value="beginner">Cơ bản</option>
+                <option value="intermediate">Trung cấp</option>
+                <option value="advanced">Nâng cao</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="dashboard__stats">
-          <CourseStats courses={courses} />
-        </div>
+        {/* Courses List */}
+        <div className="dashboard__section">
+          <div className="dashboard__section-header">
+            <h2>Danh sách khóa học ({filteredCourses.length})</h2>
+            <p>Quản lý tất cả khóa học bạn đã đăng ký</p>
+          </div>
 
-        {/* Course Cards */}
-        <div className="dashboard__courses">
-          {getFilteredCoursesByTab().length === 0 ? (
+          {filteredCourses.length === 0 ? (
             <div className="dashboard__empty">
               <div className="dashboard__empty-icon">📚</div>
-              <h3>Không tìm thấy khóa học</h3>
-              <p>Hãy thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác</p>
+              <h3>Không có khóa học nào</h3>
+              <p>Bạn chưa đăng ký khóa học nào hoặc không có kết quả tìm kiếm</p>
             </div>
           ) : (
             <div className="dashboard__courses-grid">
-              {getFilteredCoursesByTab().map(course => (
+              {filteredCourses.map((course) => (
                 <div key={course._id} className="dashboard__course-card">
-                  <div className="dashboard__course-image">
-                    <img 
-                      src={course.thumbnail || '/images/default-course.jpg'} 
-                      alt={course.title} 
-                    />
-                    <div className="dashboard__course-status">
-                      {course.isPublished ? (
-                        <span className="dashboard__status-badge dashboard__status-badge--published">
-                          Đã xuất bản
-                        </span>
-                      ) : (
-                        <span className="dashboard__status-badge dashboard__status-badge--draft">
-                          Bản nháp
-                        </span>
-                      )}
-                      {course.isApproved && (
-                        <span className="dashboard__status-badge dashboard__status-badge--approved">
-                          Đã duyệt
-                        </span>
-                      )}
+                  <div className="course-thumbnail">
+                    <img src={course.thumbnail} alt={course.title} />
+                    <div className="course-level" style={{ backgroundColor: getLevelColor(course.level) }}>
+                      {getLevelText(course.level)}
                     </div>
                   </div>
-                  
-                  <div className="dashboard__course-content">
-                    <div className="dashboard__course-header">
-                      <h3 className="dashboard__course-title">{course.title}</h3>
-                      <div className="dashboard__course-meta">
-                        <span className="dashboard__course-domain">{course.domain}</span>
-                        <span className="dashboard__course-level">{getLevelLabel(course.level)}</span>
-                      </div>
+
+                  <div className="course-content">
+                    <h3 className="course-title">{course.title}</h3>
+                    <p className="course-description">{course.description}</p>
+
+                    <div className="course-meta">
+                      <span className="course-domain">{course.domain}</span>
+                      <span className="course-duration">{course.prerequisites.length} bài học</span>
+                      <span className="course-lessons">{course.enrolledStudents.length} học viên</span>
                     </div>
-                    
-                    <p className="dashboard__course-description">{course.description}</p>
-                    
-                    <div className="dashboard__course-details">
-                      <div className="dashboard__course-prerequisites">
-                        <strong>Yêu cầu:</strong>
-                        <div className="dashboard__course-tags">
-                          {course.prerequisites.slice(0, 2).map((prereq, index) => (
-                            <span key={index} className="dashboard__course-tag">
-                              {prereq}
-                            </span>
-                          ))}
-                          {course.prerequisites.length > 2 && (
-                            <span className="dashboard__course-tag dashboard__course-tag--more">
-                              +{course.prerequisites.length - 2}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="dashboard__course-stats">
-                        <div className="dashboard__course-stat">
-                          <span className="dashboard__course-stat-icon">👍</span>
-                          <span>{course.upvotes}</span>
-                        </div>
-                        <div className="dashboard__course-stat">
-                          <span className="dashboard__course-stat-icon">💰</span>
-                          <span>{formatPrice(course.price)}</span>
-                        </div>
-                        <div className="dashboard__course-stat">
-                          <span className="dashboard__course-stat-icon">📅</span>
-                          <span>{formatDate(course.createdAt)}</span>
-                        </div>
-                      </div>
+
+                    <div className="course-price">
+                      <span className="price">{formatPrice(course.price)}</span>
                     </div>
-                    
-                    <div className="dashboard__course-actions">
+
+                    <div className="course-actions">
                       <button className="dashboard__btn dashboard__btn--primary">
-                        Chỉnh sửa
+                        Tiếp tục học
                       </button>
                       <button className="dashboard__btn dashboard__btn--outline">
                         Xem chi tiết
                       </button>
-                      {!course.isPublished && (
-                        <button className="dashboard__btn dashboard__btn--secondary">
-                          Xuất bản
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
