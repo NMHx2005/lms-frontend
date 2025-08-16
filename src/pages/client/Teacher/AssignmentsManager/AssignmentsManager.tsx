@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import './AssignmentsManager.css';
 
 interface Assignment {
   _id: string;
   title: string;
   description: string;
-  type: 'file' | 'quiz';
+  type: 'file' | 'quiz'; // Sửa từ 'file' as 'file' | 'quiz' thành 'file' | 'quiz'
   dueDate: string;
   maxScore: number;
   isPublished: boolean;
@@ -41,7 +41,7 @@ interface Lesson {
 
 const AssignmentsManager: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ const AssignmentsManager: React.FC = () => {
   const [newAssignment, setNewAssignment] = useState({
     title: '',
     description: '',
-    type: 'file' as const,
+    type: 'file' as 'file' | 'quiz', // Thay đổi từ 'file' thành 'file' as 'file' | 'quiz'
     dueDate: '',
     maxScore: 100,
     fileUrl: '',
@@ -169,12 +169,12 @@ const AssignmentsManager: React.FC = () => {
     setShowAddAssignment(false);
   };
 
-  const updateAssignment = (assignmentId: string, updates: Partial<Assignment>) => {
-    setAssignments(prev => prev.map(a => 
-      a._id === assignmentId ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
-    ));
-    setEditingAssignment(null);
-  };
+  // const updateAssignment = (assignmentId: string, updates: Partial<Assignment>) => {
+  //   setAssignments(prev => prev.map(a => 
+  //     a._id === assignmentId ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
+  //   ));
+  //   setEditingAssignment(null);
+  // };
 
   const deleteAssignment = (assignmentId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa bài tập này?')) {

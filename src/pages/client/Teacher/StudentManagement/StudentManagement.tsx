@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import './StudentManagement.css';
 
 interface Student {
@@ -37,7 +37,7 @@ interface CourseInfo {
 
 const StudentManagement: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [students, setStudents] = useState<Student[]>([]);

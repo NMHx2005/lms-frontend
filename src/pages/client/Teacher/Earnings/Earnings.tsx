@@ -240,7 +240,7 @@ const Earnings: React.FC = () => {
         <div className="earnings__chart-section">
           <h3>Biểu đồ doanh thu theo tháng</h3>
           <div className="monthly-chart">
-            {earningData.monthlyBreakdown.map((month, index) => (
+            {earningData.monthlyBreakdown.map((month) => (
               <div key={month.month} className="chart-bar">
                 <div className="chart-bar__label">{month.month}</div>
                 <div className="chart-bar__container">

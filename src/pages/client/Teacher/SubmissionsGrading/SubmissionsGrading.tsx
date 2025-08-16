@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import './SubmissionsGrading.css';
 
 interface Assignment {
@@ -52,7 +52,7 @@ interface QuizAnswer {
 
 const SubmissionsGrading: React.FC = () => {
   const { id: assignmentId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
