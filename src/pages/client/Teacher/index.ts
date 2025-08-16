@@ -1,0 +1,11 @@
+export { default as CourseStudio } from './CourseStudio/CourseStudio';
+export { default as CourseEditor } from './CourseEditor/CourseEditor';
+export { default as CourseStructure } from './CourseStructure/CourseStructure';
+export { default as AssignmentsManager } from './AssignmentsManager/AssignmentsManager';
+export { default as SubmissionsGrading } from './SubmissionsGrading/SubmissionsGrading';
+export { default as Earnings } from './Earnings/Earnings';
+export { default as AITools } from './AITools/AITools';
+export { default as Analytics } from './Analytics/Analytics';
+export { default as StudentManagement } from './StudentManagement/StudentManagement';
+export { default as CommunicationCenter } from './CommunicationCenter/CommunicationCenter';
+export { default as CourseReviews } from './CourseReviews/CourseReviews';

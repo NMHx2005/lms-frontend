@@ -1,0 +1,883 @@
+/* Submissions Grading Styles */
+
+/* Assignment Info Card */
+.assignment-info-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.assignment-header {
+  margin-bottom: 20px;
+}
+
+.assignment-header h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.assignment-description {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.assignment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.meta-icon {
+  font-size: 1rem;
+}
+
+/* Submissions Stats */
+.submissions-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Submissions List */
+.submissions-list {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.list-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.status-filter {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Submissions Grid */
+.submissions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.submission-card {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.submission-card:last-child {
+  border-bottom: none;
+}
+
+.submission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.student-info {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.student-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.student-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-details {
+  flex: 1;
+}
+
+.student-name {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.student-email {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.submission-status {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-badge--submitted {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge--graded {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status-badge--late {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Submission Content */
+.submission-content {
+  margin-bottom: 16px;
+}
+
+.submission-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.submission-meta .meta-item {
+  font-size: 0.8rem;
+}
+
+.submission-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.file-icon {
+  font-size: 1.1rem;
+}
+
+.file-link {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}
+
+.file-size {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* Grading Result */
+.grading-result {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.score-label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.score-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.feedback-preview {
+  margin-bottom: 12px;
+}
+
+.feedback-label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.feedback-text {
+  margin: 0;
+  color: #1a202c;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.grading-info {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Submission Actions */
+.submission-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.submission-actions .teacher-dashboard__btn {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+/* Grading Mode Styles */
+.grading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.grading-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.grading-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Student Info Card */
+.student-info-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.student-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid #e2e8f0;
+}
+
+.student-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-details {
+  flex: 1;
+}
+
+.student-details h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.student-details p {
+  margin: 0 0 16px 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.submission-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.submission-meta .meta-item {
+  font-size: 0.85rem;
+}
+
+/* Assignment Content Card */
+.assignment-content-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.assignment-content-card h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.assignment-content-card p {
+  margin: 0 0 20px 0;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.submission-file h5 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Submission Answers */
+.submission-answers {
+  margin-top: 20px;
+}
+
+.submission-answers h5 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.answer-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.question-number {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.question-points {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.question-text {
+  margin: 0 0 16px 0;
+  color: #1a202c;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.student-answer,
+.correct-answer {
+  margin-bottom: 12px;
+}
+
+.student-answer strong,
+.correct-answer strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.answer-text {
+  font-size: 0.9rem;
+  color: #1a202c;
+  line-height: 1.4;
+}
+
+.answer-text.correct {
+  color: #166534;
+  font-weight: 500;
+}
+
+.answer-feedback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.answer-feedback label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.85rem;
+}
+
+.points-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Grading Form Card */
+.grading-form-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.grading-form-card h4 {
+  margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.grading-form .form-group {
+  margin-bottom: 20px;
+}
+
+.grading-form label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.score-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-input {
+  width: 100px;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.score-max {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.feedback-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.grading-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .submissions-stats {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .assignment-meta {
+    gap: 16px;
+  }
+
+  .student-info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .student-avatar {
+    align-self: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .assignment-info-card {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .assignment-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .submissions-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-item {
+    padding: 16px;
+  }
+
+  .stat-icon {
+    font-size: 1.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .list-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .list-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .submission-card {
+    padding: 16px;
+  }
+
+  .submission-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .student-info {
+    width: 100%;
+  }
+
+  .submission-status {
+    align-self: flex-start;
+  }
+
+  .submission-meta {
+    gap: 12px;
+  }
+
+  .submission-meta .meta-item {
+    font-size: 0.75rem;
+  }
+
+  .grading-header {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .grading-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .grading-content {
+    gap: 20px;
+  }
+
+  .student-info-card {
+    padding: 20px;
+  }
+
+  .student-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .student-details h4 {
+    font-size: 1.1rem;
+  }
+
+  .assignment-content-card {
+    padding: 20px;
+  }
+
+  .answer-item {
+    padding: 12px;
+  }
+
+  .question-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .answer-feedback {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .points-input {
+    width: 100%;
+  }
+
+  .grading-form-card {
+    padding: 20px;
+  }
+
+  .grading-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .grading-actions .teacher-dashboard__btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .assignment-info-card {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .assignment-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .assignment-description {
+    font-size: 0.85rem;
+  }
+
+  .assignment-meta {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .meta-item {
+    font-size: 0.8rem;
+  }
+
+  .stat-item {
+    padding: 12px;
+  }
+
+  .stat-icon {
+    font-size: 1.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+  }
+
+  .list-header {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .list-header h3 {
+    font-size: 1rem;
+  }
+
+  .status-filter {
+    width: 100%;
+    padding: 10px 12px;
+  }
+
+  .submission-card {
+    padding: 12px;
+  }
+
+  .student-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .student-name {
+    font-size: 1rem;
+  }
+
+  .student-email {
+    font-size: 0.8rem;
+  }
+
+  .submission-meta {
+    gap: 8px;
+  }
+
+  .submission-meta .meta-item {
+    font-size: 0.7rem;
+  }
+
+  .grading-header {
+    padding: 12px;
+  }
+
+  .grading-header h3 {
+    font-size: 1rem;
+  }
+
+  .grading-content {
+    gap: 16px;
+  }
+
+  .student-info-card {
+    padding: 16px;
+  }
+
+  .student-avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .student-details h4 {
+    font-size: 1rem;
+  }
+
+  .assignment-content-card {
+    padding: 16px;
+  }
+
+  .answer-item {
+    padding: 10px;
+  }
+
+  .question-text {
+    font-size: 0.85rem;
+  }
+
+  .answer-text {
+    font-size: 0.85rem;
+  }
+
+  .grading-form-card {
+    padding: 16px;
+  }
+
+  .score-input {
+    width: 80px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .feedback-input {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    min-height: 80px;
+  }
+}

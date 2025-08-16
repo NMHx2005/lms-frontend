@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import './DashboardLayout.css';
 
 const DashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Debug: Log location changes
+  useEffect(() => {
+    console.log('Location changed to:', location.pathname);
+  }, [location.pathname]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -15,10 +21,34 @@ const DashboardLayout: React.FC = () => {
 
   const navItems = [
     {
+      path: '/dashboard',
+      icon: '🏠',
+      label: 'Tổng quan',
+      description: 'Tổng quan dashboard'
+    },
+    {
       path: '/dashboard/courses',
       icon: '📚',
       label: 'Khóa học của tôi',
       description: 'Danh sách khóa học đã mua'
+    },
+    {
+      path: '/dashboard/wishlist',
+      icon: '❤️',
+      label: 'Danh sách yêu thích',
+      description: 'Khóa học bạn quan tâm'
+    },
+    {
+      path: '/dashboard/groups',
+      icon: '👥',
+      label: 'Nhóm học tập',
+      description: 'Tham gia nhóm học tập'
+    },
+    {
+      path: '/dashboard/calendar',
+      icon: '📅',
+      label: 'Lịch học',
+      description: 'Quản lý lịch học và deadline'
     },
     {
       path: '/dashboard/progress',
@@ -97,9 +127,31 @@ const DashboardLayout: React.FC = () => {
               <li key={item.path} className="sidebar__nav-item">
                 <NavLink
                   to={item.path}
-                  className={({ isActive }) => 
-                    `sidebar__nav-link ${isActive ? 'active' : ''}`
-                  }
+                  className={({ isActive, isPending }) => {
+                    // Special handling for dashboard index route - only active when exactly at /dashboard
+                    if (item.path === '/dashboard') {
+                      const isExactDashboard = location.pathname === '/dashboard';
+                      console.log('Dashboard route check:', { 
+                        itemPath: item.path, 
+                        currentPath: location.pathname, 
+                        isActive, 
+                        isPending, 
+                        isExactDashboard,
+                        result: isExactDashboard ? 'active' : 'inactive'
+                      });
+                      return `sidebar__nav-link ${isExactDashboard ? 'active' : ''}`;
+                    }
+                    
+                    // For other routes, use normal isActive logic
+                    const result = `sidebar__nav-link ${isActive ? 'active' : ''}`;
+                    console.log('Other route check:', { 
+                      itemPath: item.path, 
+                      currentPath: location.pathname, 
+                      isActive, 
+                      result 
+                    });
+                    return result;
+                  }}
                   onClick={closeSidebar}
                 >
                   <span className="sidebar__nav-icon">{item.icon}</span>

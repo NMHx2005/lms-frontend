@@ -1,6 +1,6 @@
 /* Dashboard Layout */
 .dashboard {
-  display: flex;
+  /* display: flex; */
   /* min-height: 100vh; */
       padding: 20px;
     flex-wrap: wrap;

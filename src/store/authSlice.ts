@@ -1,12 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authService } from '@/services/authService';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  roles: string[];
-}
+import { User } from '../types/index';
 
 interface AuthState {
   user: User | null;
@@ -72,7 +67,12 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        // Map the response to match User interface
+        const userData = {
+          ...action.payload.user,
+          _id: action.payload.user.id || action.payload.user._id
+        };
+        state.user = userData;
         state.token = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
@@ -90,7 +90,12 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        // Map the response to match User interface
+        const userData = {
+          ...action.payload.user,
+          _id: action.payload.user.id || action.payload.user._id
+        };
+        state.user = userData;
         state.token = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
@@ -103,7 +108,12 @@ const authSlice = createSlice({
       })
       // Get Profile
       .addCase(getProfile.fulfilled, (state, action) => {
-        state.user = action.payload;
+        // Map the response to match User interface
+        const userData = {
+          ...action.payload,
+          _id: action.payload.id || action.payload._id
+        };
+        state.user = userData;
         state.isAuthenticated = true;
       });
   },

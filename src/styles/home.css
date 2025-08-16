@@ -40,8 +40,28 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin: 0 80px;
+  margin: 0 20px;
   padding: 80px 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .hero__container {
+    margin: 0 40px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero__container {
+    margin: 0 60px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .hero__container {
+    margin: 0 80px;
+  }
 }
 .hero__left {
   flex: 1 1 400px;
@@ -235,8 +255,28 @@
 
 /* Section */
 .section {
-  padding: 96px 80px;
+  padding: 96px 20px;
   background-color: #F9FAFB;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 96px 40px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section {
+    padding: 96px 60px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .section {
+    padding: 96px 80px;
+  }
 }
 .section__header {
   display: flex;
@@ -302,13 +342,25 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   min-width: 280px;
-  max-width: 280px;
+  max-width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   height: 100%;
+}
+
+@media (max-width: 768px) {
+  .card {
+    min-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    min-width: 220px;
+  }
 }
 
 .card:hover {
@@ -981,18 +1033,21 @@ padding: 64px;
 .featured-slider {
   margin: 0;
   padding: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
+  max-width: 100%;
 }
 
 .featured-slider .swiper {
   width: 100%;
   padding: 20px 0;
-  overflow: visible;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .featured-slider .swiper-wrapper {
   align-items: stretch;
+  max-width: 100%;
 }
 
 .featured-slider .swiper-slide {
@@ -1002,12 +1057,13 @@ padding: 64px;
   padding: 0;
   margin: 0;
   width: auto;
+  max-width: 100%;
 }
 
 .featured-slider .card {
   width: 100%;
   min-width: 0;
-  max-width: none;
+  max-width: 100%;
   margin: 0;
   height: 100%;
   display: flex;

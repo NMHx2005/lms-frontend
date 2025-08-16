@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Course } from '@/components/Client/Dashboard/types';
+import { Course } from '../types/index';
 
 interface CourseState {
   courses: Course[];

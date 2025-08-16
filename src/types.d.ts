@@ -54,8 +54,5 @@ declare module '*.webp' {
 } 
 
 
-export enum UserRole {
-  Admin = 'admin',
-  User = 'user',
-  Teacher = 'teacher',
-}
+// Re-export from main types file
+export { UserRole } from './types/index';
