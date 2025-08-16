@@ -19,7 +19,6 @@ const MyCourses: React.FC = () => {
     level: 'all'
   });
 
-
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
@@ -40,7 +39,7 @@ const MyCourses: React.FC = () => {
           isApproved: true,
           upvotes: 45,
           reports: 0,
-          enrolledStudents: ['student1', 'student2', 'student3'], // Array of user IDs
+          enrolledStudents: ['student1', 'student2', 'student3'],
           createdAt: '2024-01-01T00:00:00Z',
           updatedAt: '2024-01-01T00:00:00Z'
         },
@@ -139,7 +138,6 @@ const MyCourses: React.FC = () => {
     return matchesSearch && matchesDomain && matchesLevel;
   });
 
-  // Sửa type cho prev parameter
   const handleFilterChange = (newFilters: Partial<CourseFilter>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
@@ -222,8 +220,8 @@ const MyCourses: React.FC = () => {
             <p>Tìm kiếm và lọc khóa học theo nhu cầu</p>
           </div>
 
-          <div className="dashboard__filters">
-            <div className="filter-group">
+          <div className="dashboard__search--parent">
+            <div className="dashboard__search">
               <input
                 type="text"
                 placeholder="Tìm kiếm khóa học..."
@@ -233,21 +231,20 @@ const MyCourses: React.FC = () => {
               <button>🔍</button>
             </div>
 
-            <div className="filter-group">
+            <div className="dashboard__filters">
               <select
                 value={filters.domain}
                 onChange={(e) => handleFilterChange({ domain: e.target.value })}
               >
                 <option value="all">Tất cả lĩnh vực</option>
-                <option value="Web Development">Web Development</option>
-                <option value="Programming">Programming</option>
-                <option value="Data Science">Data Science</option>
+                <option value="IT">IT</option>
                 <option value="Design">Design</option>
-                <option value="Mobile Development">Mobile Development</option>
+                <option value="Business">Business</option>
+                <option value="Marketing">Marketing</option>
               </select>
             </div>
 
-            <div className="filter-group">
+            <div className="dashboard__filters">
               <select
                 value={filters.level}
                 onChange={(e) => handleFilterChange({ level: e.target.value as 'all' | 'beginner' | 'intermediate' | 'advanced' })}
@@ -283,29 +280,93 @@ const MyCourses: React.FC = () => {
                     <div className="course-level" style={{ backgroundColor: getLevelColor(course.level) }}>
                       {getLevelText(course.level)}
                     </div>
+                    <div className="course-status">
+                      {course.isPublished && course.isApproved && (
+                        <span className="status-badge published">✅ Đã xuất bản</span>
+                      )}
+                      {!course.isPublished && (
+                        <span className="status-badge draft">📝 Bản nháp</span>
+                      )}
+                      {!course.isApproved && (
+                        <span className="status-badge pending">⏳ Chờ duyệt</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="course-content">
-                    <h3 className="course-title">{course.title}</h3>
+                    <div className="course-header">
+                      <h3 className="course-title">{course.title}</h3>
+                      <div className="course-rating">
+                        <span className="rating-stars">⭐⭐⭐⭐⭐</span>
+                        <span className="rating-count">({course.upvotes} đánh giá)</span>
+                      </div>
+                    </div>
+
                     <p className="course-description">{course.description}</p>
 
                     <div className="course-meta">
-                      <span className="course-domain">{course.domain}</span>
-                      <span className="course-duration">{course.prerequisites.length} bài học</span>
-                      <span className="course-lessons">{course.enrolledStudents.length} học viên</span>
+                      <div className="meta-item">
+                        <span className="meta-icon">🏷️</span>
+                        <span className="meta-label">Lĩnh vực:</span>
+                        <span className="meta-value">{course.domain}</span>
+                      </div>
+
+                      <div className="meta-item">
+                        <span className="meta-icon">📚</span>
+                        <span className="meta-label">Yêu cầu:</span>
+                        <span className="meta-value">{course.prerequisites.length} điều kiện</span>
+                      </div>
+
+                      <div className="meta-item">
+                        <span className="meta-icon">👥</span>
+                        <span className="meta-label">Học viên:</span>
+                        <span className="meta-value">{course.enrolledStudents.length} người</span>
+                      </div>
+
+                      <div className="meta-item">
+                        <span className="meta-icon">📊</span>
+                        <span className="meta-label">Đánh giá:</span>
+                        <span className="meta-value">
+                          {course.upvotes}
+                          {course.reports > 0 && ` | ${course.reports} ⚠️`}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="course-price">
-                      <span className="price">{formatPrice(course.price)}</span>
+                    <div className="course-benefits">
+                      <h4 className="benefits-title">🎯 Lợi ích khóa học:</h4>
+                      <div className="benefits-list">
+                        {course.benefits.slice(0, 3).map((benefit, index) => (
+                          <span key={index} className="benefit-tag">
+                            {benefit}
+                          </span>
+                        ))}
+                        {course.benefits.length > 3 && (
+                          <span className="benefit-more">+{course.benefits.length - 3} khác</span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="course-actions">
-                      <button className="dashboard__btn dashboard__btn--primary">
-                        Tiếp tục học
-                      </button>
-                      <button className="dashboard__btn dashboard__btn--outline">
-                        Xem chi tiết
-                      </button>
+                    <div className="course-footer">
+                      <div className="course-price">
+                        <span className="price-label">Giá khóa học:</span>
+                        <span className="price-value">{formatPrice(course.price)}</span>
+                      </div>
+
+                      <div className="course-actions">
+                        <button className="dashboard__btn dashboard__btn--primary">
+                          {/* <span className="btn-icon">🎯</span> */}
+                          Tiếp tục học
+                        </button>
+                        <button className="dashboard__btn dashboard__btn--outline">
+                          {/* <span className="btn-icon">👁️</span> */}
+                          Xem chi tiết
+                        </button>
+                        <button className="dashboard__btn dashboard__btn--secondary">
+                          {/* <span className="btn-icon">📚</span> */}
+                          Nội dung
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
