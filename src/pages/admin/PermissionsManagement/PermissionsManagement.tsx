@@ -38,7 +38,7 @@ const PermissionsManagement: React.FC = () => {
   const [showCreateRole, setShowCreateRole] = useState(false);
   const [showEditRole, setShowEditRole] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-
+  console.log(showEditRole, selectedRole);
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
@@ -125,10 +125,10 @@ const PermissionsManagement: React.FC = () => {
     }
   };
 
-  const getPermissionCategory = (permissionName: string) => {
-    const perm = permissions.find(p => p.name === permissionName);
-    return perm?.category || 'Unknown';
-  };
+  // const getPermissionCategory = (permissionName: string) => {
+  //   const perm = permissions.find(p => p.name === permissionName);
+  //   return perm?.category || 'Unknown';
+  // };
 
   if (loading) {
     return (

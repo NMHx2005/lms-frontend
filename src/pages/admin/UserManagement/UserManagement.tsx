@@ -30,7 +30,7 @@ const UserManagement: React.FC = () => {
   });
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
-
+  console.log(showBulkActions);
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {

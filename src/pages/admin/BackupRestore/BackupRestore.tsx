@@ -226,16 +226,16 @@ const BackupRestore: React.FC = () => {
     return new Date(dateString).toLocaleString('vi-VN');
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: '#6b7280',
-      running: '#3b82f6',
-      completed: '#10b981',
-      failed: '#dc2626',
-      cancelled: '#f59e0b'
-    };
-    return colors[status] || '#6b7280';
-  };
+  // const getStatusColor = (status: string) => {
+  //   const colors: Record<string, string> = {
+  //     pending: '#6b7280',
+  //     running: '#3b82f6',
+  //     completed: '#10b981',
+  //     failed: '#dc2626',
+  //     cancelled: '#f59e0b'
+  //   };
+  //   return colors[status] || '#6b7280';
+  // };
 
   const getStatusIcon = (status: string) => {
     const icons: Record<string, string> = {

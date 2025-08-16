@@ -12,15 +12,15 @@ interface DashboardStats {
   newUsersToday: number;
 }
 
-interface ChartData {
-  labels: string[];
-  datasets: {
-    label: string;
-    data: number[];
-    backgroundColor: string;
-    borderColor: string;
-  }[];
-}
+// interface ChartData {
+//   labels: string[];
+//   datasets: {
+//     label: string;
+//     data: number[];
+//     backgroundColor: string;
+//     borderColor: string;
+//   }[];
+// }
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -56,13 +56,13 @@ const AdminDashboard: React.FC = () => {
     return new Intl.NumberFormat('vi-VN').format(num);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
+  // const formatCurrency = (amount: number) => {
+  //   return new Intl.NumberFormat('vi-VN', {
+  //     style: 'currency',
+  //     currency: 'VND',
+  //     minimumFractionDigits: 0
+  //   }).format(amount);
+  // };
 
   const formatCurrencyShort = (amount: number) => {
     if (amount >= 1000000000) {

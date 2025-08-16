@@ -139,13 +139,13 @@ const CourseModeration: React.FC = () => {
     );
   };
 
-  const handleSelectAll = () => {
-    if (selectedCourses.length === filteredCourses.length) {
-      setSelectedCourses([]);
-    } else {
-      setSelectedCourses(filteredCourses.map(course => course._id));
-    }
-  };
+  // const handleSelectAll = () => {
+  //   if (selectedCourses.length === filteredCourses.length) {
+  //     setSelectedCourses([]);
+  //   } else {
+  //     setSelectedCourses(filteredCourses.map(course => course._id));
+  //   }
+  // };
 
   const handleBulkAction = (action: 'approve' | 'reject') => {
     if (selectedCourses.length === 0) return;
@@ -170,14 +170,16 @@ const CourseModeration: React.FC = () => {
 
   const handleSubmitReview = (action: 'approve' | 'reject') => {
     if (!selectedCourse) return;
-    
+
+    const statusMap = { approve: 'approved' as const, reject: 'rejected' as const };
+
     setCourses(prev => prev.map(course => {
       if (course._id === selectedCourse._id) {
-        return { ...course, status: action };
+        return { ...course, status: statusMap[action] };
       }
       return course;
     }));
-    
+
     setShowReviewModal(false);
     setSelectedCourse(null);
     setReviewComment('');

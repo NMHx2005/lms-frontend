@@ -201,13 +201,13 @@ const RefundCenter: React.FC = () => {
     );
   };
 
-  const handleSelectAll = () => {
-    if (selectedRefunds.length === filteredRefunds.length) {
-      setSelectedRefunds([]);
-    } else {
-      setSelectedRefunds(filteredRefunds.map(refund => refund._id));
-    }
-  };
+  // const handleSelectAll = () => {
+  //   if (selectedRefunds.length === filteredRefunds.length) {
+  //     setSelectedRefunds([]);
+  //   } else {
+  //     setSelectedRefunds(filteredRefunds.map(refund => refund._id));
+  //   }
+  // };
 
   const handleBulkAction = (action: 'approve' | 'reject') => {
     if (selectedRefunds.length === 0) return;
@@ -268,13 +268,13 @@ const RefundCenter: React.FC = () => {
   };
 
   const getStatusClass = (status: string) => {
-    const classes = { 
-      pending: 'status-pending', 
-      approved: 'status-approved', 
+    const classes = {
+      pending: 'status-pending',
+      approved: 'status-approved',
       rejected: 'status-rejected',
       completed: 'status-completed'
     };
-    return classes[status as keyof typeof labels] || '';
+    return classes[status as keyof typeof classes] || '';
   };
 
   const getRefundMethodLabel = (method: string) => {
@@ -293,9 +293,9 @@ const RefundCenter: React.FC = () => {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
+  // const formatDate = (dateString: string) => {
+  //   return new Date(dateString).toLocaleDateString('vi-VN');
+  // };
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('vi-VN');

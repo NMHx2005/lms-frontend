@@ -167,13 +167,13 @@ const AIModeration: React.FC = () => {
     );
   };
 
-  const handleSelectAll = () => {
-    if (selectedResults.length === filteredResults.length) {
-      setSelectedResults([]);
-    } else {
-      setSelectedResults(filteredResults.map(result => result._id));
-    }
-  };
+  // const handleSelectAll = () => {
+  //   if (selectedResults.length === filteredResults.length) {
+  //     setSelectedResults([]);
+  //   } else {
+  //     setSelectedResults(filteredResults.map(result => result._id));
+  //   }
+  // };
 
   const handleBulkAction = (action: string) => {
     // Simulate bulk actions
