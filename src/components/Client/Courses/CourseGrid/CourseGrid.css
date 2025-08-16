@@ -17,6 +17,8 @@
 /* Loading State */
 .course-grid--loading .course-grid__container {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
 }
 
 .course-grid__skeleton-item {
@@ -125,19 +127,19 @@
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .course-grid__container {
+  /* .course-grid__container {
     margin: 0 40px;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
-  }
+  } */
 }
 
 @media (max-width: 1024px) {
-  .course-grid__container {
+  /* .course-grid__container {
     margin: 0 30px;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 18px;
-  }
+  } */
 }
 
 @media (max-width: 768px) {

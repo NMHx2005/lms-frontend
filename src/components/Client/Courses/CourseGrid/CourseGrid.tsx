@@ -11,8 +11,8 @@ interface CourseGridProps {
 const CourseGrid: React.FC<CourseGridProps> = ({ courses, loading = false }) => {
   if (loading) {
     return (
-      <div className="course-grid__container">
-        <div className="course-grid">
+      <div className="">
+        <div className="course-grid__container">
           {Array.from({ length: 8 }).map((_, index) => (
             <div key={index} className="course-grid__skeleton">
               <div className="course-grid__skeleton-image"></div>
@@ -41,8 +41,8 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses, loading = false }) => 
   }
 
   return (
-    <div className="course-grid__container">
-      <div className="course-grid">
+    <div className="">
+      <div className="course-grid__container">
         {courses.map((course) => (
           <Card
             key={course._id}
