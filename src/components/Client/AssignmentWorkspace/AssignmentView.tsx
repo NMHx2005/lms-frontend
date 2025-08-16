@@ -120,8 +120,8 @@ const AssignmentView: React.FC<AssignmentViewProps> = ({ assignment }) => {
                       </span>
                     </div>
                   </div>
-                  <a 
-                    href={attachment.url} 
+                  <a
+                    href={attachment.url}
                     className="assignment-view__attachment-download"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -163,9 +163,6 @@ const AssignmentView: React.FC<AssignmentViewProps> = ({ assignment }) => {
       </div>
 
       <div className="assignment-view__actions">
-        <button className="assignment-view__action-btn assignment-view__action-btn--primary">
-          Bắt đầu làm bài
-        </button>
         <button className="assignment-view__action-btn assignment-view__action-btn--secondary">
           Tải tài liệu
         </button>

@@ -2049,3 +2049,11 @@ padding: 64px;
 }
 
 
+
+
+
+.course-thumbnail-analytics {
+  width: auto!important;
+  height: auto!important;
+  object-fit: cover;
+}

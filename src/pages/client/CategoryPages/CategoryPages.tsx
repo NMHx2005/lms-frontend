@@ -267,7 +267,7 @@ const CategoryPages: React.FC = () => {
                 {course.isPopular && <span className="badge popular">Phổ biến</span>}
               </div>
               
-              <div className="course-thumbnail">
+              <div className="course-thumbnail course-thumbnail-analytics">
                 <img src={course.thumbnail} alt={course.title} />
                 <div className="course-overlay">
                   <Link to={`/courses/${course._id}`} className="view-course-btn">

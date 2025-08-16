@@ -349,7 +349,7 @@ const InstructorProfile: React.FC = () => {
             <div className="courses-grid">
               {courses.map((course) => (
                 <div key={course._id} className="course-card">
-                  <div className="course-thumbnail">
+                  <div className="course-thumbnail course-thumbnail-analytics">
                     <img src={course.thumbnail} alt={course.title} />
                   </div>
                   <div className="course-content">

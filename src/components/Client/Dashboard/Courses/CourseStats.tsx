@@ -18,42 +18,46 @@ const CourseStats: React.FC<CourseStatsProps> = ({ courses }) => {
   const totalValue = courses.reduce((sum, course) => sum + course.price, 0);
   const averagePrice = totalCourses > 0 ? Math.round(totalValue / totalCourses) : 0;
 
+  // Xác định lĩnh vực chính
+  const getMainDomain = () => {
+    if (totalCourses === 0) return 'N/A';
+    
+    const domainCounts: { [key: string]: number } = {};
+    courses.forEach(course => {
+      domainCounts[course.domain] = (domainCounts[course.domain] || 0) + 1;
+    });
+    
+    const mainDomain = Object.entries(domainCounts).reduce((a, b) => 
+      domainCounts[a[0]] > domainCounts[b[0]] ? a : b
+    );
+    
+    return mainDomain[0];
+  };
+
   const stats = [
     {
-      label: 'Tổng khóa học',
+      label: 'Khóa học đã mua',
       value: totalCourses,
       icon: '📚',
       color: 'blue'
     },
     {
-      label: 'Đã xuất bản',
-      value: publishedCourses,
-      icon: '✅',
+      label: 'Tổng giá trị',
+      value: `${(totalValue / 1000).toFixed(0)}k`,
+      icon: '💰',
       color: 'green'
     },
     {
-      label: 'Đã duyệt',
-      value: approvedCourses,
-      icon: '🔒',
-      color: 'blue'
-    },
-    {
-      label: 'Bản nháp',
-      value: draftCourses,
-      icon: '📝',
+      label: 'Tổng đánh giá',
+      value: totalUpvotes,
+      icon: '⭐',
       color: 'yellow'
     },
     {
-      label: 'Tổng upvotes',
-      value: totalUpvotes,
-      icon: '👍',
+      label: 'Lĩnh vực chính',
+      value: getMainDomain(),
+      icon: '🏷️',
       color: 'purple'
-    },
-    {
-      label: 'Giá trung bình',
-      value: `${(averagePrice / 1000).toFixed(0)}k`,
-      icon: '💰',
-      color: 'orange'
     }
   ];
 
@@ -77,9 +81,9 @@ const CourseStats: React.FC<CourseStatsProps> = ({ courses }) => {
         <div className="dashboard-stats__insight">
           <span className="dashboard-stats__insight-icon">💡</span>
           <span>
-            {publishedCourses > 0 
-              ? `Bạn có ${publishedCourses} khóa học đã xuất bản và ${approvedCourses} khóa học đã được duyệt.`
-              : 'Bạn chưa có khóa học nào được xuất bản. Hãy tạo và xuất bản khóa học đầu tiên!'
+            {totalCourses > 0 
+              ? `Bạn đã mua ${totalCourses} khóa học. Hãy tiếp tục học tập để nâng cao kỹ năng!`
+              : 'Bạn chưa mua khóa học nào. Hãy khám phá và đăng ký khóa học phù hợp!'
             }
           </span>
         </div>
@@ -89,13 +93,21 @@ const CourseStats: React.FC<CourseStatsProps> = ({ courses }) => {
             Tổng giá trị: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalValue)}
           </span>
         </div>
-        {totalReports > 0 && (
-          <div className="dashboard-stats__insight dashboard-stats__insight--warning">
-            <span className="dashboard-stats__insight-icon">⚠️</span>
-            <span>
-              Có {totalReports} báo cáo cần xem xét. Hãy kiểm tra và xử lý kịp thời.
-            </span>
-          </div>
+        {totalCourses > 0 && (
+          <>
+            <div className="dashboard-stats__insight">
+              <span className="dashboard-stats__insight-icon">🎯</span>
+              <span>
+                Lĩnh vực chính: {getMainDomain()}
+              </span>
+            </div>
+            <div className="dashboard-stats__insight">
+              <span className="dashboard-stats__insight-icon">⭐</span>
+              <span>
+                Trung bình {totalUpvotes > 0 ? Math.round(totalUpvotes / totalCourses) : 0} đánh giá mỗi khóa học
+              </span>
+            </div>
+          </>
         )}
       </div>
     </div>

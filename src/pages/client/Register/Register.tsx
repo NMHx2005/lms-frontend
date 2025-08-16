@@ -9,15 +9,15 @@ const Register: React.FC = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'student',
+    role: 'student', // Mặc định là student
     agreeToTerms: false
   });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -27,11 +27,12 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setLoading(false);
       // Handle registration logic here
+      // Tất cả tài khoản đăng ký đều có role = 'student'
     }, 2000);
   };
 
@@ -44,7 +45,7 @@ const Register: React.FC = () => {
           <p>Đăng ký ngay để truy cập hàng nghìn khóa học chất lượng cao</p>
         </div>
       </div>
-      
+
       <div className="auth-form-container">
         <div className="auth-form-wrapper">
           <div className="auth-header">
@@ -53,7 +54,7 @@ const Register: React.FC = () => {
               <h1>LMS Platform</h1>
             </div>
             <h2>Đăng ký tài khoản</h2>
-            <p>Tạo tài khoản mới để bắt đầu học tập</p>
+            <p>Tạo tài khoản học viên mới để bắt đầu học tập</p>
           </div>
 
           <form onSubmit={handleSubmit} className="auth-form">
@@ -144,23 +145,6 @@ const Register: React.FC = () => {
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="role">Vai trò</label>
-              <div className="input-wrapper">
-                <span className="input-icon">🎯</span>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="form-select"
-                >
-                  <option value="student">Học viên</option>
-                  <option value="teacher">Giảng viên</option>
-                </select>
-              </div>
-            </div>
-
             <div className="form-options">
               <label className="checkbox-wrapper">
                 <input
@@ -182,8 +166,8 @@ const Register: React.FC = () => {
               </label>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="auth-submit-btn"
               disabled={loading || !formData.agreeToTerms}
             >

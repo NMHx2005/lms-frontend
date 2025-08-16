@@ -326,7 +326,7 @@ const Analytics: React.FC = () => {
           {analyticsData.coursePerformance.map((course) => (
             <div key={course._id} className="performance-card">
               <div className="course-header">
-                <img src={course.thumbnail} alt={course.name} className="course-thumbnail" />
+                <img src={course.thumbnail} alt={course.name} className="course-thumbnail course-thumbnail-analytics" />
                 <div className="course-info">
                   <h4 className="course-name">{course.name}</h4>
                   <div className="course-stats">

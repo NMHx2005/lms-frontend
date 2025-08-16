@@ -309,7 +309,7 @@ const CourseReviews: React.FC = () => {
                   <div className="course-status" style={{ backgroundColor: getStatusColor(course.status) }}>
                     {getStatusText(course.status)}
                   </div>
-                  <div className="course-thumbnail">
+                  <div className="course-thumbnail course-thumbnail-analytics">
                     <img src={course.thumbnail} alt={course.title} />
                   </div>
                 </div>

@@ -581,7 +581,7 @@ const StudyGroups: React.FC = () => {
                       type="checkbox"
                       checked={createForm.isPrivate}
                       onChange={(e) => setCreateForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
-                      className="form-checkbox"
+                      className="form-checkbox input__primary"
                     />
                     Nhóm riêng tư
                   </label>

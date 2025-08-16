@@ -379,7 +379,7 @@
 }
 
 .course-name {
-  margin: 0 0 0.75rem 0;
+  margin: 10px 0 0.75rem 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: #1e293b;
@@ -394,8 +394,8 @@
 }
 
 .performance-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* display: grid;
+  grid-template-columns: repeat(3, 1fr); */
   gap: 1rem;
   margin-bottom: 1.5rem;
   padding: 1rem 0;
@@ -411,7 +411,7 @@
   display: block;
   font-size: 0.8rem;
   color: #64748b;
-  margin-bottom: 0.5rem;
+  /* margin-bottom: 0.5rem; */
 }
 
 .metric-value {
@@ -718,6 +718,6 @@
   }
   
   .course-actions {
-    flex-direction: column;
+    /* flex-direction: column; */
   }
 }

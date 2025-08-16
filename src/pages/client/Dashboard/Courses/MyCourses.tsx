@@ -275,22 +275,12 @@ const MyCourses: React.FC = () => {
             <div className="dashboard__courses-grid">
               {filteredCourses.map((course) => (
                 <div key={course._id} className="dashboard__course-card">
-                  <div className="course-thumbnail">
+                  <div className="course-thumbnail course-thumbnail-analytics">
                     <img src={course.thumbnail} alt={course.title} />
                     <div className="course-level" style={{ backgroundColor: getLevelColor(course.level) }}>
                       {getLevelText(course.level)}
                     </div>
-                    <div className="course-status">
-                      {course.isPublished && course.isApproved && (
-                        <span className="status-badge published">✅ Đã xuất bản</span>
-                      )}
-                      {!course.isPublished && (
-                        <span className="status-badge draft">📝 Bản nháp</span>
-                      )}
-                      {!course.isApproved && (
-                        <span className="status-badge pending">⏳ Chờ duyệt</span>
-                      )}
-                    </div>
+
                   </div>
 
                   <div className="course-content">

@@ -481,10 +481,13 @@
 }
 
 .form-group label {
-  display: block;
+  display: flex!important;
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #374151;
+}
+.input__primary {
+  width: auto!important;
 }
 
 .form-input, .form-textarea, .form-select {

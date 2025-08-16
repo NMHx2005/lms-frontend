@@ -222,7 +222,7 @@ const Dashboard: React.FC = () => {
             <div className="courses-grid">
               {recentCourses.map((course) => (
                 <div key={course._id} className="course-card">
-                  <div className="course-thumbnail">
+                  <div className="course-thumbnail course-thumbnail-analytics">
                     <img src={course.thumbnail} alt={course.title} />
                     <div className="progress-overlay">
                       <div className="progress-circle">
