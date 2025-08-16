@@ -5,6 +5,7 @@ import './StudyGroups.css';
 
 const StudyGroups: React.FC = () => {
   const [groups, setGroups] = useState<StudyGroup[]>([]);
+  console.log(groups);
   const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [availableGroups, setAvailableGroups] = useState<StudyGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,22 +20,21 @@ const StudyGroups: React.FC = () => {
     courseId: '',
     maxMembers: 10,
     isPrivate: false,
-    tags: []
+    tags: [],
   });
 
   const [availableCourses] = useState([
     { _id: 'course1', title: 'React Advanced Patterns', thumbnail: '/images/course1.jpg' },
     { _id: 'course2', title: 'Node.js Backend Development', thumbnail: '/images/course2.jpg' },
     { _id: 'course3', title: 'UI/UX Design Fundamentals', thumbnail: '/images/course3.jpg' },
-    { _id: 'course4', title: 'Machine Learning with Python', thumbnail: '/images/course4.jpg' }
+    { _id: 'course4', title: 'Machine Learning with Python', thumbnail: '/images/course4.jpg' },
   ]);
 
   const [availableTags] = useState([
-    'React', 'Node.js', 'Python', 'Design', 'Machine Learning', 'Web Development', 'Mobile', 'Data Science'
+    'React', 'Node.js', 'Python', 'Design', 'Machine Learning', 'Web Development', 'Mobile', 'Data Science',
   ]);
 
   useEffect(() => {
-    // Simulate API call
     setLoading(true);
     setTimeout(() => {
       const mockGroups: StudyGroup[] = [
@@ -54,17 +54,17 @@ const StudyGroups: React.FC = () => {
           owner: {
             _id: 'user1',
             name: 'Hieu Doan',
-            avatar: '/images/avatar1.jpg'
+            avatar: '/images/avatar1.jpg',
           },
           members: [
             { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'owner', joinedAt: '2024-01-10T10:00:00Z' },
             { _id: 'user2', name: 'Minh Nguyen', avatar: '/images/avatar2.jpg', role: 'admin', joinedAt: '2024-01-11T09:00:00Z' },
-            { _id: 'user3', name: 'Lan Tran', avatar: '/images/avatar3.jpg', role: 'member', joinedAt: '2024-01-12T14:00:00Z' }
+            { _id: 'user3', name: 'Lan Tran', avatar: '/images/avatar3.jpg', role: 'member', joinedAt: '2024-01-12T14:00:00Z' },
           ],
           recentDiscussions: [
             { _id: 'disc1', title: 'Custom Hooks best practices', author: 'Minh Nguyen', lastReply: '2024-01-20T15:30:00Z', repliesCount: 8 },
-            { _id: 'disc2', title: 'State management với Context API', author: 'Lan Tran', lastReply: '2024-01-19T11:20:00Z', repliesCount: 12 }
-          ]
+            { _id: 'disc2', title: 'State management với Context API', author: 'Lan Tran', lastReply: '2024-01-19T11:20:00Z', repliesCount: 12 },
+          ],
         },
         {
           _id: 'group2',
@@ -82,16 +82,16 @@ const StudyGroups: React.FC = () => {
           owner: {
             _id: 'user2',
             name: 'Minh Nguyen',
-            avatar: '/images/avatar2.jpg'
+            avatar: '/images/avatar2.jpg',
           },
           members: [
             { _id: 'user2', name: 'Minh Nguyen', avatar: '/images/avatar2.jpg', role: 'owner', joinedAt: '2024-01-08T14:00:00Z' },
-            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: '2024-01-09T10:00:00Z' }
+            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: '2024-01-09T10:00:00Z' },
           ],
           recentDiscussions: [
             { _id: 'disc3', title: 'Express.js middleware patterns', author: 'Hieu Doan', lastReply: '2024-01-20T16:45:00Z', repliesCount: 15 },
-            { _id: 'disc4', title: 'Database optimization tips', author: 'Minh Nguyen', lastReply: '2024-01-18T13:15:00Z', repliesCount: 9 }
-          ]
+            { _id: 'disc4', title: 'Database optimization tips', author: 'Minh Nguyen', lastReply: '2024-01-18T13:15:00Z', repliesCount: 9 },
+          ],
         },
         {
           _id: 'group3',
@@ -109,24 +109,23 @@ const StudyGroups: React.FC = () => {
           owner: {
             _id: 'user3',
             name: 'Lan Tran',
-            avatar: '/images/avatar3.jpg'
+            avatar: '/images/avatar3.jpg',
           },
           members: [
             { _id: 'user3', name: 'Lan Tran', avatar: '/images/avatar3.jpg', role: 'owner', joinedAt: '2024-01-05T16:00:00Z' },
-            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: '2024-01-06T11:00:00Z' }
+            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: '2024-01-06T11:00:00Z' },
           ],
           recentDiscussions: [
             { _id: 'disc5', title: 'Color theory trong design', author: 'Lan Tran', lastReply: '2024-01-19T17:20:00Z', repliesCount: 6 },
-            { _id: 'disc6', title: 'Prototyping tools comparison', author: 'Hieu Doan', lastReply: '2024-01-17T14:30:00Z', repliesCount: 11 }
-          ]
-        }
+            { _id: 'disc6', title: 'Prototyping tools comparison', author: 'Hieu Doan', lastReply: '2024-01-17T14:30:00Z', repliesCount: 11 },
+          ],
+        },
       ];
 
-      // Separate groups into my groups and available groups
-      const myGroupsData = mockGroups.filter(group => 
+      const myGroupsData = mockGroups.filter(group =>
         group.members.some(member => member._id === 'user1')
       );
-      const availableGroupsData = mockGroups.filter(group => 
+      const availableGroupsData = mockGroups.filter(group =>
         !group.members.some(member => member._id === 'user1')
       );
 
@@ -139,7 +138,7 @@ const StudyGroups: React.FC = () => {
 
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const newGroup: StudyGroup = {
       _id: `group${Date.now()}`,
       name: createForm.name,
@@ -156,31 +155,30 @@ const StudyGroups: React.FC = () => {
       owner: {
         _id: 'user1',
         name: 'Hieu Doan',
-        avatar: '/images/avatar1.jpg'
+        avatar: '/images/avatar1.jpg',
       },
       members: [{
         _id: 'user1',
         name: 'Hieu Doan',
         avatar: '/images/avatar1.jpg',
         role: 'owner',
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
       }],
-      recentDiscussions: []
+      recentDiscussions: [],
     };
 
     setMyGroups(prev => [newGroup, ...prev]);
     setGroups(prev => [newGroup, ...prev]);
-    
-    // Reset form
+
     setCreateForm({
       name: '',
       description: '',
       courseId: '',
       maxMembers: 10,
       isPrivate: false,
-      tags: []
+      tags: [],
     });
-    
+
     setShowCreateForm(false);
     setActiveTab('my-groups');
   };
@@ -189,7 +187,7 @@ const StudyGroups: React.FC = () => {
     const group = availableGroups.find(g => g._id === groupId);
     if (!group) return;
 
-    const updatedGroup = {
+    const updatedGroup: StudyGroup = {
       ...group,
       currentMembers: group.currentMembers + 1,
       members: [...group.members, {
@@ -197,8 +195,9 @@ const StudyGroups: React.FC = () => {
         name: 'Hieu Doan',
         avatar: '/images/avatar1.jpg',
         role: 'member',
-        joinedAt: new Date().toISOString()
-      }]
+        joinedAt: new Date().toISOString(),
+      }],
+      recentDiscussions: group.recentDiscussions, // Đảm bảo giữ nguyên
     };
 
     setMyGroups(prev => [updatedGroup, ...prev]);
@@ -210,14 +209,14 @@ const StudyGroups: React.FC = () => {
     const group = myGroups.find(g => g._id === groupId);
     if (!group) return;
 
-    const updatedGroup = {
+    const updatedGroup: StudyGroup = {
       ...group,
       currentMembers: group.currentMembers - 1,
-      members: group.members.filter(m => m._id !== 'user1')
+      members: group.members.filter(m => m._id !== 'user1'),
+      recentDiscussions: group.recentDiscussions, // Đảm bảo giữ nguyên
     };
 
     if (group.members.length === 1) {
-      // If only one member left, remove the group entirely
       setMyGroups(prev => prev.filter(g => g._id !== groupId));
       setGroups(prev => prev.filter(g => g._id !== groupId));
     } else {
@@ -227,8 +226,8 @@ const StudyGroups: React.FC = () => {
   };
 
   const toggleTag = (tag: string) => {
-    setFilterTags(prev => 
-      prev.includes(tag) 
+    setFilterTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -237,13 +236,13 @@ const StudyGroups: React.FC = () => {
   const filteredGroups = (groupsToFilter: StudyGroup[]) => {
     return groupsToFilter.filter(group => {
       const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           group.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
+        group.description.toLowerCase().includes(searchQuery.toLowerCase());
+
       const matchesCourse = !filterCourse || group.courseId === filterCourse;
-      
-      const matchesTags = filterTags.length === 0 || 
-                         filterTags.some(tag => group.tags.includes(tag));
-      
+
+      const matchesTags = filterTags.length === 0 ||
+        filterTags.some(tag => group.tags.includes(tag));
+
       return matchesSearch && matchesCourse && matchesTags;
     });
   };
@@ -252,7 +251,7 @@ const StudyGroups: React.FC = () => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -260,7 +259,7 @@ const StudyGroups: React.FC = () => {
     const now = new Date();
     const date = new Date(dateString);
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 1) return 'Vừa xong';
     if (diffInHours < 24) return `${diffInHours} giờ trước`;
     if (diffInHours < 168) return `${Math.floor(diffInHours / 24)} ngày trước`;
@@ -285,7 +284,6 @@ const StudyGroups: React.FC = () => {
         <p>Tham gia nhóm học tập để chia sẻ kiến thức và hỗ trợ lẫn nhau</p>
       </div>
 
-      {/* Stats */}
       <div className="groups-stats">
         <div className="stat-item">
           <span className="stat-number">{myGroups.length}</span>
@@ -303,29 +301,27 @@ const StudyGroups: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="groups-tabs">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'my-groups' ? 'active' : ''}`}
-          onClick={() => setActiveTab('my-groups')}
+          onClick={() => { setActiveTab('my-groups'); setShowCreateForm(false); }}
         >
           👥 Nhóm của tôi ({myGroups.length})
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'discover' ? 'active' : ''}`}
-          onClick={() => setActiveTab('discover')}
+          onClick={() => { setActiveTab('discover'); setShowCreateForm(false); }}
         >
           🔍 Khám phá ({availableGroups.length})
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'create' ? 'active' : ''}`}
-          onClick={() => setActiveTab('create')}
+          onClick={() => { setActiveTab('create'); setShowCreateForm(true); }}
         >
           ➕ Tạo nhóm mới
         </button>
       </div>
 
-      {/* Search and Filters */}
       <div className="groups-controls">
         <div className="search-box">
           <input
@@ -338,8 +334,8 @@ const StudyGroups: React.FC = () => {
         </div>
 
         <div className="filters">
-          <select 
-            value={filterCourse} 
+          <select
+            value={filterCourse}
             onChange={(e) => setFilterCourse(e.target.value)}
             className="course-filter"
           >
@@ -365,7 +361,6 @@ const StudyGroups: React.FC = () => {
         </div>
       </div>
 
-      {/* Content based on active tab */}
       {activeTab === 'my-groups' && (
         <div className="my-groups">
           {filteredGroups(myGroups).length === 0 ? (
@@ -373,8 +368,8 @@ const StudyGroups: React.FC = () => {
               <div className="empty-icon">👥</div>
               <h3>Bạn chưa tham gia nhóm nào</h3>
               <p>Khám phá và tham gia các nhóm học tập để bắt đầu</p>
-              <button 
-                onClick={() => setActiveTab('discover')}
+              <button
+                onClick={() => { setActiveTab('discover'); setShowCreateForm(false); }}
                 className="discover-btn"
               >
                 🔍 Khám phá nhóm
@@ -432,7 +427,7 @@ const StudyGroups: React.FC = () => {
                     <Link to={`/groups/${group._id}`} className="view-group-btn">
                       👁️ Xem nhóm
                     </Link>
-                    <button 
+                    <button
                       onClick={() => leaveGroup(group._id)}
                       className="leave-group-btn"
                     >
@@ -453,8 +448,8 @@ const StudyGroups: React.FC = () => {
               <div className="empty-icon">🔍</div>
               <h3>Không tìm thấy nhóm phù hợp</h3>
               <p>Thử thay đổi bộ lọc hoặc tạo nhóm mới</p>
-              <button 
-                onClick={() => setActiveTab('create')}
+              <button
+                onClick={() => { setActiveTab('create'); setShowCreateForm(true); }}
                 className="create-group-btn"
               >
                 ➕ Tạo nhóm mới
@@ -499,7 +494,7 @@ const StudyGroups: React.FC = () => {
                   </div>
 
                   <div className="group-actions">
-                    <button 
+                    <button
                       onClick={() => joinGroup(group._id)}
                       className="join-group-btn"
                       disabled={group.currentMembers >= group.maxMembers}
@@ -517,7 +512,7 @@ const StudyGroups: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'create' && (
+      {activeTab === 'create' && showCreateForm && (
         <div className="create-group">
           <div className="create-form-container">
             <h3>Tạo nhóm học tập mới</h3>
@@ -605,7 +600,7 @@ const StudyGroups: React.FC = () => {
                           ...prev,
                           tags: prev.tags.includes(tag)
                             ? prev.tags.filter(t => t !== tag)
-                            : [...prev.tags, tag]
+                            : [...prev.tags, tag],
                         }));
                       }}
                       className={`tag-select-btn ${createForm.tags.includes(tag) ? 'selected' : ''}`}
@@ -620,9 +615,9 @@ const StudyGroups: React.FC = () => {
                 <button type="submit" className="create-btn">
                   ➕ Tạo nhóm
                 </button>
-                <button 
-                  type="button" 
-                  onClick={() => setActiveTab('my-groups')}
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('my-groups'); setShowCreateForm(false); }}
                   className="cancel-btn"
                 >
                   Hủy
@@ -633,7 +628,6 @@ const StudyGroups: React.FC = () => {
         </div>
       )}
 
-      {/* Quick Actions */}
       <div className="quick-actions">
         <Link to="/dashboard" className="back-dashboard-btn">
           🏠 Về Dashboard

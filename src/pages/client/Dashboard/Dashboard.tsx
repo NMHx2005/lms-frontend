@@ -42,6 +42,8 @@ const Dashboard: React.FC = () => {
     currentStreak: 7
   });
 
+  console.log(recentCourses, upcomingAssignments, certificates, stats);
+
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
@@ -121,6 +123,14 @@ const Dashboard: React.FC = () => {
       setRecentCourses(mockRecentCourses);
       setUpcomingAssignments(mockAssignments);
       setCertificates(mockCertificates);
+      setStats({
+        totalCourses: 12,
+        completedCourses: 8,
+        totalHours: 156,
+        averageGrade: 4.2,
+        certificatesEarned: 5,
+        currentStreak: 7
+      });
     }, 1000);
   }, []);
 

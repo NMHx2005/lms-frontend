@@ -34,7 +34,8 @@ const MyCourses: React.FC = () => {
         upvotes: 25,
         reports: 0,
         createdAt: '2025-08-02T03:00:00.000Z',
-        updatedAt: '2025-08-02T03:00:00.000Z'
+        updatedAt: '2025-08-02T03:00:00.000Z',
+        enrolledStudents: ["64f0c1234567890abcdef123"],
       },
       {
         _id: '64f0d1234567890abcdef124',
@@ -53,7 +54,8 @@ const MyCourses: React.FC = () => {
         upvotes: 18,
         reports: 1,
         createdAt: '2025-08-01T03:00:00.000Z',
-        updatedAt: '2025-08-01T03:00:00.000Z'
+        updatedAt: '2025-08-01T03:00:00.000Z',
+        enrolledStudents: ["64f0c1234567890abcdef124"],
       },
       {
         _id: '64f0d1234567890abcdef125',
@@ -72,7 +74,8 @@ const MyCourses: React.FC = () => {
         upvotes: 12,
         reports: 0,
         createdAt: '2025-07-30T03:00:00.000Z',
-        updatedAt: '2025-07-30T03:00:00.000Z'
+        updatedAt: '2025-07-30T03:00:00.000Z',
+        enrolledStudents: ["64f0c1234567890abcdef125"],
       },
       {
         _id: '64f0d1234567890abcdef126',
@@ -91,7 +94,8 @@ const MyCourses: React.FC = () => {
         upvotes: 8,
         reports: 0,
         createdAt: '2025-07-28T03:00:00.000Z',
-        updatedAt: '2025-07-28T03:00:00.000Z'
+        updatedAt: '2025-07-28T03:00:00.000Z',
+        enrolledStudents: ["64f0c1234567890abcdef126"],
       },
       {
         _id: '64f0d1234567890abcdef127',
@@ -110,7 +114,8 @@ const MyCourses: React.FC = () => {
         upvotes: 32,
         reports: 0,
         createdAt: '2025-07-25T03:00:00.000Z',
-        updatedAt: '2025-07-25T03:00:00.000Z'
+        updatedAt: '2025-07-25T03:00:00.000Z',
+        enrolledStudents: ["64f0c1234567890abcdef127"],
       }
     ];
 

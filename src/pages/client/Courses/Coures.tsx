@@ -43,7 +43,8 @@ const Courses = () => {
         "upvotes": 45,
         "reports": 0,
         "createdAt": "2025-08-02T03:00:00.000Z",
-        "updatedAt": "2025-08-02T03:00:00.000Z"
+        "updatedAt": "2025-08-02T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef123"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef124",
@@ -62,7 +63,8 @@ const Courses = () => {
         "upvotes": 32,
         "reports": 0,
         "createdAt": "2025-08-01T03:00:00.000Z",
-        "updatedAt": "2025-08-01T03:00:00.000Z"
+        "updatedAt": "2025-08-01T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef124"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef125",
@@ -81,7 +83,8 @@ const Courses = () => {
         "upvotes": 28,
         "reports": 0,
         "createdAt": "2025-07-30T03:00:00.000Z",
-        "updatedAt": "2025-07-30T03:00:00.000Z"
+        "updatedAt": "2025-07-30T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef125"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef126",
@@ -100,7 +103,8 @@ const Courses = () => {
         "upvotes": 50,
         "reports": 0,
         "createdAt": "2025-08-05T03:00:00.000Z",
-        "updatedAt": "2025-08-05T03:00:00.000Z"
+        "updatedAt": "2025-08-05T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef126"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef127",
@@ -119,7 +123,8 @@ const Courses = () => {
         "upvotes": 40,
         "reports": 0,
         "createdAt": "2025-08-04T03:00:00.000Z",
-        "updatedAt": "2025-08-04T03:00:00.000Z"
+        "updatedAt": "2025-08-04T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef127"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef128",
@@ -138,7 +143,8 @@ const Courses = () => {
         "upvotes": 35,
         "reports": 0,
         "createdAt": "2025-08-03T03:00:00.000Z",
-        "updatedAt": "2025-08-03T03:00:00.000Z"
+        "updatedAt": "2025-08-03T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef128"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef129",
@@ -157,7 +163,8 @@ const Courses = () => {
         "upvotes": 30,
         "reports": 0,
         "createdAt": "2025-08-02T03:00:00.000Z",
-        "updatedAt": "2025-08-02T03:00:00.000Z"
+        "updatedAt": "2025-08-02T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef129"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef130",
@@ -176,7 +183,8 @@ const Courses = () => {
         "upvotes": 42,
         "reports": 0,
         "createdAt": "2025-08-01T03:00:00.000Z",
-        "updatedAt": "2025-08-01T03:00:00.000Z"
+        "updatedAt": "2025-08-01T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef130"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef131",
@@ -195,7 +203,8 @@ const Courses = () => {
         "upvotes": 25,
         "reports": 0,
         "createdAt": "2025-07-31T03:00:00.000Z",
-        "updatedAt": "2025-07-31T03:00:00.000Z"
+        "updatedAt": "2025-07-31T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef131"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef132",
@@ -214,7 +223,8 @@ const Courses = () => {
         "upvotes": 48,
         "reports": 0,
         "createdAt": "2025-07-30T03:00:00.000Z",
-        "updatedAt": "2025-07-30T03:00:00.000Z"
+        "updatedAt": "2025-07-30T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef132"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef133",
@@ -233,7 +243,8 @@ const Courses = () => {
         "upvotes": 33,
         "reports": 0,
         "createdAt": "2025-07-29T03:00:00.000Z",
-        "updatedAt": "2025-07-29T03:00:00.000Z"
+        "updatedAt": "2025-07-29T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef133"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef134",
@@ -252,7 +263,8 @@ const Courses = () => {
         "upvotes": 39,
         "reports": 0,
         "createdAt": "2025-07-28T03:00:00.000Z",
-        "updatedAt": "2025-07-28T03:00:00.000Z"
+        "updatedAt": "2025-07-28T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef134"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef135",
@@ -271,7 +283,8 @@ const Courses = () => {
         "upvotes": 36,
         "reports": 0,
         "createdAt": "2025-07-27T03:00:00.000Z",
-        "updatedAt": "2025-07-27T03:00:00.000Z"
+        "updatedAt": "2025-07-27T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef135"]     // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef136",
@@ -290,7 +303,8 @@ const Courses = () => {
         "upvotes": 29,
         "reports": 0,
         "createdAt": "2025-07-26T03:00:00.000Z",
-        "updatedAt": "2025-07-26T03:00:00.000Z"
+        "updatedAt": "2025-07-26T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef136"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef137",
@@ -309,7 +323,8 @@ const Courses = () => {
         "upvotes": 44,
         "reports": 0,
         "createdAt": "2025-07-25T03:00:00.000Z",
-        "updatedAt": "2025-07-25T03:00:00.000Z"
+        "updatedAt": "2025-07-25T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef137"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef138",
@@ -328,7 +343,8 @@ const Courses = () => {
         "upvotes": 47,
         "reports": 0,
         "createdAt": "2025-07-24T03:00:00.000Z",
-        "updatedAt": "2025-07-24T03:00:00.000Z"
+        "updatedAt": "2025-07-24T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef138"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef139",
@@ -347,7 +363,8 @@ const Courses = () => {
         "upvotes": 31,
         "reports": 0,
         "createdAt": "2025-07-23T03:00:00.000Z",
-        "updatedAt": "2025-07-23T03:00:00.000Z"
+        "updatedAt": "2025-07-23T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef139"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef140",
@@ -366,7 +383,8 @@ const Courses = () => {
         "upvotes": 27,
         "reports": 0,
         "createdAt": "2025-07-22T03:00:00.000Z",
-        "updatedAt": "2025-07-22T03:00:00.000Z"
+        "updatedAt": "2025-07-22T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef140"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef141",
@@ -385,7 +403,8 @@ const Courses = () => {
         "upvotes": 43,
         "reports": 0,
         "createdAt": "2025-07-21T03:00:00.000Z",
-        "updatedAt": "2025-07-21T03:00:00.000Z"
+        "updatedAt": "2025-07-21T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef141"] // Thêm thuộc tính
       },
       {
         "_id": "64f0d1234567890abcdef142",
@@ -404,7 +423,8 @@ const Courses = () => {
         "upvotes": 38,
         "reports": 0,
         "createdAt": "2025-07-20T03:00:00.000Z",
-        "updatedAt": "2025-07-20T03:00:00.000Z"
+        "updatedAt": "2025-07-20T03:00:00.000Z",
+        "enrolledStudents": ["64f0c1234567890abcdef142"] // Thêm thuộc tính
       }
     ];
 
