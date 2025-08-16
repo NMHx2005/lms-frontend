@@ -424,6 +424,7 @@
   padding: 0 20px 20px;
   margin-top: auto;
   flex-shrink: 0;
+  gap: 16px;
 }
 
 .card__btn-sm {
@@ -447,9 +448,10 @@
 .card__link {
   font-size: 0.875rem;
   color: #d35400;
+  width: 100%;
   font-weight: 600;
-  display: flex;
-  align-items: center;
+  /* display: flex;
+  align-items: center; */
   gap: 4px;
   transition: all 0.3s ease;
 }
@@ -2045,3 +2047,5 @@ padding: 64px;
     max-height: 40px;
   }
 }
+
+
