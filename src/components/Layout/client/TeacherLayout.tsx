@@ -58,38 +58,38 @@ const TeacherLayout: React.FC = () => {
 
   // Sub-navigation items for detailed course management
   // These provide quick access to specific course-related functions
-  const subNavItems = [
-    {
-      path: '/teacher/courses',
-      icon: '📚',
-      label: 'Course Studio',
-      description: 'Quản lý khóa học của bạn'
-    },
-    {
-      path: '/teacher/courses/new',
-      icon: '➕',
-      label: 'Tạo khóa học mới',
-      description: 'Tạo khóa học mới'
-    },
-    {
-      path: '/teacher/analytics',
-      icon: '📊',
-      label: 'Analytics',
-      description: 'Phân tích hiệu suất và thu nhập'
-    },
-    {
-      path: '/teacher/earnings',
-      icon: '💰',
-      label: 'Doanh thu & Hóa đơn',
-      description: 'Theo dõi thu nhập và thanh toán'
-    },
-    {
-      path: '/teacher/ai',
-      icon: '🤖',
-      label: 'AI Tools',
-      description: 'Công cụ AI hỗ trợ giảng dạy'
-    }
-  ];
+  // const subNavItems = [
+  //   {
+  //     path: '/teacher/courses',
+  //     icon: '📚',
+  //     label: 'Course Studio',
+  //     description: 'Quản lý khóa học của bạn'
+  //   },
+  //   {
+  //     path: '/teacher/courses/new',
+  //     icon: '➕',
+  //     label: 'Tạo khóa học mới',
+  //     description: 'Tạo khóa học mới'
+  //   },
+  //   {
+  //     path: '/teacher/analytics',
+  //     icon: '📊',
+  //     label: 'Analytics',
+  //     description: 'Phân tích hiệu suất và thu nhập'
+  //   },
+  //   {
+  //     path: '/teacher/earnings',
+  //     icon: '💰',
+  //     label: 'Doanh thu & Hóa đơn',
+  //     description: 'Theo dõi thu nhập và thanh toán'
+  //   },
+  //   {
+  //     path: '/teacher/ai',
+  //     icon: '🤖',
+  //     label: 'AI Tools',
+  //     description: 'Công cụ AI hỗ trợ giảng dạy'
+  //   }
+  // ];
 
   
   return (

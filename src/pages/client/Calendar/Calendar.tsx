@@ -12,7 +12,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [filterCourse, setFilterCourse] = useState('');
-
+console.log(selectedDate, showEventForm);
   useEffect(() => {
     // Simulate API call
     setLoading(true);
