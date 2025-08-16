@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './CategoryPages.css';
+import TopBar from '@/components/Client/Home/TopBar/TopBar';
+import Header from '@/components/Layout/client/Header';
+import Footer from '@/components/Layout/client/Footer';
 
 interface Course {
   _id: string;
@@ -144,17 +147,25 @@ const CategoryPages: React.FC = () => {
 
   if (loading) {
     return (
+      <>
+      <TopBar />
+      <Header />
       <div className="category-page">
         <div className="category-loading">
           <div className="loading-spinner"></div>
           <p>Đang tải danh mục...</p>
         </div>
       </div>
+      <Footer />
+      </>
     );
   }
 
   if (!category) {
     return (
+      <>
+      <TopBar />
+      <Header />
       <div className="category-page">
         <div className="category-not-found">
           <h1>Không tìm thấy danh mục</h1>
@@ -164,10 +175,15 @@ const CategoryPages: React.FC = () => {
           </Link>
         </div>
       </div>
+      <Footer />
+      </>
     );
   }
 
   return (
+    <>
+    <TopBar />
+    <Header />
     <div className="category-page">
       {/* Category Header */}
       <div className="category-header" style={{ backgroundColor: category.color + '20' }}>
@@ -317,6 +333,8 @@ const CategoryPages: React.FC = () => {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

@@ -67,6 +67,9 @@ const Header = () => {
             <NavLink to="/contact" className={({isActive}) => `header__nav-item nav-menu${isActive ? ' active' : ''}`}>
               Liên Hệ
             </NavLink>
+            <NavLink to="/about" className={({isActive}) => `header__nav-item nav-menu${isActive ? ' active' : ''}`}>
+              Về chúng tôi
+            </NavLink>
           </nav>
 
           {/* Desktop Buttons */}
@@ -137,6 +140,9 @@ const Header = () => {
             </NavLink>
             <NavLink to="/contact" className={({isActive}) => `header__mobile-nav-item${isActive ? ' active' : ''}`} onClick={closeMobileMenu}>
               Liên Hệ
+            </NavLink>
+            <NavLink to="/about" className={({ isActive }) => `header__mobile-nav-item${isActive ? ' active' : ''}`} onClick={closeMobileMenu}>
+              Về chúng tôi
             </NavLink>
           </nav>
 

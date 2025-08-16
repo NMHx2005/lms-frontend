@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './InstructorProfile.css';
+import TopBar from '@/components/Client/Home/TopBar/TopBar';
+import Header from '@/components/Layout/client/Header';
+import Footer from '@/components/Layout/client/Footer';
 
 interface Course {
   _id: string;
@@ -216,17 +219,25 @@ const InstructorProfile: React.FC = () => {
 
   if (loading) {
     return (
+      <>
+        <TopBar />
+        <Header />
       <div className="instructor-profile">
         <div className="instructor-loading">
           <div className="loading-spinner"></div>
           <p>Đang tải thông tin giảng viên...</p>
         </div>
       </div>
+      <Footer />
+    </>
     );
   }
 
   if (!instructor) {
     return (
+      <>
+      <TopBar />
+      <Header />
       <div className="instructor-profile">
         <div className="instructor-not-found">
           <h1>Không tìm thấy giảng viên</h1>
@@ -236,15 +247,20 @@ const InstructorProfile: React.FC = () => {
           </Link>
         </div>
       </div>
+      <Footer />
+      </>
     );
   }
 
   return (
+    <>
+    <TopBar />
+    <Header />
     <div className="instructor-profile">
       {/* Instructor Header */}
       <div className="instructor-header">
         <div className="instructor-header__content">
-          <div className="instructor-avatar">
+          <div className="instructor-avatar instructor-avatar--modefi">
             <img src={instructor.avatar} alt={instructor.name} />
           </div>
           <div className="instructor-info">
@@ -429,6 +445,8 @@ const InstructorProfile: React.FC = () => {
         )}
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

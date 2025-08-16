@@ -75,6 +75,12 @@ import SubmissionsGrading from './pages/client/Teacher/SubmissionsGrading/Submis
 import SearchResults from './pages/client/SearchResults/SearchResults.tsx';
 import NotFound from './pages/client/NotFound/NotFound.tsx';
 
+// Additional Client Pages
+import Contact from './pages/client/Contact/Contact.tsx';
+import About from './pages/client/About/About.tsx';
+import InstructorProfile from './pages/client/InstructorProfile/InstructorProfile.tsx';
+import CategoryPages from './pages/client/CategoryPages/CategoryPages.tsx';
+
 const queryClient = new QueryClient();
 
 const theme = createTheme({
@@ -106,6 +112,12 @@ function App() {
                 <Route path="/checkout/:courseId" element={<Checkout />} />
                 <Route path="/learning/:courseId" element={<LearningPlayer />} />
                 <Route path="/assignments/:id" element={<AssignmentWorkspace />} />
+                
+                {/* Additional Client Pages */}
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/instructor/:id" element={<InstructorProfile />} />
+                <Route path="/category/:slug" element={<CategoryPages />} />
                 
                 {/* Dashboard Routes */}
                 <Route

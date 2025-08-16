@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import './Contact.css';
+import Footer from '@/components/Layout/client/Footer';
+import TopBar from '@/components/Client/Home/TopBar/TopBar';
+import Header from '@/components/Layout/client/Header';
 
 interface ContactForm {
   name: string;
@@ -107,159 +110,164 @@ const Contact: React.FC = () => {
   }
 
   return (
-    <div className="contact-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1>Liên hệ với chúng tôi</h1>
-          <p>Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn. Hãy để lại tin nhắn và chúng tôi sẽ phản hồi sớm nhất có thể.</p>
-        </div>
-      </section>
+    <>
+    <TopBar />
+    <Header />
+      <div className="contact-page">
+        {/* Hero Section */}
+        <section className="hero-section">
+          <div className="hero-content">
+            <h1>Liên hệ với chúng tôi</h1>
+            <p>Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn. Hãy để lại tin nhắn và chúng tôi sẽ phản hồi sớm nhất có thể.</p>
+          </div>
+        </section>
 
-      <div className="contact-content">
-        <div className="container">
-          <div className="contact-grid">
-            {/* Contact Form */}
-            <div className="contact-form-section">
-              <h2>Gửi tin nhắn</h2>
-              <form onSubmit={handleSubmit} className="contact-form">
-                <div className="form-row">
+        <div className="contact-content">
+          <div className="container">
+            <div className="contact-grid">
+              {/* Contact Form */}
+              <div className="contact-form-section">
+                <h2>Gửi tin nhắn</h2>
+                <form onSubmit={handleSubmit} className="contact-form" autoComplete='off'>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="name">Họ và tên *</label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Nhập họ và tên của bạn"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="email">Email *</label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Nhập email của bạn"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="type">Loại tin nhắn *</label>
+                      <select
+                        id="type"
+                        name="type"
+                        value={formData.type}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="general">Tin nhắn chung</option>
+                        <option value="support">Hỗ trợ kỹ thuật</option>
+                        <option value="business">Hợp tác kinh doanh</option>
+                        <option value="feedback">Góp ý phản hồi</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="subject">Tiêu đề *</label>
+                      <input
+                        type="text"
+                        id="subject"
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Nhập tiêu đề tin nhắn"
+                      />
+                    </div>
+                  </div>
+
                   <div className="form-group">
-                    <label htmlFor="name">Họ và tên *</label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
+                    <label htmlFor="message">Nội dung tin nhắn *</label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      value={formData.message}
                       onChange={handleInputChange}
                       required
-                      placeholder="Nhập họ và tên của bạn"
+                      rows={6}
+                      placeholder="Nhập nội dung tin nhắn của bạn..."
                     />
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="email">Email *</label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Nhập email của bạn"
-                    />
-                  </div>
+
+                  <button
+                    type="submit"
+                    className="submit-btn"
+                    disabled={loading}
+                  >
+                    {loading ? 'Đang gửi...' : 'Gửi tin nhắn'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Contact Information */}
+              <div className="contact-info-section">
+                <h2>Thông tin liên hệ</h2>
+                <div className="contact-info-list">
+                  {contactInfo.map((info, index) => (
+                    <div key={index} className="contact-info-item">
+                      <div className="info-icon">{info.icon}</div>
+                      <div className="info-content">
+                        <h3>{info.title}</h3>
+                        <p>{info.content}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="type">Loại tin nhắn *</label>
-                    <select
-                      id="type"
-                      name="type"
-                      value={formData.type}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="general">Tin nhắn chung</option>
-                      <option value="support">Hỗ trợ kỹ thuật</option>
-                      <option value="business">Hợp tác kinh doanh</option>
-                      <option value="feedback">Góp ý phản hồi</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="subject">Tiêu đề *</label>
-                    <input
-                      type="text"
-                      id="subject"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Nhập tiêu đề tin nhắn"
-                    />
+                <div className="social-links">
+                  <h3>Theo dõi chúng tôi</h3>
+                  <div className="social-icons">
+                    <a href="#" className="social-icon facebook">📘</a>
+                    <a href="#" className="social-icon twitter">🐦</a>
+                    <a href="#" className="social-icon linkedin">💼</a>
+                    <a href="#" className="social-icon youtube">📺</a>
+                    <a href="#" className="social-icon instagram">📷</a>
                   </div>
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="message">Nội dung tin nhắn *</label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                    rows={6}
-                    placeholder="Nhập nội dung tin nhắn của bạn..."
-                  />
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="submit-btn"
-                  disabled={loading}
-                >
-                  {loading ? 'Đang gửi...' : 'Gửi tin nhắn'}
-                </button>
-              </form>
+              </div>
             </div>
 
-            {/* Contact Information */}
-            <div className="contact-info-section">
-              <h2>Thông tin liên hệ</h2>
-              <div className="contact-info-list">
-                {contactInfo.map((info, index) => (
-                  <div key={index} className="contact-info-item">
-                    <div className="info-icon">{info.icon}</div>
-                    <div className="info-content">
-                      <h3>{info.title}</h3>
-                      <p>{info.content}</p>
-                    </div>
+            {/* FAQ Section */}
+            <section className="faq-section">
+              <h2>Câu hỏi thường gặp</h2>
+              <div className="faq-list">
+                {faqs.map((faq, index) => (
+                  <div key={index} className="faq-item">
+                    <h3 className="faq-question">{faq.question}</h3>
+                    <p className="faq-answer">{faq.answer}</p>
                   </div>
                 ))}
               </div>
+            </section>
 
-              <div className="social-links">
-                <h3>Theo dõi chúng tôi</h3>
-                <div className="social-icons">
-                  <a href="#" className="social-icon facebook">📘</a>
-                  <a href="#" className="social-icon twitter">🐦</a>
-                  <a href="#" className="social-icon linkedin">💼</a>
-                  <a href="#" className="social-icon youtube">📺</a>
-                  <a href="#" className="social-icon instagram">📷</a>
+            {/* Map Section */}
+            <section className="map-section">
+              <h2>Vị trí của chúng tôi</h2>
+              <div className="map-container">
+                <div className="map-placeholder">
+                  <div className="map-icon">🗺️</div>
+                  <p>Bản đồ sẽ được hiển thị tại đây</p>
+                  <p className="map-address">
+                    <strong>Địa chỉ:</strong> 123 Đường ABC, Quận 1, TP.HCM, Việt Nam
+                  </p>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
-
-          {/* FAQ Section */}
-          <section className="faq-section">
-            <h2>Câu hỏi thường gặp</h2>
-            <div className="faq-list">
-              {faqs.map((faq, index) => (
-                <div key={index} className="faq-item">
-                  <h3 className="faq-question">{faq.question}</h3>
-                  <p className="faq-answer">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Map Section */}
-          <section className="map-section">
-            <h2>Vị trí của chúng tôi</h2>
-            <div className="map-container">
-              <div className="map-placeholder">
-                <div className="map-icon">🗺️</div>
-                <p>Bản đồ sẽ được hiển thị tại đây</p>
-                <p className="map-address">
-                  <strong>Địa chỉ:</strong> 123 Đường ABC, Quận 1, TP.HCM, Việt Nam
-                </p>
-              </div>
-            </div>
-          </section>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

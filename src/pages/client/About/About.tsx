@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './About.css';
+import Footer from '@/components/Layout/client/Footer';
+import TopBar from '@/components/Client/Home/TopBar/TopBar';
+import Header from '@/components/Layout/client/Header';
 
 const About: React.FC = () => {
   const stats = [
@@ -89,6 +92,9 @@ const About: React.FC = () => {
   ];
 
   return (
+    <>
+    <TopBar />
+    <Header />
     <div className="about-page">
       {/* Hero Section */}
       <section className="hero-section">
@@ -225,6 +231,8 @@ const About: React.FC = () => {
         </div>
       </section>
     </div>
+    <Footer />
+    </>
   );
 };
 
