@@ -2,70 +2,72 @@ import React, { useState, useEffect } from 'react';
 import { Bill } from '@/components/Client/Dashboard/types';
 import './Bills.css';
 
-interface BillsData {
-  bills: Bill[];
-  totalAmount: number;
-  completedAmount: number;
-  pendingAmount: number;
-  failedAmount: number;
-}
-
 const Bills: React.FC = () => {
-  const [billsData, setBillsData] = useState<BillsData | null>(null);
+  const [billsData, setBillsData] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'completed' | 'failed'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'completed' | 'failed' | 'refunded'>('all');
 
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
-      const mockData: BillsData = {
-        bills: [
-          {
-            _id: 'bill_001',
-            studentId: 'student_001',
-            courseId: 'course_001',
-            amount: 500000,
-            currency: 'VND',
-            paymentMethod: 'credit_card',
-            status: 'completed',
-            transactionId: 'txn_123456789',
-            purpose: 'course_purchase',
-            paidAt: '2025-01-15T10:30:00Z',
-            createdAt: '2025-01-15T10:25:00Z',
-            updatedAt: '2025-01-15T10:30:00Z'
-          },
-          {
-            _id: 'bill_002',
-            studentId: 'student_001',
-            courseId: 'course_002',
-            amount: 800000,
-            currency: 'VND',
-            paymentMethod: 'bank_transfer',
-            status: 'pending',
-            transactionId: 'txn_123456790',
-            purpose: 'course_purchase',
-            createdAt: '2025-01-14T14:20:00Z',
-            updatedAt: '2025-01-14T14:20:00Z'
-          },
-          {
-            _id: 'bill_003',
-            studentId: 'student_001',
-            courseId: 'course_003',
-            amount: 600000,
-            currency: 'VND',
-            paymentMethod: 'momo',
-            status: 'failed',
-            transactionId: 'txn_123456791',
-            purpose: 'course_purchase',
-            createdAt: '2025-01-13T09:15:00Z',
-            updatedAt: '2025-01-13T09:20:00Z'
-          }
-        ],
-        totalAmount: 1900000,
-        completedAmount: 500000,
-        pendingAmount: 800000,
-        failedAmount: 600000
-      };
+      const mockData: Bill[] = [
+        {
+          _id: 'bill_001',
+          studentId: 'student_001',
+          courseId: 'course_001',
+          amount: 500000,
+          currency: 'VND',
+          paymentMethod: 'stripe',
+          status: 'completed',
+          transactionId: 'txn_123456789',
+          purpose: 'course_purchase',
+          paidAt: '2025-01-15T10:30:00Z',
+          createdAt: '2025-01-15T10:25:00Z',
+          updatedAt: '2025-01-15T10:30:00Z'
+        },
+        {
+          _id: 'bill_002',
+          studentId: 'student_001',
+          courseId: 'course_002',
+          amount: 800000,
+          currency: 'VND',
+          paymentMethod: 'momo',
+          status: 'pending',
+          transactionId: 'txn_123456790',
+          paidAt: '2025-01-15T10:30:00Z',
+          purpose: 'course_purchase',
+          createdAt: '2025-01-14T14:20:00Z',
+          updatedAt: '2025-01-14T14:20:00Z'
+        },
+        {
+          _id: 'bill_003',
+          studentId: 'student_001',
+          courseId: 'course_003',
+          amount: 600000,
+          currency: 'VND',
+          paymentMethod: 'zalopay',
+          status: 'failed',
+          paidAt: '2025-01-15T10:30:00Z',
+          transactionId: 'txn_123456791',
+          purpose: 'course_purchase',
+          createdAt: '2025-01-13T09:15:00Z',
+          updatedAt: '2025-01-13T09:20:00Z'
+        },
+        {
+          _id: 'bill_004',
+          studentId: 'student_001',
+          courseId: 'course_004',
+          amount: 700000,
+          currency: 'VND',
+          paymentMethod: 'bank_transfer',
+          status: 'refunded',
+          transactionId: 'txn_123456792',
+          purpose: 'refund',
+          paidAt: '2025-01-12T08:10:00Z',
+          createdAt: '2025-01-12T08:10:00Z',
+          updatedAt: '2025-01-20T10:00:00Z'
+        }
+      ];
       setBillsData(mockData);
       setLoading(false);
     }, 1000);
@@ -74,7 +76,7 @@ const Bills: React.FC = () => {
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'VND'
+      currency: 'VND',
     }).format(amount);
   };
 
@@ -84,11 +86,11 @@ const Bills: React.FC = () => {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: Bill['status']) => {
     switch (status) {
       case 'completed':
         return 'Hoàn thành';
@@ -103,7 +105,7 @@ const Bills: React.FC = () => {
     }
   };
 
-  const getStatusClass = (status: string) => {
+  const getStatusClass = (status: Bill['status']) => {
     switch (status) {
       case 'completed':
         return 'dashboard__status-badge--completed';
@@ -120,33 +122,55 @@ const Bills: React.FC = () => {
 
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
-      case 'credit_card':
-        return 'Thẻ tín dụng';
-      case 'bank_transfer':
-        return 'Chuyển khoản';
+      case 'stripe':
+        return 'Thẻ tín dụng (Stripe)';
       case 'momo':
         return 'Ví MoMo';
       case 'zalopay':
         return 'Ví ZaloPay';
+      case 'bank_transfer':
+        return 'Chuyển khoản ngân hàng';
       default:
         return method;
     }
   };
 
-  const getFilteredBills = () => {
-    if (!billsData) return [];
-    
-    switch (selectedFilter) {
-      case 'pending':
-        return billsData.bills.filter(bill => bill.status === 'pending');
-      case 'completed':
-        return billsData.bills.filter(bill => bill.status === 'completed');
-      case 'failed':
-        return billsData.bills.filter(bill => bill.status === 'failed');
+  const getPurposeLabel = (purpose: string) => {
+    switch (purpose) {
+      case 'course_purchase':
+        return 'Mua khóa học';
+      case 'subscription':
+        return 'Đăng ký gói';
+      case 'refund':
+        return 'Hoàn tiền';
       default:
-        return billsData.bills;
+        return purpose;
     }
   };
+
+  const getFilteredBills = () => {
+    if (!billsData) return [];
+
+    switch (selectedFilter) {
+      case 'pending':
+        return billsData.filter((bill) => bill.status === 'pending');
+      case 'completed':
+        return billsData.filter((bill) => bill.status === 'completed');
+      case 'failed':
+        return billsData.filter((bill) => bill.status === 'failed');
+      case 'refunded':
+        return billsData.filter((bill) => bill.status === 'refunded');
+      default:
+        return billsData;
+    }
+  };
+
+  // Tính toán stats từ billsData array
+  const totalAmount = billsData.reduce((sum, bill) => sum + bill.amount, 0);
+  const completedAmount = billsData.filter(bill => bill.status === 'completed').reduce((sum, bill) => sum + bill.amount, 0);
+  const pendingAmount = billsData.filter(bill => bill.status === 'pending').reduce((sum, bill) => sum + bill.amount, 0);
+  const failedAmount = billsData.filter(bill => bill.status === 'failed').reduce((sum, bill) => sum + bill.amount, 0);
+  const refundedAmount = billsData.filter(bill => bill.status === 'refunded').reduce((sum, bill) => sum + bill.amount, 0);
 
   if (loading) {
     return (
@@ -210,7 +234,7 @@ const Bills: React.FC = () => {
             <div className="dashboard__bills-stat-icon">💰</div>
             <div className="dashboard__bills-stat-content">
               <h4>Tổng giao dịch</h4>
-              <span>{formatPrice(billsData.totalAmount)}</span>
+              <span>{formatPrice(totalAmount)}</span>
             </div>
           </div>
 
@@ -218,7 +242,7 @@ const Bills: React.FC = () => {
             <div className="dashboard__bills-stat-icon">✅</div>
             <div className="dashboard__bills-stat-content">
               <h4>Đã hoàn thành</h4>
-              <span>{formatPrice(billsData.completedAmount)}</span>
+              <span>{formatPrice(completedAmount)}</span>
             </div>
           </div>
 
@@ -226,7 +250,7 @@ const Bills: React.FC = () => {
             <div className="dashboard__bills-stat-icon">⏳</div>
             <div className="dashboard__bills-stat-content">
               <h4>Đang xử lý</h4>
-              <span>{formatPrice(billsData.pendingAmount)}</span>
+              <span>{formatPrice(pendingAmount)}</span>
             </div>
           </div>
 
@@ -234,7 +258,15 @@ const Bills: React.FC = () => {
             <div className="dashboard__bills-stat-icon">❌</div>
             <div className="dashboard__bills-stat-content">
               <h4>Thất bại</h4>
-              <span>{formatPrice(billsData.failedAmount)}</span>
+              <span>{formatPrice(failedAmount)}</span>
+            </div>
+          </div>
+
+          <div className="dashboard__bills-stat">
+            <div className="dashboard__bills-stat-icon">🔄</div>
+            <div className="dashboard__bills-stat-content">
+              <h4>Đã hoàn tiền</h4>
+              <span>{formatPrice(refundedAmount)}</span>
             </div>
           </div>
         </div>
@@ -245,25 +277,31 @@ const Bills: React.FC = () => {
             className={`dashboard__tab ${selectedFilter === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('all')}
           >
-            Tất cả ({billsData.bills.length})
+            Tất cả ({billsData.length})
           </button>
           <button
             className={`dashboard__tab ${selectedFilter === 'completed' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('completed')}
           >
-            Hoàn thành ({billsData.bills.filter(bill => bill.status === 'completed').length})
+            Hoàn thành ({billsData.filter((bill) => bill.status === 'completed').length})
           </button>
           <button
             className={`dashboard__tab ${selectedFilter === 'pending' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('pending')}
           >
-            Đang xử lý ({billsData.bills.filter(bill => bill.status === 'pending').length})
+            Đang xử lý ({billsData.filter((bill) => bill.status === 'pending').length})
           </button>
           <button
             className={`dashboard__tab ${selectedFilter === 'failed' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('failed')}
           >
-            Thất bại ({billsData.bills.filter(bill => bill.status === 'failed').length})
+            Thất bại ({billsData.filter((bill) => bill.status === 'failed').length})
+          </button>
+          <button
+            className={`dashboard__tab ${selectedFilter === 'refunded' ? 'active' : ''}`}
+            onClick={() => setSelectedFilter('refunded')}
+          >
+            Đã hoàn tiền ({billsData.filter((bill) => bill.status === 'refunded').length})
           </button>
         </div>
 
@@ -287,7 +325,7 @@ const Bills: React.FC = () => {
                   <div className="dashboard__bill-header">
                     <div className="dashboard__bill-info">
                       <h4>Giao dịch #{bill.transactionId}</h4>
-                      <p>Mục đích: {bill.purpose === 'course_purchase' ? 'Mua khóa học' : bill.purpose}</p>
+                      <p>Mục đích: {getPurposeLabel(bill.purpose)}</p>
                       <span className="dashboard__bill-date">{formatDate(bill.createdAt)}</span>
                     </div>
                     <div className="dashboard__bill-amount">
@@ -297,7 +335,7 @@ const Bills: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="dashboard__bill-details">
                     <div className="dashboard__bill-method">
                       <strong>Phương thức:</strong> {getPaymentMethodLabel(bill.paymentMethod)}
@@ -307,8 +345,13 @@ const Bills: React.FC = () => {
                         <strong>Thanh toán:</strong> {formatDate(bill.paidAt)}
                       </div>
                     )}
+                    {/* {bill.refundedAt && (
+                      <div className="dashboard__bill-refunded">
+                        <strong>Hoàn tiền:</strong> {formatDate(bill.refundedAt)}
+                      </div>
+                    )} */}
                   </div>
-                  
+
                   <div className="dashboard__bill-actions">
                     <button className="dashboard__btn dashboard__btn--outline">
                       <span>👁️</span>
@@ -324,6 +367,12 @@ const Bills: React.FC = () => {
                       <button className="dashboard__btn dashboard__btn--secondary">
                         <span>🔄</span>
                         Thử lại
+                      </button>
+                    )}
+                    {bill.status === 'completed' && (
+                      <button className="dashboard__btn dashboard__btn--outline">
+                        <span>📄</span>
+                        Tải hóa đơn
                       </button>
                     )}
                   </div>

@@ -55,11 +55,17 @@ export interface Refund {
 
 export interface Bill {
   _id: string;
+  studentId: string;
   courseId: string;
   amount: number;
-  status: 'paid' | 'pending' | 'overdue';
-  dueDate: string;
-  paidAt?: string;
+  currency: string;
+  paymentMethod: string;
+  status: string;
+  transactionId: string;
+  purpose: string;
+  paidAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DashboardStats {
