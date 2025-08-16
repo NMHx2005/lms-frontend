@@ -8,15 +8,15 @@ interface CourseStatsProps {
 
 const CourseStats: React.FC<CourseStatsProps> = ({ courses }) => {
   const totalCourses = courses.length;
-  const publishedCourses = courses.filter(course => course.isPublished).length;
-  const approvedCourses = courses.filter(course => course.isApproved).length;
-  const draftCourses = courses.filter(course => !course.isPublished).length;
+  // const publishedCourses = courses.filter(course => course.isPublished).length;
+  // const approvedCourses = courses.filter(course => course.isApproved).length;
+  // const draftCourses = courses.filter(course => !course.isPublished).length;
   
   const totalUpvotes = courses.reduce((sum, course) => sum + course.upvotes, 0);
-  const totalReports = courses.reduce((sum, course) => sum + course.reports, 0);
+  // const totalReports = courses.reduce((sum, course) => sum + course.reports, 0);
   
   const totalValue = courses.reduce((sum, course) => sum + course.price, 0);
-  const averagePrice = totalCourses > 0 ? Math.round(totalValue / totalCourses) : 0;
+  // const averagePrice = totalCourses > 0 ? Math.round(totalValue / totalCourses) : 0;
 
   // Xác định lĩnh vực chính
   const getMainDomain = () => {

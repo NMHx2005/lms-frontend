@@ -35,6 +35,7 @@ const CourseEditor: React.FC = () => {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
   
+  console.log(course, thumbnailFile);
   // Quản lý hiển thị các section
   const [sections, setSections] = useState<SectionConfig[]>([
     { id: 'tags', title: 'Tags', icon: '🏷️', visible: true, type: 'tags', data: [''] },
@@ -191,13 +192,13 @@ const CourseEditor: React.FC = () => {
   };
 
   // Quản lý hiển thị section
-  const toggleSection = (sectionId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, visible: !section.visible }
-        : section
-    ));
-  };
+  // const toggleSection = (sectionId: string) => {
+  //   setSections(prev => prev.map(section => 
+  //     section.id === sectionId 
+  //       ? { ...section, visible: !section.visible }
+  //       : section
+  //   ));
+  // };
 
   const addSection = (sectionId: string) => {
     setSections(prev => prev.map(section => 
