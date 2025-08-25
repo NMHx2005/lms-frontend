@@ -1,0 +1,11 @@
+export { uploadService } from './uploadService';
+export { paymentsService } from './paymentsService';
+export { cartService } from './cartService';
+export { reportsService } from './reportsService';
+export { metricsService } from './metricsService';
+export { verifyService } from './verifyService';
+export { commentsService } from './commentsService';
+export { coursesService } from './coursesService';
+export { adminService } from './adminService';
+export { clientService } from './clientService';
+export { certificatesService } from './certificatesService';
