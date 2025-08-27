@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authService } from '@/services/authService';
+import { toast } from 'react-hot-toast';
 
 import { User } from '../types/index';
 
@@ -14,9 +15,9 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('token'),
+  token: localStorage.getItem('accessToken'),
   refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: false,
+  isAuthenticated: Boolean(localStorage.getItem('accessToken')),
   loading: false,
   error: null,
 };
@@ -31,8 +32,8 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: { email: string; password: string; name: string }) => {
-    const response = await authService.register(userData);
+  async (userData: { email: string; password: string; name: string; phone?: string }) => {
+    const response = await authService.register(userData as any);
     return response;
   }
 );
@@ -41,6 +42,18 @@ export const getProfile = createAsyncThunk('auth/getProfile', async () => {
   const response = await authService.getProfile();
   return response;
 });
+
+function extractAuthPayload(payload: any) {
+  const data = payload?.data ?? payload;
+  const userRaw = data?.user ?? data;
+  const user = {
+    ...userRaw,
+    _id: userRaw?.id || userRaw?._id,
+  };
+  const accessToken = data?.accessToken;
+  const refreshToken = data?.refreshToken;
+  return { user, accessToken, refreshToken };
+}
 
 const authSlice = createSlice({
   name: 'auth',
@@ -51,8 +64,9 @@ const authSlice = createSlice({
       state.token = null;
       state.refreshToken = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      toast.success('Đăng xuất thành công');
     },
     clearError: (state) => {
       state.error = null;
@@ -67,17 +81,14 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        // Map the response to match User interface
-        const userData = {
-          ...action.payload.user,
-          _id: action.payload.user.id || action.payload.user._id
-        };
-        state.user = userData;
-        state.token = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
-        state.isAuthenticated = true;
-        localStorage.setItem('token', action.payload.accessToken);
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
+        const { user, accessToken, refreshToken } = extractAuthPayload(action.payload);
+        state.user = user as any;
+        state.token = accessToken || null;
+        state.refreshToken = refreshToken || null;
+        state.isAuthenticated = Boolean(accessToken);
+        if (accessToken) localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        toast.success('Đăng nhập thành công');
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -90,17 +101,14 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        // Map the response to match User interface
-        const userData = {
-          ...action.payload.user,
-          _id: action.payload.user.id || action.payload.user._id
-        };
-        state.user = userData;
-        state.token = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
-        state.isAuthenticated = true;
-        localStorage.setItem('token', action.payload.accessToken);
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
+        const { user, accessToken, refreshToken } = extractAuthPayload(action.payload);
+        state.user = user as any;
+        state.token = accessToken || null;
+        state.refreshToken = refreshToken || null;
+        state.isAuthenticated = Boolean(accessToken);
+        if (accessToken) localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        toast.success('Đăng ký thành công');
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -108,11 +116,12 @@ const authSlice = createSlice({
       })
       // Get Profile
       .addCase(getProfile.fulfilled, (state, action) => {
-        // Map the response to match User interface
+        // Backend returns { success, data } for /auth/me
+        const data = (action.payload as any)?.data ?? action.payload;
         const userData = {
-          ...action.payload,
-          _id: action.payload.id || action.payload._id
-        };
+          ...data,
+          _id: data?.id || data?._id,
+        } as any;
         state.user = userData;
         state.isAuthenticated = true;
       });

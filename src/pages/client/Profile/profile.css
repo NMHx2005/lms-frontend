@@ -1,0 +1,37 @@
+.profile-container { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+.profile-title { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+
+.profile-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+.profile-summary { display: grid; grid-template-columns: 120px 1fr; gap: 16px; }
+.profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
+.profile-name { font-size: 18px; font-weight: 600; }
+.profile-email { color: #6b7280; margin-top: 4px; }
+.profile-roles { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.profile-role-chip { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #f3f4f6; color: #374151; text-transform: capitalize; }
+
+.profile-section-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.col-span-2 { grid-column: span 2; }
+
+/* Read-only info rows */
+.info-grid { display: grid; gap: 10px; }
+.info-row { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: #6b7280; font-size: 13px; }
+.info-value { color: #111827; font-weight: 500; }
+
+.form-label { display: block; margin-bottom: 6px; font-size: 13px; color: #374151; font-weight: 600; }
+.form-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; background: #fff; }
+.form-input:focus { border-color: #d35400; box-shadow: 0 0 0 3px rgba(211,84,0,.1); }
+
+.profile-actions { margin-top: 16px; display: flex; gap: 12px; }
+
+@media (max-width: 768px) {
+  .profile-summary { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .col-span-2 { grid-column: span 1; }
+}
+
+

@@ -1,9 +1,16 @@
 import { Link, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./style.css";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "@/store/authSlice";
+import type { RootState } from "@/store";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth as any);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -12,6 +19,64 @@ const Header = () => {
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    closeMobileMenu();
+    setIsUserMenuOpen(false);
+  };
+
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const UserMenu = () => (
+    <div className="header__user" ref={userMenuRef}>
+      <button
+        className="header__user-trigger"
+        aria-haspopup="menu"
+        aria-expanded={isUserMenuOpen}
+        onClick={() => setIsUserMenuOpen((v) => !v)}
+        title={user?.name || user?.email}
+      >
+        <img
+          src={user?.avatar || "/images/default-avatar.png"}
+          alt={user?.name || user?.email || "User"}
+          className="header__user-avatar"
+          width={32}
+          height={32}
+        />
+        <svg className="header__user-caret" width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+          <path d="M7 10l5 5 5-5" fill="none" stroke="#333" strokeWidth="1.7"/>
+        </svg>
+      </button>
+      {isUserMenuOpen && (
+        <div className="header__user-dropdown" role="menu">
+          <div className="header__user-meta">
+            <div className="header__user-meta-name">{user?.name || user?.email}</div>
+            {user?.roles?.length ? (
+              <div className="header__user-meta-role">{user?.roles?.[0]}</div>
+            ) : null}
+          </div>
+          <Link to="/dashboard" className="header__user-item" role="menuitem" onClick={() => setIsUserMenuOpen(false)}>
+            Bảng điều khiển
+          </Link>
+          <Link to="/profile" className="header__user-item" role="menuitem" onClick={() => setIsUserMenuOpen(false)}>
+            Thông tin cá nhân
+          </Link>
+          <button className="header__user-item btn-link" role="menuitem" onClick={handleLogout}>
+            Đăng xuất
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <header className="header" role="banner">
@@ -72,14 +137,20 @@ const Header = () => {
             </NavLink>
           </nav>
 
-          {/* Desktop Buttons */}
+          {/* Desktop Buttons or User Menu */}
           <div className="header__buttons">
-            <Link to="/login" className="header__btn-login btn btn--outline-orange">
-              Đăng nhập
-            </Link>
-            <Link to="/register" className="header__btn-register btn btn--orange">
-              Đăng ký
-            </Link>
+            {isAuthenticated ? (
+              <UserMenu />
+            ) : (
+              <>
+                <Link to="/login" className="header__btn-login btn btn--outline-orange">
+                  Đăng nhập
+                </Link>
+                <Link to="/register" className="header__btn-register btn btn--orange">
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Language Switcher */}
@@ -146,14 +217,27 @@ const Header = () => {
             </NavLink>
           </nav>
 
-          {/* Mobile Buttons */}
+          {/* Mobile Buttons or User */}
           <div className="header__mobile-buttons">
-            <Link to="/login" className="header__mobile-btn-login btn btn--outline-orange">
-              Đăng nhập
-            </Link>
-            <Link to="/register" className="header__mobile-btn-register btn btn--orange">
-              Đăng ký
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard" className="header__mobile-btn-register btn btn--orange" onClick={closeMobileMenu}>
+                  Bảng điều khiển
+                </Link>
+                <button className="header__mobile-btn-login btn btn--outline-orange" onClick={handleLogout}>
+                  Đăng xuất
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="header__mobile-btn-login btn btn--outline-orange" onClick={closeMobileMenu}>
+                  Đăng nhập
+                </Link>
+                <Link to="/register" className="header__mobile-btn-register btn btn--orange" onClick={closeMobileMenu}>
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Register.css';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/store';
+import { register as registerThunk } from '@/store/authSlice';
+import { toast } from 'react-hot-toast';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +17,8 @@ const Register: React.FC = () => {
     agreeToTerms: false
   });
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -26,14 +32,30 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    if (!formData.agreeToTerms) {
+      toast.error('Vui lòng đồng ý với điều khoản');
+      return;
+    }
     setLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await dispatch(
+        registerThunk({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+        })
+      ).unwrap();
+      navigate('/');
+    } catch (err) {
+      // Lỗi đã được interceptor toast; giữ UI responsive
+    } finally {
       setLoading(false);
-      // Handle registration logic here
-      // Tất cả tài khoản đăng ký đều có role = 'student'
-    }, 2000);
+    }
   };
 
   return (
