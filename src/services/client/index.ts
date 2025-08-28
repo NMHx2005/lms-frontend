@@ -1,0 +1,9 @@
+export { clientDashboardService } from './dashboard.service';
+export { clientAuthService } from './auth.service';
+export { clientTeacherPackagesService } from './teacher-packages.service';
+export { clientCoursesService } from './courses.service';
+export { clientAssignmentsService } from './assignments.service';
+export { clientPaymentsService } from './payments.service';
+export { clientCertificatesService } from './certificates.service';
+export { clientAnalyticsService } from './analytics.service';
+export { clientTeacherDashboardService } from './teacher-dashboard.service';

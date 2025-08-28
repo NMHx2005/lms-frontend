@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './ForgotPassword.css';
+import api from '@/services/api';
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,13 +11,14 @@ const ForgotPassword: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await api.post('/auth/forgot-password', { email });
       setSubmitted(true);
-      // Handle password reset logic here
-    }, 2000);
+    } catch (err) {
+      // toast được interceptor hiển thị
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {

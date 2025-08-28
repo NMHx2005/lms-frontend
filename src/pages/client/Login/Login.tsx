@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/store';
+import { login as loginThunk, getProfile } from '@/store/authSlice';
+import { toast } from 'react-hot-toast';
+import { api } from '@/services';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +14,34 @@ const Login: React.FC = () => {
     rememberMe: false
   });
   const [loading, setLoading] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
+  // Parse token from OAuth redirect
+  useEffect(() => {
+    const search = window.location.search;
+    if (!search) return;
+    const params = new URLSearchParams(search);
+    const token = params.get('token');
+    const refreshToken = params.get('refresh_token');
+    const oauthError = params.get('error');
+
+    if (oauthError) {
+      const msg = params.get('message') || 'Google OAuth thất bại';
+      toast.error(msg);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (token) {
+      localStorage.setItem('accessToken', token);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      dispatch<any>(getProfile());
+      navigate('/');
+    }
+  }, [dispatch, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -20,13 +53,66 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    if (!formData.email || !formData.password) {
+      toast.error('Vui lòng nhập email và mật khẩu');
+      return;
+    }
+
+    const payload = {
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+    };
+
+    try {
+      setLoading(true);
+      console.log('[LOGIN] request payload:', { email: payload.email, passwordLength: payload.password.length });
+
+      const res: any = await dispatch<any>(loginThunk(payload)).unwrap();
+      console.log('[LOGIN] success response:', res);
+
+      await dispatch<any>(getProfile());
+      navigate('/');
+    } catch (err: any) {
+      const status = err?.response?.status || err?.status;
+      const data = err?.response?.data || err?.data;
+      console.error('[LOGIN] error:', { status, data, message: err?.message });
+
+      const msg = data?.error?.message || data?.message || 'Đăng nhập thất bại';
+      toast.error(msg);
+    } finally {
       setLoading(false);
-      // Handle login logic here
-    }, 2000);
+    }
+  };
+
+  // Only logic: start Google OAuth
+  const handleGoogleLogin = async () => {
+    if (googleBusy) return;
+    try {
+      setGoogleBusy(true);
+      // Optional: check config is enabled
+      try {
+        const cfg = await api.get('/auth/google/config');
+        const enabled = !!cfg?.data?.data?.googleOAuth?.enabled;
+        if (!enabled) {
+          toast.error('Google OAuth chưa được cấu hình');
+          return;
+        }
+      } catch (_) {
+        // If config check fails, still attempt start; backend will validate again
+      }
+      const resp = await api.get('/auth/google/start', { params: { returnUrl: window.location.origin } });
+      const authUrl = resp?.data?.data?.authUrl;
+      if (!authUrl) {
+        toast.error('Không lấy được URL đăng nhập Google');
+        return;
+      }
+      window.location.href = authUrl;
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Không thể bắt đầu đăng nhập Google';
+      toast.error(String(msg));
+    } finally {
+      setGoogleBusy(false);
+    }
   };
 
   return (
@@ -121,7 +207,7 @@ const Login: React.FC = () => {
             </div>
 
             <div className="social-login">
-              <button type="button" className="social-btn social-btn--google">
+              <button type="button" className="social-btn social-btn--google" onClick={handleGoogleLogin}>
                 <span className="social-icon">🔍</span>
                 Đăng nhập với Google
               </button>

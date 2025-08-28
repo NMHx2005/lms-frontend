@@ -77,40 +77,50 @@ api.interceptors.response.use(
 	async (error) => {
 		const originalRequest: any = error.config || {};
 
+		// Do NOT attempt refresh on auth endpoints themselves
+		const urlPath = (originalRequest?.url || '').toString();
+		const isAuthEndpoint = [
+			'/auth/login',
+			'/auth/register',
+			'/auth/refresh',
+			'/auth/validate-token',
+		].some((p) => urlPath.includes(p));
+		if (isAuthEndpoint) {
+			return Promise.reject(error);
+		}
+
 		if (error.response?.status === 401 && !originalRequest._retry) {
 			originalRequest._retry = true;
 			try {
 				if (API_WITH_CREDENTIALS) {
-					// Cookie-based session/refresh
 					await axios.post(joinUrl(baseURL, API_REFRESH_PATH), {}, { withCredentials: true });
 					return api(originalRequest);
 				}
 
-				// Bearer token flow with refresh token in storage
-				const refreshToken = localStorage.getItem('refreshToken');
-				const resp = await axios.post(joinUrl(baseURL, API_REFRESH_PATH), { refreshToken });
-				const { accessToken } = resp.data || {};
-				if (accessToken) {
-					localStorage.setItem('accessToken', accessToken);
-					api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+				const storedRefreshToken = localStorage.getItem('refreshToken');
+				// No refresh token available → do not attempt refresh
+				if (!storedRefreshToken) {
+					return Promise.reject(error);
+				}
+
+				const resp = await axios.post(joinUrl(baseURL, API_REFRESH_PATH), { refreshToken: storedRefreshToken });
+				const refreshedAccessToken = resp?.data?.data?.accessToken ?? resp?.data?.accessToken;
+				if (refreshedAccessToken) {
+					localStorage.setItem('accessToken', refreshedAccessToken);
+					api.defaults.headers.common['Authorization'] = `Bearer ${refreshedAccessToken}`;
+					originalRequest.headers = originalRequest.headers || {};
+					originalRequest.headers['Authorization'] = `Bearer ${refreshedAccessToken}`;
 				}
 				return api(originalRequest);
 			} catch (refreshError) {
 				localStorage.removeItem('accessToken');
 				localStorage.removeItem('refreshToken');
-				window.location.href = '/login';
 				return Promise.reject(refreshError);
 			}
 		}
 
-		// Non-401 errors: show toast with mapped message
-		try {
-			const message = extractErrorMessage(error);
-			if (message) toast.error(message);
-		} catch (_) {
-			// best-effort; swallow any UI error from toast
-		}
-
+		const message = extractErrorMessage(error);
+		if (message) toast.error(message);
 		return Promise.reject(error);
 	}
 );

@@ -474,3 +474,20 @@ export enum SubscriptionPlan {
   Pro = 'pro',
   Advanced = 'advanced',
 }
+
+// Profile Update Interface
+export interface ProfileUpdateData {
+  name?: string;
+  email?: string;
+  avatar?: string;
+  phone?: string;
+  address?: string;
+  bio?: string;
+}
+
+// Password Change Interface
+export interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}

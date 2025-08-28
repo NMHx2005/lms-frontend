@@ -1,5 +1,6 @@
+import { sharedAuthService } from '@/services/shared/auth.service';
+import { clientAuthService } from '@/services/client/auth.service';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { authService } from '@/services/authService';
 import { toast } from 'react-hot-toast';
 
 import { User } from '../types/index';
@@ -25,7 +26,7 @@ const initialState: AuthState = {
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string }) => {
-    const response = await authService.login(credentials);
+    const response = await sharedAuthService.login(credentials);
     return response;
   }
 );
@@ -33,15 +34,31 @@ export const login = createAsyncThunk(
 export const register = createAsyncThunk(
   'auth/register',
   async (userData: { email: string; password: string; name: string; phone?: string }) => {
-    const response = await authService.register(userData as any);
+    const response = await sharedAuthService.register(userData as any);
     return response;
   }
 );
 
-export const getProfile = createAsyncThunk('auth/getProfile', async () => {
-  const response = await authService.getProfile();
+export const getProfile = createAsyncThunk('auth/getProfile', async (_, { getState }) => {
+  const state = getState() as any;
+  const accessToken = state.auth.token || localStorage.getItem('accessToken');
+  
+  // Chỉ gọi API khi có accessToken
+  if (!accessToken) {
+    return null;
+  }
+  
+  const response = await sharedAuthService.getProfile();
   return response;
 });
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (userData: { email?: string; name?: string; avatar?: string; phone?: string; address?: string; bio?: string }) => {
+    const response = await clientAuthService.updateProfile(userData as any);
+    return response;
+  }
+);
 
 function extractAuthPayload(payload: any) {
   const data = payload?.data ?? payload;
@@ -116,6 +133,11 @@ const authSlice = createSlice({
       })
       // Get Profile
       .addCase(getProfile.fulfilled, (state, action) => {
+        // Nếu không có accessToken, action.payload sẽ là null
+        if (!action.payload) {
+          return; // Không làm gì cả, giữ nguyên state
+        }
+        
         // Backend returns { success, data } for /auth/me
         const data = (action.payload as any)?.data ?? action.payload;
         const userData = {
@@ -124,6 +146,27 @@ const authSlice = createSlice({
         } as any;
         state.user = userData;
         state.isAuthenticated = true;
+      })
+      // Update Profile
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        // Backend returns { success, data: { user } } for /auth/profile
+        const data = (action.payload as any)?.data ?? action.payload;
+        const userData = {
+          ...data,
+          _id: data?.id || data?._id,
+        } as any;
+        state.user = userData;
+        toast.success('Cập nhật hồ sơ thành công');
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Update profile failed';
+        toast.error('Cập nhật hồ sơ thất bại');
       });
   },
 });

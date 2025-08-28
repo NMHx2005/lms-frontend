@@ -101,6 +101,20 @@ function AppContent() {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
+    // Parse tokens returned from OAuth redirect
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const refreshToken = params.get('refresh_token');
+
+    if (token) localStorage.setItem('accessToken', token);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+    if (token || refreshToken) {
+      // Clean query params from URL without reloading
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
     const hasBearer = Boolean(localStorage.getItem('accessToken'));
     if (hasBearer) dispatch(getProfile());
   }, [dispatch]);
