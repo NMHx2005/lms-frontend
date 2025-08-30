@@ -1,0 +1,27 @@
+/* Top bar */
+.top-bar {
+  background-color: #d35400;
+  color: #fff;
+  font-size: 0.875rem;
+  padding: 16px 0;
+  text-align: center;
+}
+.top-bar__link {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  margin-left: 12px;
+}
+.btn-register {
+  background-color: #FFF1EB;
+  color: #932F08;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin-left: 40px;
+}
+.btn-register:hover {
+  background-color: #932F08;
+  color: #FFF1EB;
+}

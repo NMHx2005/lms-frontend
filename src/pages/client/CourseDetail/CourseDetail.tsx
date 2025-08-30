@@ -7,6 +7,7 @@ import CourseContent from "@/components/Client/CourseDetail/CourseContent/Course
 import CourseCTA from "@/components/Client/CourseDetail/CourseCTA/CourseCTA";
 import CourseFAQ from "@/components/Client/CourseDetail/CourseFAQ/CourseFAQ";
 import TopBar from '@/components/Client/Home/TopBar/TopBar';
+import { clientCoursesService } from '@/services/client/courses.service';
 import "./CourseDetail.css";
 
 interface Course {
@@ -50,7 +51,7 @@ const CourseDetail = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock data - trong thực tế sẽ lấy từ API
+  // Mock data (fallback)
   useEffect(() => {
     const mockCourse: Course = {
       id: id || '1',
@@ -162,11 +163,58 @@ const CourseDetail = () => {
       ]
     };
 
-    // Simulate API call delay
-    setTimeout(() => {
-      setCourse(mockCourse);
-      setLoading(false);
-    }, 1000);
+    const fetchAndMerge = async () => {
+      try {
+        setLoading(true);
+        // Try fetch from backend
+        const res = id ? await clientCoursesService.getCourseById(id) : null;
+        const apiCourse = res?.data || res || null;
+
+        // Map backend to our Course shape
+        const mapped: Partial<Course> = apiCourse
+          ? {
+            id: apiCourse._id || mockCourse.id,
+            title: apiCourse.title,
+            description: apiCourse.description,
+            category: apiCourse.domain,
+            imgSrc: apiCourse.thumbnail,
+            imgAlt: apiCourse.title,
+            price: apiCourse.price,
+            originalPrice: apiCourse.originalPrice,
+            rating: apiCourse.averageRating,
+            totalRatings: apiCourse.totalRatings || apiCourse.reviewsCount || 0,
+            instructor: {
+              name: apiCourse.instructorName || apiCourse.instructorId?.name || mockCourse.instructor.name,
+              avatar: apiCourse.instructorId?.avatar || mockCourse.instructor.avatar,
+              title: mockCourse.instructor.title,
+              company: mockCourse.instructor.company
+            },
+            duration: typeof apiCourse.totalDuration === 'number' ? `${apiCourse.totalDuration} giờ` : (apiCourse.totalDuration || mockCourse.duration),
+            level: apiCourse.level,
+            students: apiCourse.totalStudents,
+            lastUpdated: apiCourse.updatedAt ? new Date(apiCourse.updatedAt).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }) : undefined,
+            language: apiCourse.language,
+            // For now, use mock sections as curriculum unless backend provides
+          }
+          : {};
+
+        // Merge with mock defaults
+        const merged: Course = {
+          ...mockCourse,
+          ...mapped,
+          instructor: { ...mockCourse.instructor, ...(mapped.instructor || {}) },
+        } as Course;
+
+        setCourse(merged);
+      } catch (e) {
+        // Fallback to mock on error
+        setCourse(mockCourse);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndMerge();
   }, [id]);
 
   const faqs = [
@@ -229,14 +277,14 @@ const CourseDetail = () => {
     <>
       <TopBar />
       <Header />
-      
+
       <main className="course-detail">
         <CourseHero course={course} />
         <CourseContent course={course} />
         <CourseCTA course={course} />
         <CourseFAQ faqs={faqs} />
       </main>
-      
+
       <Footer />
     </>
   );

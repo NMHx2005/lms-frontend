@@ -197,6 +197,73 @@
   box-shadow: 0 4px 12px rgba(211, 84, 0, 0.3);
 }
 
+/* Button States */
+.course-cta__enroll-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.course-cta__enroll-btn--loading {
+  background-color: #6b7280;
+  color: white;
+  cursor: not-allowed;
+}
+
+.course-cta__enroll-btn--success {
+  background-color: #10b981;
+  color: white;
+  cursor: not-allowed;
+}
+
+.course-cta__enroll-btn--error {
+  background-color: #ef4444;
+  color: white;
+}
+
+.course-cta__enroll-btn--enrolled {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.course-cta__enroll-btn--enrolled:hover {
+  background-color: #2563eb;
+}
+
+/* Success and Error Messages */
+.course-cta__success-message,
+.course-cta__error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.course-cta__success-message {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.course-cta__success-message svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.course-cta__error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.course-cta__error-message svg {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
 .course-cta__payment-info {
   text-align: center;
   padding-top: 20px;
@@ -215,6 +282,291 @@
   gap: 8px;
   font-size: 14px;
   color: #374151;
+}
+
+/* Payment Modal */
+.course-cta__payment-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.course-cta__payment-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.course-cta__payment-modal-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.course-cta__payment-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.course-cta__payment-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.course-cta__payment-modal-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.course-cta__payment-modal-body {
+  padding: 24px;
+}
+
+.course-cta__payment-methods {
+  margin-bottom: 24px;
+}
+
+.course-cta__payment-method {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.course-cta__payment-method:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.course-cta__payment-method input[type="radio"] {
+  display: none;
+}
+
+.course-cta__payment-method input[type="radio"]:checked + label {
+  color: #3b82f6;
+}
+
+.course-cta__payment-method input[type="radio"]:checked + label .course-cta__payment-method-icon {
+  transform: scale(1.1);
+}
+
+.course-cta__payment-method:has(input[type="radio"]:checked) {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.course-cta__payment-method label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.course-cta__payment-method-icon {
+  font-size: 24px;
+  transition: transform 0.2s;
+}
+
+.course-cta__payment-method-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: #111827;
+}
+
+.course-cta__payment-method-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.course-cta__payment-summary {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.course-cta__payment-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.course-cta__payment-summary-item:last-child {
+  margin-bottom: 0;
+}
+
+.course-cta__payment-summary-total {
+  font-weight: 600;
+  font-size: 16px;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.course-cta__payment-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.course-cta__payment-cancel-btn {
+  flex: 1;
+  padding: 12px 24px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.course-cta__payment-cancel-btn:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.course-cta__payment-confirm-btn {
+  flex: 2;
+  padding: 12px 24px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.course-cta__payment-confirm-btn:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.course-cta__payment-confirm-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.course-cta__payment-confirm-btn--vnpay {
+  background-color: #1e40af;
+}
+
+.course-cta__payment-confirm-btn--vnpay:hover:not(:disabled) {
+  background-color: #1e3a8a;
+}
+
+.course-cta__payment-confirm-btn--contact {
+  background-color: #059669;
+}
+
+.course-cta__payment-confirm-btn--contact:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+/* Success Notification */
+.course-cta__success-notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin: 24px 0;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  animation: slideInUp 0.5s ease-out;
+}
+
+.course-cta__success-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.course-cta__success-content {
+  flex: 1;
+}
+
+.course-cta__success-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: white;
+}
+
+.course-cta__success-message {
+  font-size: 14px;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* Error Message */
+.course-cta__error-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin: 24px 0;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+  animation: slideInUp 0.5s ease-out;
+}
+
+.course-cta__error-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsive */
@@ -276,6 +628,26 @@
     padding: 14px 20px;
     font-size: 15px;
   }
+
+  .course-cta__success-notification,
+  .course-cta__error-message {
+    margin: 16px 0;
+    padding: 16px;
+  }
+  
+  .course-cta__success-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  
+  .course-cta__success-title {
+    font-size: 16px;
+  }
+  
+  .course-cta__success-message {
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -324,5 +696,26 @@
   .course-cta__enroll-btn {
     padding: 12px 16px;
     font-size: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .course-cta__payment-modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .course-cta__payment-modal-header,
+  .course-cta__payment-modal-body {
+    padding: 20px;
+  }
+  
+  .course-cta__payment-actions {
+    flex-direction: column;
+  }
+  
+  .course-cta__payment-cancel-btn,
+  .course-cta__payment-confirm-btn {
+    flex: none;
   }
 }

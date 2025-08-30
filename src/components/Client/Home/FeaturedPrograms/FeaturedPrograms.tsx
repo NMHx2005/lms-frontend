@@ -1,89 +1,150 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Card from "../Card/Card";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/autoplay";
+import { clientCoursesService } from "../../../../services/client/courses.service";
+
+interface Course {
+    _id: string;
+    title: string;
+    shortDescription?: string;
+    description?: string;
+    thumbnail?: string;
+    domain?: string;
+    level?: string;
+    averageRating?: number;
+    totalStudents?: number;
+    totalLessons?: number;
+    price?: number;
+    originalPrice?: number;
+    discountPercentage?: number;
+    instructorId?: {
+        name: string;
+        email: string;
+        avatar?: string;
+    };
+    certificate?: boolean;
+}
 
 const FeaturedPrograms = () => {
-    const programs = [
-        {
-            id: '1',
-            category: "Kỹ năng",
-            title: "Đào tạo lập trình viên quốc tế",
-            desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/511cdf80-9e0b-4b53-1a80-941d6c952f79.jpg",
-            imgAlt: "Two people working on computers in office environment",
-            btnText: "Đăng ký",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '2',
-            category: "Career & Academic",
-            title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
-            desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/290a80f1-a263-4cd3-dcf8-e6ec6b6b50c9.jpg",
-            imgAlt: "Woman talking to man in office meeting",
-            btnText: "Đăng ký",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '3',
-            category: "Career & Academic",
-            title: "Những kiến thức cơ bản để hiểu về AI",
-            desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/f9dbcea8-f19d-4f64-2aac-72bed0506370.jpg",
-            imgAlt: "Group of people in meeting room discussing",
-            btnText: "Đăng ký",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '4',
-            category: "Kỹ năng",
-            title: "Đào tạo lập trình viên quốc tế",
-            desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/511cdf80-9e0b-4b53-1a80-941d6c952f79.jpg",
-            imgAlt: "Two people working on computers in office environment",
-            btnText: "Đăng ký",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '5',
-            category: "Career & Academic",
-            title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
-            desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/290a80f1-a263-4cd3-dcf8-e6ec6b6b50c9.jpg",
-            imgAlt: "Woman talking to man in office meeting",
-            btnText: "Đăng ký",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '6',
-            category: "Career & Academic",
-            title: "Những kiến thức cơ bản để hiểu về AI",
-            desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/f9dbcea8-f19d-4f64-2aac-72bed0506370.jpg",
-            imgAlt: "Group of people in meeting room discussing",
-            btnText: "Đăng ký",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-    ];
+    const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchFeaturedCourses = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch top-rated courses as featured courses
+                const response = await clientCoursesService.getCourses({
+                    limit: 8, // Get 8 featured courses
+                    sortBy: 'averageRating',
+                    sortOrder: 'desc'
+                });
+
+                if (response.success && response.data) {
+                    setFeaturedCourses(response.data.courses || response.data);
+                } else {
+                    setError('Không thể tải danh sách khóa học nổi bật');
+                }
+            } catch (err: any) {
+                console.error('Error fetching featured courses:', err);
+                setError('Có lỗi xảy ra khi tải khóa học nổi bật');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFeaturedCourses();
+    }, []);
+
+    // Loading state
+    if (loading) {
+        return (
+            <section className="section" aria-label="Featured programs">
+                <div className="section__header">
+                    <div>
+                        <h2 className="section__title">Khóa Học Nổi Bật</h2>
+                        <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
+                    </div>
+                    <Link to="/courses" className="section__btn">
+                        Xem thêm
+                    </Link>
+                </div>
+                <div className="featured-slider">
+                    <div className="loading-placeholder">
+                        <div className="loading-text">Đang tải khóa học nổi bật...</div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <section className="section" aria-label="Featured programs">
+                <div className="section__header">
+                    <div>
+                        <h2 className="section__title">Khóa Học Nổi Bật</h2>
+                        <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
+                    </div>
+                    <Link to="/courses" className="section__btn">
+                        Xem thêm
+                    </Link>
+                </div>
+                <div className="featured-slider">
+                    <div className="error-placeholder">
+                        <div className="error-text">{error}</div>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="retry-btn"
+                        >
+                            Thử lại
+                        </button>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    // Empty state
+    if (!featuredCourses || featuredCourses.length === 0) {
+        return (
+            <section className="section" aria-label="Featured programs">
+                <div className="section__header">
+                    <div>
+                        <h2 className="section__title">Khóa Học Nổi Bật</h2>
+                        <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
+                    </div>
+                    <Link to="/courses" className="section__btn">
+                        Xem thêm
+                    </Link>
+                </div>
+                <div className="featured-slider">
+                    <div className="empty-placeholder">
+                        <div className="empty-text">Chưa có khóa học nổi bật nào</div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
-        <section className="section" aria-label="Featured programs"> 
+        <section className="section" aria-label="Featured programs">
             <div className="section__header">
                 <div>
                     <h2 className="section__title">Khóa Học Nổi Bật</h2>
                     <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
                 </div>
-                <button type="button" className="section__btn">
+                <Link to="/courses" className="section__btn">
                     Xem thêm
-                </button>
+                </Link>
             </div>
             <div className="featured-slider">
                 <Swiper
@@ -104,9 +165,20 @@ const FeaturedPrograms = () => {
                         1536: { slidesPerView: 5, spaceBetween: 24 },
                     }}
                 >
-                    {programs.map((program, index) => (
-                        <SwiperSlide key={index}>
-                            <Card {...program} />
+                    {featuredCourses.map((course, index) => (
+                        <SwiperSlide key={course._id || index}>
+                            <Card
+                                id={course._id}
+                                category={course.domain || 'Khóa học'}
+                                title={course.title}
+                                desc={course.shortDescription || course.description || 'Không có mô tả'}
+                                imgSrc={course.thumbnail || '/images/default-course.jpg'}
+                                imgAlt={`Khóa học: ${course.title}`}
+                                btnText="Đăng ký"
+                                linkText="Chi tiết →"
+                                linkHref={`/courses/${course._id}`}
+                                fetchData={false} // Use static data since we already have course info
+                            />
                         </SwiperSlide>
                     ))}
                 </Swiper>

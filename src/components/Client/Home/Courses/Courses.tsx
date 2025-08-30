@@ -1,100 +1,145 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Card from "../Card/Card";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/autoplay";
+import { clientCoursesService } from "../../../../services/client/courses.service";
+
+interface Course {
+    _id: string;
+    title: string;
+    shortDescription?: string;
+    description?: string;
+    thumbnail?: string;
+    domain?: string;
+    level?: string;
+    averageRating?: number;
+    totalStudents?: number;
+    totalLessons?: number;
+    price?: number;
+    originalPrice?: number;
+    discountPercentage?: number;
+    instructorId?: {
+        name: string;
+        email: string;
+        avatar?: string;
+    };
+    certificate?: boolean;
+}
 
 const Courses = () => {
-    const courses = [
-        {
-            id: '1',
-            category: "Khoa học máy tính",
-            title: "Đào tạo lập trình viên quốc tế",
-            desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/2acdcf6b-7987-4e03-25b9-3a37878e436d.jpg",
-            imgAlt: "Person working on laptop in office",
-            btnText: "Offline",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '2',
-            category: "Khoa học máy tính",
-            title: "Đào tạo lập trình viên quốc tế",
-            desc: "Chương trình đào tạo lập trình viên chuyên nghiệp với giáo trình quốc tế.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/9e55681f-7af2-45da-31a6-d5f109a91ca6.jpg",
-            imgAlt: "Group of students in classroom",
-            btnText: "Offline",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '3',
-            category: "Data Science",
-            title: "Những kiến thức cơ bản để hiểu về AI",
-            desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/9bfd7db9-44e6-4720-9a72-3bf6d26f126d.jpg",
-            imgAlt: "Man working with data on computer",
-            btnText: "Xem thử",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '4',
-            category: "Business & Accounting",
-            title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
-            desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/0820ec3b-33e6-468b-cc54-d7317c4a00fd.jpg",
-            imgAlt: "People in meeting room discussing",
-            btnText: "Offline",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '5',
-            category: "Khoa học máy tính",
-            title: "Đào tạo lập trình viên quốc tế",
-            desc: "Học để trở thành chuyên gia công nghệ với các khóa học quốc tế chuẩn quốc tế.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/2acdcf6b-7987-4e03-25b9-3a37878e436d.jpg",
-            imgAlt: "Person working on laptop in office",
-            btnText: "Offline",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '6',
-            category: "Khoa học máy tính",
-            title: "Đào tạo lập trình viên quốc tế",
-            desc: "Chương trình đào tạo lập trình viên chuyên nghiệp với giáo trình quốc tế.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/9e55681f-7af2-45da-31a6-d5f109a91ca6.jpg",
-            imgAlt: "Group of students in classroom",
-            btnText: "Offline",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '7',
-            category: "Data Science",
-            title: "Những kiến thức cơ bản để hiểu về AI",
-            desc: "Làm thế nào để hiểu và áp dụng AI trong các ngành nghề khác nhau.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/9bfd7db9-44e6-4720-9a72-3bf6d26f126d.jpg",
-            imgAlt: "Man working with data on computer",
-            btnText: "Xem thử",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        },
-        {
-            id: '8',
-            category: "Business & Accounting",
-            title: "Đào tạo kỹ sư IT làm kế toán doanh nghiệp",
-            desc: "Lập kế hoạch, quản lý và vận hành hệ thống kế toán doanh nghiệp.",
-            imgSrc: "https://storage.googleapis.com/a1aa/image/0820ec3b-33e6-468b-cc54-d7317c4a00fd.jpg",
-            imgAlt: "People in meeting room discussing",
-            btnText: "Offline",
-            linkText: "Chi tiết →",
-            linkHref: "#",
-        }
-    ];
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch courses with limit and sorting
+                const response = await clientCoursesService.getCourses({
+                    limit: 8, // Get 8 courses
+                    sortBy: 'createdAt',
+                    sortOrder: 'desc'
+                });
+
+                if (response.success && response.data) {
+                    setCourses(response.data.courses || response.data);
+                } else {
+                    setError('Không thể tải danh sách khóa học');
+                }
+            } catch (err: any) {
+                console.error('Error fetching courses:', err);
+                setError('Có lỗi xảy ra khi tải danh sách khóa học');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourses();
+    }, []);
+
+    // Loading state
+    if (loading) {
+        return (
+            <section className="section" aria-label="Courses">
+                <div className="section__header">
+                    <div>
+                        <h2 className="section__title">Lớp học</h2>
+                        <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
+                    </div>
+                    <Link to="/courses">
+                        <button type="button" className="section__btn">
+                            Xem
+                        </button>
+                    </Link>
+                </div>
+                <div className="featured-slider">
+                    <div className="loading-placeholder">
+                        <div className="loading-text">Đang tải danh sách khóa học...</div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <section className="section" aria-label="Courses">
+                <div className="section__header">
+                    <div>
+                        <h2 className="section__title">Lớp học</h2>
+                        <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
+                    </div>
+                    <Link to="/courses">
+                        <button type="button" className="section__btn">
+                            Xem
+                        </button>
+                    </Link>
+                </div>
+                <div className="featured-slider">
+                    <div className="error-placeholder">
+                        <div className="error-text">{error}</div>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="retry-btn"
+                        >
+                            Thử lại
+                        </button>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    // Empty state
+    if (!courses || courses.length === 0) {
+        return (
+            <section className="section" aria-label="Courses">
+                <div className="section__header">
+                    <div>
+                        <h2 className="section__title">Lớp học</h2>
+                        <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
+                    </div>
+                    <Link to="/courses">
+                        <button type="button" className="section__btn">
+                            Xem
+                        </button>
+                    </Link>
+                </div>
+                <div className="featured-slider">
+                    <div className="empty-placeholder">
+                        <div className="empty-text">Chưa có khóa học nào</div>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="section" aria-label="Courses">
@@ -103,9 +148,11 @@ const Courses = () => {
                     <h2 className="section__title">Lớp học</h2>
                     <p className="section__subtitle">Rất nhiều các khóa học từ nhiều lĩnh vực với nhiều các trung tâm uy tín.</p>
                 </div>
-                <button type="button" className="section__btn">
-                    Xem
-                </button>
+                <Link to="/courses">
+                    <button type="button" className="section__btn">
+                        Xem
+                    </button>
+                </Link>
             </div>
             <div className="featured-slider">
                 <Swiper
@@ -127,8 +174,19 @@ const Courses = () => {
                     }}
                 >
                     {courses.map((course, index) => (
-                        <SwiperSlide key={index}>
-                            <Card {...course} />
+                        <SwiperSlide key={course._id || index}>
+                            <Card
+                                id={course._id}
+                                category={course.domain || 'Khóa học'}
+                                title={course.title}
+                                desc={course.shortDescription || course.description || 'Không có mô tả'}
+                                imgSrc={course.thumbnail || '/images/default-course.jpg'}
+                                imgAlt={`Khóa học: ${course.title}`}
+                                btnText="Xem thử"
+                                linkText="Chi tiết →"
+                                linkHref={`/courses/${course._id}`}
+                                fetchData={false} // Use static data since we already have course info
+                            />
                         </SwiperSlide>
                     ))}
                 </Swiper>

@@ -1,4 +1,4 @@
-
+import './TopBar.css';
 
 const TopBar = () => {
     return (

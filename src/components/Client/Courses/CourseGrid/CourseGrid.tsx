@@ -11,15 +11,16 @@ interface CourseGridProps {
 const CourseGrid: React.FC<CourseGridProps> = ({ courses, loading = false }) => {
   if (loading) {
     return (
-      <div className="">
+      <div className="course-grid course-grid--loading">
         <div className="course-grid__container">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="course-grid__skeleton">
+            <div key={index} className="course-grid__skeleton-item">
               <div className="course-grid__skeleton-image"></div>
               <div className="course-grid__skeleton-content">
                 <div className="course-grid__skeleton-title"></div>
-                <div className="course-grid__skeleton-text"></div>
-                <div className="course-grid__skeleton-text short"></div>
+                <div className="course-grid__skeleton-desc"></div>
+                <div className="course-grid__skeleton-desc"></div>
+                <div className="course-grid__skeleton-btn"></div>
               </div>
             </div>
           ))}
@@ -30,32 +31,36 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses, loading = false }) => 
 
   if (courses.length === 0) {
     return (
-      <div className="course-grid course-grid__noresult">
-        <div className="course-grid__empty">
-          <div className="course-grid__empty-icon">📚</div>
-          <h3>Không tìm thấy khóa học</h3>
-          <p>Hãy thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác</p>
+      <div className="course-grid course-grid--empty">
+        <div className="course-grid__container">
+          <div className="course-grid__empty-content">
+            <div className="course-grid__empty-icon">📚</div>
+            <h3 className="course-grid__empty-title">Không tìm thấy khóa học</h3>
+            <p className="course-grid__empty-desc">Hãy thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác</p>
+            <button className="course-grid__empty-btn">Xóa bộ lọc</button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="">
+    <div className="course-grid">
       <div className="course-grid__container">
         {courses.map((course) => (
-          <Card
-            key={course._id}
-            id={course._id}
-            category={course.domain}
-            title={course.title}
-            desc={course.description}
-            imgSrc={course.thumbnail || '/images/default-course.jpg'}
-            imgAlt={course.title}
-            btnText="Xem khóa học"
-            linkText="Chi tiết →"
-            linkHref="#"
-          />
+          <div key={course._id} className="course-grid__item">
+            <Card
+              id={course._id}
+              category={course.domain}
+              title={course.title}
+              desc={course.description}
+              imgSrc={course.thumbnail || '/images/default-course.jpg'}
+              imgAlt={course.title}
+              btnText="Xem khóa học"
+              linkText="Chi tiết →"
+              linkHref="#"
+            />
+          </div>
         ))}
       </div>
     </div>
