@@ -7,7 +7,6 @@ import {
   CardContent,
   Typography,
   Stack,
-  Divider,
   Chip,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/CollectionsBookmark';
@@ -49,7 +48,7 @@ const CourseStats: React.FC<CourseStatsProps> = ({ courses }) => {
                     width: 48,
                     height: 48,
                     borderRadius: '12px',
-                    bgcolor: (t) => `${stat.color}`,
+                    bgcolor: stat.color,
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',

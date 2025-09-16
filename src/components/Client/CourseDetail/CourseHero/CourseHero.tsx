@@ -33,7 +33,6 @@ interface CourseHeroProps {
 }
 
 const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
-  const [isEnrolling, setIsEnrolling] = useState(false);
   const [enrollmentStatus, setEnrollmentStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [isEnrolled, setIsEnrolled] = useState(false);
@@ -231,7 +230,6 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
 
   const getEnrollButtonText = () => {
     if (isCheckingEnrollment) return 'Đang kiểm tra...';
-    if (isEnrolling) return 'Đang đăng ký...';
     if (enrollmentStatus === 'success') return 'Đăng ký thành công!';
     if (enrollmentStatus === 'error') return 'Thử lại';
     if (isEnrolled) return 'Tiếp tục học';
@@ -241,7 +239,6 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
   const getEnrollButtonClass = () => {
     let baseClass = 'course-hero__enroll-btn';
     if (isCheckingEnrollment) baseClass += ' course-hero__enroll-btn--loading';
-    if (isEnrolling) baseClass += ' course-hero__enroll-btn--loading';
     if (enrollmentStatus === 'success') baseClass += ' course-hero__enroll-btn--success';
     if (enrollmentStatus === 'error') baseClass += ' course-hero__enroll-btn--error';
     if (isEnrolled) baseClass += ' course-hero__enroll-btn--enrolled';
@@ -249,7 +246,7 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
   };
 
   const isButtonDisabled = () => {
-    return isCheckingEnrollment || isEnrolling || enrollmentStatus === 'success';
+    return isCheckingEnrollment || enrollmentStatus === 'success';
   };
 
   return (
