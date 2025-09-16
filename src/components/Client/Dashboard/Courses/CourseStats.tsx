@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Course } from '@/types';
+import { Course } from '../../../../types/index';
 import {
   Box,
   Grid,
