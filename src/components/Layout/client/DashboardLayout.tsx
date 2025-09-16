@@ -1,10 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { sharedAuthService } from '../../../services/shared/auth.service';
 import './DashboardLayout.css';
+
+interface UserInfo {
+  id: string;
+  fullName: string;
+  avatar: string;
+  role: string;
+  email: string;
+}
 
 const DashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    id: '',
+    fullName: 'Đang tải...',
+    avatar: '/images/default-avatar.png',
+    role: 'Student',
+    email: ''
+  });
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
+
+  // Load user info on component mount
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        setLoading(true);
+        const response = await sharedAuthService.getProfile();
+
+        if (response.success && response.data) {
+          const userData = response.data.user || response.data;
+          setUserInfo({
+            id: userData._id || userData.id,
+            fullName: userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Người dùng',
+            avatar: userData.avatar || '/images/default-avatar.png',
+            role: userData.role || 'Student',
+            email: userData.email || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user info:', error);
+        // Keep default values on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserInfo();
+  }, []);
 
   // Debug: Log location changes
   useEffect(() => {
@@ -95,7 +140,7 @@ const DashboardLayout: React.FC = () => {
         <div className="mobile-header__brand">
           <h2>LMS Dashboard</h2>
         </div>
-        <button 
+        <button
           className="mobile-header__menu-toggle"
           onClick={toggleSidebar}
           aria-label="Toggle menu"
@@ -112,7 +157,7 @@ const DashboardLayout: React.FC = () => {
           <div className="sidebar__brand">
             <h2>LMS Dashboard</h2>
           </div>
-          <button 
+          <button
             className="sidebar__close-btn"
             onClick={closeSidebar}
             aria-label="Close sidebar"
@@ -131,25 +176,25 @@ const DashboardLayout: React.FC = () => {
                     // Special handling for dashboard index route - only active when exactly at /dashboard
                     if (item.path === '/dashboard') {
                       const isExactDashboard = location.pathname === '/dashboard';
-                      console.log('Dashboard route check:', { 
-                        itemPath: item.path, 
-                        currentPath: location.pathname, 
-                        isActive, 
-                        isPending, 
+                      console.log('Dashboard route check:', {
+                        itemPath: item.path,
+                        currentPath: location.pathname,
+                        isActive,
+                        isPending,
                         isExactDashboard,
                         result: isExactDashboard ? 'active' : 'inactive'
                       });
                       return `sidebar__nav-link ${isExactDashboard ? 'active' : ''}`;
                     }
-                    
+
                     // For other routes, use normal isActive logic
                     const result = `sidebar__nav-link ${isActive ? 'active' : ''}`;
-                    console.log('Other route check:', { 
-                      itemPath: item.path, 
-                      currentPath: location.pathname, 
-                      isActive, 
-                      result 
-                    });
+                    // console.log('Other route check:', { 
+                    //   itemPath: item.path, 
+                    //   currentPath: location.pathname, 
+                    //   isActive, 
+                    //   result 
+                    // });
                     return result;
                   }}
                   onClick={closeSidebar}
@@ -168,11 +213,17 @@ const DashboardLayout: React.FC = () => {
         <div className="sidebar__footer">
           <div className="sidebar__user-info">
             <div className="sidebar__user-avatar">
-              <img src="/images/default-avatar.png" alt="User Avatar" />
+              <img
+                src={userInfo.avatar}
+                alt="User Avatar"
+                onError={(e) => {
+                  e.currentTarget.src = '/images/default-avatar.png';
+                }}
+              />
             </div>
             <div className="sidebar__user-details">
-              <h4>Hieu Doan</h4>
-              <p>Student</p>
+              <h4>{loading ? 'Đang tải...' : userInfo.fullName}</h4>
+              <p>{loading ? '...' : userInfo.role}</p>
             </div>
           </div>
         </div>

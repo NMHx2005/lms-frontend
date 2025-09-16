@@ -1,11 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { StudyGroup, CreateGroupForm } from '../../../types/index';
-import './StudyGroups.css';
+import { clientStudyGroupsService } from '../../../services/client/study-groups.service';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  CardMedia,
+  Typography,
+  Button,
+  Chip,
+  Stack,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Tabs,
+  Tab,
+  Avatar,
+  Divider,
+  Checkbox,
+  FormControlLabel,
+  Breadcrumbs,
+  Link as MuiLink,
+  CircularProgress,
+} from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
+import LockIcon from '@mui/icons-material/Lock';
+import PublicIcon from '@mui/icons-material/Public';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
+import HomeIcon from '@mui/icons-material/Home';
+import SchoolIcon from '@mui/icons-material/School';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 const StudyGroups: React.FC = () => {
-  const [groups, setGroups] = useState<StudyGroup[]>([]);
-  console.log(groups);
   const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [availableGroups, setAvailableGroups] = useState<StudyGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,140 +72,82 @@ const StudyGroups: React.FC = () => {
   ]);
 
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      const mockGroups: StudyGroup[] = [
-        {
-          _id: 'group1',
-          name: 'React Masters',
-          description: 'Nhóm học tập React nâng cao, chia sẻ kinh nghiệm và thực hành cùng nhau',
-          courseId: 'course1',
-          courseTitle: 'React Advanced Patterns',
-          thumbnail: '/images/course1.jpg',
-          maxMembers: 15,
-          currentMembers: 12,
-          isPrivate: false,
-          createdAt: '2024-01-10T10:00:00Z',
-          lastActivity: '2024-01-20T15:30:00Z',
-          tags: ['React', 'Web Development'],
-          owner: {
-            _id: 'user1',
-            name: 'Hieu Doan',
-            avatar: '/images/avatar1.jpg',
-          },
-          members: [
-            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'owner', joinedAt: '2024-01-10T10:00:00Z' },
-            { _id: 'user2', name: 'Minh Nguyen', avatar: '/images/avatar2.jpg', role: 'admin', joinedAt: '2024-01-11T09:00:00Z' },
-            { _id: 'user3', name: 'Lan Tran', avatar: '/images/avatar3.jpg', role: 'member', joinedAt: '2024-01-12T14:00:00Z' },
-          ],
-          recentDiscussions: [
-            { _id: 'disc1', title: 'Custom Hooks best practices', author: 'Minh Nguyen', lastReply: '2024-01-20T15:30:00Z', repliesCount: 8 },
-            { _id: 'disc2', title: 'State management với Context API', author: 'Lan Tran', lastReply: '2024-01-19T11:20:00Z', repliesCount: 12 },
-          ],
-        },
-        {
-          _id: 'group2',
-          name: 'Backend Developers',
-          description: 'Nhóm học Node.js và backend development, thảo luận về API design và database',
-          courseId: 'course2',
-          courseTitle: 'Node.js Backend Development',
-          thumbnail: '/images/course2.jpg',
-          maxMembers: 20,
-          currentMembers: 18,
-          isPrivate: false,
-          createdAt: '2024-01-08T14:00:00Z',
-          lastActivity: '2024-01-20T16:45:00Z',
-          tags: ['Node.js', 'Backend Development'],
-          owner: {
-            _id: 'user2',
-            name: 'Minh Nguyen',
-            avatar: '/images/avatar2.jpg',
-          },
-          members: [
-            { _id: 'user2', name: 'Minh Nguyen', avatar: '/images/avatar2.jpg', role: 'owner', joinedAt: '2024-01-08T14:00:00Z' },
-            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: '2024-01-09T10:00:00Z' },
-          ],
-          recentDiscussions: [
-            { _id: 'disc3', title: 'Express.js middleware patterns', author: 'Hieu Doan', lastReply: '2024-01-20T16:45:00Z', repliesCount: 15 },
-            { _id: 'disc4', title: 'Database optimization tips', author: 'Minh Nguyen', lastReply: '2024-01-18T13:15:00Z', repliesCount: 9 },
-          ],
-        },
-        {
-          _id: 'group3',
-          name: 'Design Thinkers',
-          description: 'Nhóm học UI/UX design, chia sẻ inspiration và feedback cho nhau',
-          courseId: 'course3',
-          courseTitle: 'UI/UX Design Fundamentals',
-          thumbnail: '/images/course3.jpg',
-          maxMembers: 12,
-          currentMembers: 8,
-          isPrivate: true,
-          createdAt: '2024-01-05T16:00:00Z',
-          lastActivity: '2024-01-19T17:20:00Z',
-          tags: ['Design', 'UI/UX'],
-          owner: {
-            _id: 'user3',
-            name: 'Lan Tran',
-            avatar: '/images/avatar3.jpg',
-          },
-          members: [
-            { _id: 'user3', name: 'Lan Tran', avatar: '/images/avatar3.jpg', role: 'owner', joinedAt: '2024-01-05T16:00:00Z' },
-            { _id: 'user1', name: 'Hieu Doan', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: '2024-01-06T11:00:00Z' },
-          ],
-          recentDiscussions: [
-            { _id: 'disc5', title: 'Color theory trong design', author: 'Lan Tran', lastReply: '2024-01-19T17:20:00Z', repliesCount: 6 },
-            { _id: 'disc6', title: 'Prototyping tools comparison', author: 'Hieu Doan', lastReply: '2024-01-17T14:30:00Z', repliesCount: 11 },
-          ],
-        },
-      ];
+    const load = async () => {
+      setLoading(true);
 
-      const myGroupsData = mockGroups.filter(group =>
-        group.members.some(member => member._id === 'user1')
-      );
-      const availableGroupsData = mockGroups.filter(group =>
-        !group.members.some(member => member._id === 'user1')
-      );
+      // Always load public groups first
+      const pubRes = await Promise.allSettled([
+        clientStudyGroupsService.listPublic({ page: 1, limit: 20 })
+      ]);
+      const pub = pubRes[0].status === 'fulfilled' ? pubRes[0].value : { data: { items: [] } } as any;
 
-      setGroups(mockGroups);
-      setMyGroups(myGroupsData);
-      setAvailableGroups(availableGroupsData);
+      // Check if user is authenticated
+      const isAuthenticated = localStorage.getItem('token') || document.cookie.includes('token');
+
+      let myItems: any[] = [];
+
+      if (isAuthenticated) {
+        // Try to load user's groups only if authenticated
+        const [mineRes, joinedRes] = await Promise.allSettled([
+          clientStudyGroupsService.listMine({ page: 1, limit: 20 }),
+          clientStudyGroupsService.listJoined({ page: 1, limit: 20 })
+        ]);
+
+        const mine = mineRes.status === 'fulfilled' ? mineRes.value : null;
+        const joined = joinedRes.status === 'fulfilled' ? joinedRes.value : null;
+
+        myItems = ([] as any[])
+          .concat(mine?.data?.items || [])
+          .concat(joined?.data?.items || []);
+      }
+
+      const myMap: Record<string, any> = {};
+      myItems.forEach((g: any) => { myMap[g._id] = g; });
+
+      setMyGroups(myItems.map(mapApiGroupToUi));
+
+      const allPublic = pub?.data?.items || [];
+      setAvailableGroups(allPublic.filter((g: any) => !myMap[g._id]).map(mapApiGroupToUi));
+
       setLoading(false);
-    }, 1000);
+    };
+    load();
   }, []);
 
-  const handleCreateGroup = (e: React.FormEvent) => {
+  const mapApiGroupToUi = (g: any): StudyGroup => ({
+    _id: g._id,
+    name: g.name,
+    description: g.description || '',
+    courseId: g.courseId || '',
+    courseTitle: g.course?.title || '',
+    thumbnail: g.course?.thumbnail || '/images/course1.jpg',
+    maxMembers: g.maxMembers || 20,
+    currentMembers: (g.members || []).length,
+    isPrivate: !!g.isPrivate,
+    createdAt: g.createdAt,
+    lastActivity: g.updatedAt || g.createdAt,
+    tags: g.tags || [],
+    owner: { _id: g.creatorId, name: g.creator?.name || 'Chủ nhóm', avatar: g.creator?.avatar || '/images/avatar1.jpg' },
+    members: (g.members || []).map((m: any) => ({ _id: m, name: 'Thành viên', avatar: '/images/avatar1.jpg', role: 'member', joinedAt: g.createdAt })),
+    recentDiscussions: [],
+  });
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const newGroup: StudyGroup = {
-      _id: `group${Date.now()}`,
-      name: createForm.name,
-      description: createForm.description,
-      courseId: createForm.courseId,
-      courseTitle: availableCourses.find(c => c._id === createForm.courseId)?.title || '',
-      thumbnail: availableCourses.find(c => c._id === createForm.courseId)?.thumbnail || '',
-      maxMembers: createForm.maxMembers,
-      currentMembers: 1,
-      isPrivate: createForm.isPrivate,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      tags: createForm.tags,
-      owner: {
-        _id: 'user1',
-        name: 'Hieu Doan',
-        avatar: '/images/avatar1.jpg',
-      },
-      members: [{
-        _id: 'user1',
-        name: 'Hieu Doan',
-        avatar: '/images/avatar1.jpg',
-        role: 'owner',
-        joinedAt: new Date().toISOString(),
-      }],
-      recentDiscussions: [],
-    };
-
-    setMyGroups(prev => [newGroup, ...prev]);
-    setGroups(prev => [newGroup, ...prev]);
+    try {
+      const res = await clientStudyGroupsService.create({
+        name: createForm.name,
+        description: createForm.description,
+        courseId: createForm.courseId,
+        maxMembers: createForm.maxMembers,
+        isPrivate: createForm.isPrivate,
+        tags: createForm.tags,
+      });
+      const created = mapApiGroupToUi(res.data);
+      setMyGroups(prev => [created, ...prev]);
+    } catch (err) {
+      // no-op: could show toast
+    }
 
     setCreateForm({
       name: '',
@@ -183,46 +162,24 @@ const StudyGroups: React.FC = () => {
     setActiveTab('my-groups');
   };
 
-  const joinGroup = (groupId: string) => {
-    const group = availableGroups.find(g => g._id === groupId);
-    if (!group) return;
-
-    const updatedGroup: StudyGroup = {
-      ...group,
-      currentMembers: group.currentMembers + 1,
-      members: [...group.members, {
-        _id: 'user1',
-        name: 'Hieu Doan',
-        avatar: '/images/avatar1.jpg',
-        role: 'member',
-        joinedAt: new Date().toISOString(),
-      }],
-      recentDiscussions: group.recentDiscussions, // Đảm bảo giữ nguyên
-    };
-
-    setMyGroups(prev => [updatedGroup, ...prev]);
-    setAvailableGroups(prev => prev.filter(g => g._id !== groupId));
-    setGroups(prev => prev.map(g => g._id === groupId ? updatedGroup : g));
+  const joinGroup = async (groupId: string) => {
+    try {
+      await clientStudyGroupsService.join(groupId);
+      const group = availableGroups.find(g => g._id === groupId);
+      if (!group) return;
+      const updated: StudyGroup = { ...group, currentMembers: group.currentMembers + 1, members: group.members };
+      setMyGroups(prev => [updated, ...prev]);
+      setAvailableGroups(prev => prev.filter(g => g._id !== groupId));
+    } catch { }
   };
 
-  const leaveGroup = (groupId: string) => {
-    const group = myGroups.find(g => g._id === groupId);
-    if (!group) return;
-
-    const updatedGroup: StudyGroup = {
-      ...group,
-      currentMembers: group.currentMembers - 1,
-      members: group.members.filter(m => m._id !== 'user1'),
-      recentDiscussions: group.recentDiscussions, // Đảm bảo giữ nguyên
-    };
-
-    if (group.members.length === 1) {
+  const leaveGroup = async (groupId: string) => {
+    try {
+      await clientStudyGroupsService.leave(groupId);
+      const group = myGroups.find(g => g._id === groupId);
+      if (!group) return;
       setMyGroups(prev => prev.filter(g => g._id !== groupId));
-      setGroups(prev => prev.filter(g => g._id !== groupId));
-    } else {
-      setMyGroups(prev => prev.map(g => g._id === groupId ? updatedGroup : g));
-      setGroups(prev => prev.map(g => g._id === groupId ? updatedGroup : g));
-    }
+    } catch { }
   };
 
   const toggleTag = (tag: string) => {
@@ -268,378 +225,376 @@ const StudyGroups: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="study-groups-page">
-        <div className="groups-loading">
-          <div className="loading-spinner"></div>
-          <p>Đang tải nhóm học tập...</p>
-        </div>
-      </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" alignItems="center" justifyContent="center" minHeight={400}>
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress />
+            <Typography variant="h6">Đang tải nhóm học tập...</Typography>
+          </Stack>
+        </Box>
+      </Container>
     );
   }
 
   return (
-    <div className="study-groups-page">
-      <div className="groups-header">
-        <h1>Nhóm học tập 👥</h1>
-        <p>Tham gia nhóm học tập để chia sẻ kiến thức và hỗ trợ lẫn nhau</p>
-      </div>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header */}
+      <Breadcrumbs sx={{ mb: 3 }}>
+        <MuiLink color="inherit" href="/dashboard">Dashboard</MuiLink>
+        <Typography color="text.primary">Nhóm học tập</Typography>
+      </Breadcrumbs>
 
-      <div className="groups-stats">
-        <div className="stat-item">
-          <span className="stat-number">{myGroups.length}</span>
-          <span className="stat-label">Nhóm của tôi</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number">{availableGroups.length}</span>
-          <span className="stat-label">Nhóm có thể tham gia</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number">
-            {myGroups.reduce((total, group) => total + group.currentMembers, 0)}
-          </span>
-          <span className="stat-label">Tổng thành viên</span>
-        </div>
-      </div>
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+        Nhóm học tập
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Tham gia nhóm để chia sẻ kiến thức và hỗ trợ lẫn nhau
+      </Typography>
 
-      <div className="groups-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'my-groups' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('my-groups'); setShowCreateForm(false); }}
+      {/* Stats */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'primary.main', color: 'white' }}><GroupIcon /></Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>{myGroups.length}</Typography>
+                  <Typography variant="body2" color="text.secondary">Nhóm của tôi</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'success.main', color: 'white' }}><PublicIcon /></Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>{availableGroups.length}</Typography>
+                  <Typography variant="body2" color="text.secondary">Nhóm có thể tham gia</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'warning.main', color: 'white' }}><PeopleAltIcon /></Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>
+                    {myGroups.reduce((t, g) => t + g.currentMembers, 0)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">Tổng thành viên</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Tabs */}
+      <Card sx={{ borderRadius: 3, mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => { setActiveTab(v); setShowCreateForm(v === 'create'); }}
+          variant="scrollable"
+          scrollButtons
+          allowScrollButtonsMobile
         >
-          👥 Nhóm của tôi ({myGroups.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'discover' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('discover'); setShowCreateForm(false); }}
-        >
-          🔍 Khám phá ({availableGroups.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'create' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('create'); setShowCreateForm(true); }}
-        >
-          ➕ Tạo nhóm mới
-        </button>
-      </div>
+          <Tab value="my-groups" label={`Nhóm của tôi (${myGroups.length})`} icon={<GroupIcon />} iconPosition="start" />
+          <Tab value="discover" label={`Khám phá (${availableGroups.length})`} icon={<SearchIcon />} iconPosition="start" />
+          <Tab value="create" label="Tạo nhóm mới" icon={<AddIcon />} iconPosition="start" />
+        </Tabs>
+      </Card>
 
-      <div className="groups-controls">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Tìm kiếm nhóm..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-        </div>
+      {/* Controls */}
+      <Card sx={{ borderRadius: 3, mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} gutterBottom>Bộ lọc và tìm kiếm</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Tìm kiếm và lọc nhóm học tập theo nhu cầu
+          </Typography>
 
-        <div className="filters">
-          <select
-            value={filterCourse}
-            onChange={(e) => setFilterCourse(e.target.value)}
-            className="course-filter"
-          >
-            <option value="">Tất cả khóa học</option>
-            {availableCourses.map(course => (
-              <option key={course._id} value={course._id}>
-                {course.title}
-              </option>
-            ))}
-          </select>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Tìm kiếm nhóm"
+                placeholder="Nhập tên nhóm hoặc mô tả..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Khóa học</InputLabel>
+                <Select
+                  value={filterCourse}
+                  label="Khóa học"
+                  onChange={(e) => setFilterCourse(e.target.value)}
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="">Tất cả khóa học</MenuItem>
+                  {availableCourses.map(c => (
+                    <MenuItem key={c._id} value={c._id}>{c.title}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
 
-          <div className="tags-filter">
-            {availableTags.map(tag => (
-              <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                className={`tag-btn ${filterTags.includes(tag) ? 'active' : ''}`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+              Lọc theo tags
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {availableTags.map(tag => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  color={filterTags.includes(tag) ? 'primary' : 'default'}
+                  variant={filterTags.includes(tag) ? 'filled' : 'outlined'}
+                  onClick={() => toggleTag(tag)}
+                  size="small"
+                  sx={{
+                    mb: 0.5,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: 2
+                    }
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
+      {/* My Groups */}
       {activeTab === 'my-groups' && (
-        <div className="my-groups">
+        <Box>
           {filteredGroups(myGroups).length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">👥</div>
-              <h3>Bạn chưa tham gia nhóm nào</h3>
-              <p>Khám phá và tham gia các nhóm học tập để bắt đầu</p>
-              <button
-                onClick={() => { setActiveTab('discover'); setShowCreateForm(false); }}
-                className="discover-btn"
-              >
-                🔍 Khám phá nhóm
-              </button>
-            </div>
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Box textAlign="center" py={6}>
+                  <GroupIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h5" gutterBottom>Bạn chưa tham gia nhóm nào</Typography>
+                  <Typography color="text.secondary" sx={{ mb: 2 }}>Khám phá và tham gia các nhóm học tập để bắt đầu</Typography>
+                  <Button variant="contained" startIcon={<SearchIcon />} onClick={() => { setActiveTab('discover'); setShowCreateForm(false); }}>
+                    Khám phá nhóm
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="groups-grid">
+            <Grid container spacing={3}>
               {filteredGroups(myGroups).map(group => (
-                <div key={group._id} className="group-card my-group">
-                  <div className="group-header">
-                    <div className="group-thumbnail">
-                      <img src={group.thumbnail} alt={group.courseTitle} />
-                    </div>
-                    <div className="group-info">
-                      <h3 className="group-name">{group.name}</h3>
-                      <p className="course-title">{group.courseTitle}</p>
-                      <div className="group-meta">
-                        <span className="members-count">
-                          👥 {group.currentMembers}/{group.maxMembers} thành viên
-                        </span>
-                        <span className="privacy">
-                          {group.isPrivate ? '🔒 Riêng tư' : '🌐 Công khai'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="group-description">{group.description}</p>
-
-                  <div className="group-tags">
-                    {group.tags.map(tag => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
-                  </div>
-
-                  <div className="group-activity">
-                    <span className="last-activity">
-                      Hoạt động cuối: {formatRelativeTime(group.lastActivity)}
-                    </span>
-                  </div>
-
-                  <div className="recent-discussions">
-                    <h4>Thảo luận gần đây:</h4>
-                    {group.recentDiscussions.slice(0, 2).map(discussion => (
-                      <div key={discussion._id} className="discussion-item">
-                        <span className="discussion-title">{discussion.title}</span>
-                        <span className="discussion-meta">
-                          {discussion.author} • {discussion.repliesCount} trả lời
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="group-actions">
-                    <Link to={`/groups/${group._id}`} className="view-group-btn">
-                      👁️ Xem nhóm
-                    </Link>
-                    <button
-                      onClick={() => leaveGroup(group._id)}
-                      className="leave-group-btn"
-                    >
-                      🚪 Rời nhóm
-                    </button>
-                  </div>
-                </div>
+                <Grid key={group._id} item xs={12} sm={6} md={4}>
+                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'all .2s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+                    <Box sx={{ position: 'relative' }}>
+                      <CardMedia component="img" height={160} image={group.thumbnail} alt={group.courseTitle} />
+                      <Stack direction="row" spacing={1} sx={{ position: 'absolute', top: 12, left: 12 }}>
+                        <Chip size="small" label={group.courseTitle} color="secondary" />
+                      </Stack>
+                    </Box>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" fontWeight={700} gutterBottom noWrap>{group.name}</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }} noWrap>
+                        {group.description}
+                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                        <Chip size="small" icon={<PeopleAltIcon />} label={`${group.currentMembers}/${group.maxMembers}`} />
+                        <Chip size="small" icon={group.isPrivate ? <LockIcon /> : <PublicIcon />} label={group.isPrivate ? 'Riêng tư' : 'Công khai'} />
+                      </Stack>
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                        {group.tags.slice(0, 4).map(tag => (
+                          <Chip key={tag} size="small" label={tag} variant="outlined" />
+                        ))}
+                      </Stack>
+                      <Divider sx={{ my: 1.5 }} />
+                      <Typography variant="caption" color="text.secondary">Hoạt động cuối: {formatRelativeTime(group.lastActivity)}</Typography>
+                    </CardContent>
+                    <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
+                      <Button component={Link} to={`/groups/${group._id}`} variant="outlined" startIcon={<VisibilityIcon />} sx={{ flex: 1 }}>
+                        Xem nhóm
+                      </Button>
+                      <Button onClick={() => leaveGroup(group._id)} color="error" variant="contained" startIcon={<LogoutIcon />}>Rời nhóm</Button>
+                    </CardActions>
+                  </Card>
+                </Grid>
               ))}
-            </div>
+            </Grid>
           )}
-        </div>
+        </Box>
       )}
 
+      {/* Discover */}
       {activeTab === 'discover' && (
-        <div className="discover-groups">
+        <Box>
           {filteredGroups(availableGroups).length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <h3>Không tìm thấy nhóm phù hợp</h3>
-              <p>Thử thay đổi bộ lọc hoặc tạo nhóm mới</p>
-              <button
-                onClick={() => { setActiveTab('create'); setShowCreateForm(true); }}
-                className="create-group-btn"
-              >
-                ➕ Tạo nhóm mới
-              </button>
-            </div>
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent>
+                <Box textAlign="center" py={6}>
+                  <SearchIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h5" gutterBottom>Không tìm thấy nhóm phù hợp</Typography>
+                  <Typography color="text.secondary" sx={{ mb: 2 }}>Thử thay đổi bộ lọc hoặc tạo nhóm mới</Typography>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setActiveTab('create'); setShowCreateForm(true); }}>
+                    Tạo nhóm mới
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="groups-grid">
+            <Grid container spacing={3}>
               {filteredGroups(availableGroups).map(group => (
-                <div key={group._id} className="group-card available-group">
-                  <div className="group-header">
-                    <div className="group-thumbnail">
-                      <img src={group.thumbnail} alt={group.courseTitle} />
-                    </div>
-                    <div className="group-info">
-                      <h3 className="group-name">{group.name}</h3>
-                      <p className="course-title">{group.courseTitle}</p>
-                      <div className="group-meta">
-                        <span className="members-count">
-                          👥 {group.currentMembers}/{group.maxMembers} thành viên
-                        </span>
-                        <span className="privacy">
-                          {group.isPrivate ? '🔒 Riêng tư' : '🌐 Công khai'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="group-description">{group.description}</p>
-
-                  <div className="group-tags">
-                    {group.tags.map(tag => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
-                  </div>
-
-                  <div className="group-owner">
-                    <span className="owner-label">Chủ nhóm:</span>
-                    <div className="owner-info">
-                      <img src={group.owner.avatar} alt={group.owner.name} className="owner-avatar" />
-                      <span className="owner-name">{group.owner.name}</span>
-                    </div>
-                  </div>
-
-                  <div className="group-actions">
-                    <button
-                      onClick={() => joinGroup(group._id)}
-                      className="join-group-btn"
-                      disabled={group.currentMembers >= group.maxMembers}
-                    >
-                      {group.currentMembers >= group.maxMembers ? 'Đã đầy' : '➕ Tham gia'}
-                    </button>
-                    <Link to={`/groups/${group._id}`} className="view-group-btn">
-                      👁️ Xem chi tiết
-                    </Link>
-                  </div>
-                </div>
+                <Grid key={group._id} item xs={12} sm={6} md={4}>
+                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'all .2s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+                    <Box sx={{ position: 'relative' }}>
+                      <CardMedia component="img" height={160} image={group.thumbnail} alt={group.courseTitle} />
+                    </Box>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" fontWeight={700} gutterBottom noWrap>{group.name}</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }} noWrap>{group.courseTitle}</Typography>
+                      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                        <Chip size="small" icon={<PeopleAltIcon />} label={`${group.currentMembers}/${group.maxMembers}`} />
+                        <Chip size="small" icon={group.isPrivate ? <LockIcon /> : <PublicIcon />} label={group.isPrivate ? 'Riêng tư' : 'Công khai'} />
+                      </Stack>
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                        {group.tags.slice(0, 4).map(tag => (
+                          <Chip key={tag} size="small" label={tag} variant="outlined" />
+                        ))}
+                      </Stack>
+                    </CardContent>
+                    <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
+                      <Button onClick={() => joinGroup(group._id)} variant="contained" startIcon={<LoginIcon />} disabled={group.currentMembers >= group.maxMembers} sx={{ flex: 1 }}>
+                        {group.currentMembers >= group.maxMembers ? 'Đã đầy' : 'Tham gia'}
+                      </Button>
+                      <Button component={Link} to={`/groups/${group._id}`} variant="outlined" startIcon={<VisibilityIcon />}>Xem chi tiết</Button>
+                    </CardActions>
+                  </Card>
+                </Grid>
               ))}
-            </div>
+            </Grid>
           )}
-        </div>
+        </Box>
       )}
 
+      {/* Create */}
       {activeTab === 'create' && showCreateForm && (
-        <div className="create-group">
-          <div className="create-form-container">
-            <h3>Tạo nhóm học tập mới</h3>
-            <form onSubmit={handleCreateGroup} className="create-form">
-              <div className="form-group">
-                <label htmlFor="groupName">Tên nhóm *</label>
-                <input
-                  type="text"
-                  id="groupName"
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Nhập tên nhóm..."
-                  required
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="groupDescription">Mô tả *</label>
-                <textarea
-                  id="groupDescription"
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Mô tả mục đích và hoạt động của nhóm..."
-                  required
-                  rows={4}
-                  className="form-textarea"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="courseSelect">Khóa học *</label>
-                <select
-                  id="courseSelect"
-                  value={createForm.courseId}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, courseId: e.target.value }))}
-                  required
-                  className="form-select"
-                >
-                  <option value="">Chọn khóa học</option>
-                  {availableCourses.map(course => (
-                    <option key={course._id} value={course._id}>
-                      {course.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="maxMembers">Số thành viên tối đa</label>
-                  <input
-                    type="number"
-                    id="maxMembers"
-                    value={createForm.maxMembers}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, maxMembers: parseInt(e.target.value) }))}
-                    min="2"
-                    max="50"
-                    className="form-input"
+        <Card sx={{ borderRadius: 3 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Tạo nhóm học tập mới</Typography>
+            <Box component="form" onSubmit={handleCreateGroup}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Tên nhóm *"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                    required
                   />
-                </div>
-
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={createForm.isPrivate}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
-                      className="form-checkbox input__primary"
-                    />
-                    Nhóm riêng tư
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Tags</label>
-                <div className="tags-selection">
-                  {availableTags.map(tag => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        setCreateForm(prev => ({
-                          ...prev,
-                          tags: prev.tags.includes(tag)
-                            ? prev.tags.filter(t => t !== tag)
-                            : [...prev.tags, tag],
-                        }));
-                      }}
-                      className={`tag-select-btn ${createForm.tags.includes(tag) ? 'selected' : ''}`}
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Khóa học *</InputLabel>
+                    <Select
+                      value={createForm.courseId}
+                      label="Khóa học *"
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, courseId: e.target.value }))}
+                      required
+                      MenuProps={{ disableScrollLock: true }}
                     >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="create-btn">
-                  ➕ Tạo nhóm
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setActiveTab('my-groups'); setShowCreateForm(false); }}
-                  className="cancel-btn"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+                      <MenuItem value="">Chọn khóa học</MenuItem>
+                      {availableCourses.map(course => (
+                        <MenuItem key={course._id} value={course._id}>{course.title}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Mô tả *"
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                    required
+                    multiline
+                    rows={4}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Số thành viên tối đa"
+                    value={createForm.maxMembers}
+                    inputProps={{ min: 2, max: 50 }}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, maxMembers: parseInt(e.target.value) }))}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={createForm.isPrivate}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
+                      />
+                    }
+                    label="Nhóm riêng tư"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Tags</Typography>
+                  <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                    {availableTags.map(tag => (
+                      <Chip
+                        key={tag}
+                        label={tag}
+                        color={createForm.tags.includes(tag) ? 'primary' : 'default'}
+                        variant={createForm.tags.includes(tag) ? 'filled' : 'outlined'}
+                        onClick={() => {
+                          setCreateForm(prev => ({
+                            ...prev,
+                            tags: prev.tags.includes(tag)
+                              ? prev.tags.filter(t => t !== tag)
+                              : [...prev.tags, tag],
+                          }));
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Grid>
+              </Grid>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
+                <Button type="submit" variant="contained" startIcon={<AddIcon />} sx={{ flex: 1 }}>Tạo nhóm</Button>
+                <Button type="button" variant="outlined" onClick={() => { setActiveTab('my-groups'); setShowCreateForm(false); }} sx={{ flex: 1 }}>Hủy</Button>
+              </Stack>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="quick-actions">
-        <Link to="/dashboard" className="back-dashboard-btn">
-          🏠 Về Dashboard
-        </Link>
-        <Link to="/dashboard/courses" className="my-courses-btn">
-          📚 Khóa học của tôi
-        </Link>
-        <Link to="/dashboard/calendar" className="calendar-btn">
-          📅 Lịch học
-        </Link>
-      </div>
-    </div>
+      {/* Quick actions */}
+      <Card sx={{ mt: 4, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} gutterBottom>Hành động nhanh</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Button component={Link} to="/dashboard" variant="outlined" startIcon={<HomeIcon />} sx={{ flex: 1 }}>Về Dashboard</Button>
+            <Button component={Link} to="/dashboard/courses" variant="outlined" startIcon={<SchoolIcon />} sx={{ flex: 1 }}>Khóa học của tôi</Button>
+            <Button component={Link} to="/dashboard/calendar" variant="outlined" startIcon={<CalendarMonthIcon />} sx={{ flex: 1 }}>Lịch học</Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

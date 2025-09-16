@@ -1,6 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { Bill } from '@/components/Client/Dashboard/types';
-import './Bills.css';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Stack,
+  Chip,
+  Button,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
+  Alert,
+  CircularProgress,
+  Avatar,
+  Divider
+} from '@mui/material';
+import {
+  AttachMoney as MoneyIcon,
+  CheckCircle as CheckCircleIcon,
+  Pending as PendingIcon,
+  Cancel as CancelIcon,
+  Refresh as RefreshIcon,
+  Visibility as VisibilityIcon,
+  Payment as PaymentIcon,
+  Receipt as ReceiptIcon,
+  Redo as RedoIcon
+} from '@mui/icons-material';
+
+interface Bill {
+  _id: string;
+  studentId: string;
+  courseId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  status: 'completed' | 'pending' | 'failed' | 'refunded';
+  transactionId: string;
+  purpose: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const Bills: React.FC = () => {
   const [billsData, setBillsData] = useState<Bill[]>([]);
@@ -73,14 +120,14 @@ const Bills: React.FC = () => {
     }, 1000);
   }, []);
 
-  const formatPrice = (amount: number) => {
+  const formatPrice = useCallback((amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'long',
@@ -88,9 +135,9 @@ const Bills: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
 
-  const getStatusLabel = (status: Bill['status']) => {
+  const getStatusLabel = useCallback((status: Bill['status']) => {
     switch (status) {
       case 'completed':
         return 'Hoàn thành';
@@ -103,24 +150,24 @@ const Bills: React.FC = () => {
       default:
         return status;
     }
-  };
+  }, []);
 
-  const getStatusClass = (status: Bill['status']) => {
+  const getStatusColor = useCallback((status: Bill['status']): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
     switch (status) {
       case 'completed':
-        return 'dashboard__status-badge--completed';
+        return 'success';
       case 'pending':
-        return 'dashboard__status-badge--pending';
+        return 'warning';
       case 'failed':
-        return 'dashboard__status-badge--failed';
+        return 'error';
       case 'refunded':
-        return 'dashboard__status-badge--refunded';
+        return 'info';
       default:
-        return '';
+        return 'default';
     }
-  };
+  }, []);
 
-  const getPaymentMethodLabel = (method: string) => {
+  const getPaymentMethodLabel = useCallback((method: string) => {
     switch (method) {
       case 'stripe':
         return 'Thẻ tín dụng (Stripe)';
@@ -133,9 +180,9 @@ const Bills: React.FC = () => {
       default:
         return method;
     }
-  };
+  }, []);
 
-  const getPurposeLabel = (purpose: string) => {
+  const getPurposeLabel = useCallback((purpose: string) => {
     switch (purpose) {
       case 'course_purchase':
         return 'Mua khóa học';
@@ -146,9 +193,9 @@ const Bills: React.FC = () => {
       default:
         return purpose;
     }
-  };
+  }, []);
 
-  const getFilteredBills = () => {
+  const filteredBills = useMemo(() => {
     if (!billsData) return [];
 
     switch (selectedFilter) {
@@ -163,226 +210,328 @@ const Bills: React.FC = () => {
       default:
         return billsData;
     }
-  };
+  }, [billsData, selectedFilter]);
 
   // Tính toán stats từ billsData array
-  const totalAmount = billsData.reduce((sum, bill) => sum + bill.amount, 0);
-  const completedAmount = billsData.filter(bill => bill.status === 'completed').reduce((sum, bill) => sum + bill.amount, 0);
-  const pendingAmount = billsData.filter(bill => bill.status === 'pending').reduce((sum, bill) => sum + bill.amount, 0);
-  const failedAmount = billsData.filter(bill => bill.status === 'failed').reduce((sum, bill) => sum + bill.amount, 0);
-  const refundedAmount = billsData.filter(bill => bill.status === 'refunded').reduce((sum, bill) => sum + bill.amount, 0);
+  const stats = useMemo(() => {
+    const totalAmount = billsData.reduce((sum, bill) => sum + bill.amount, 0);
+    const completedAmount = billsData.filter(bill => bill.status === 'completed').reduce((sum, bill) => sum + bill.amount, 0);
+    const pendingAmount = billsData.filter(bill => bill.status === 'pending').reduce((sum, bill) => sum + bill.amount, 0);
+    const failedAmount = billsData.filter(bill => bill.status === 'failed').reduce((sum, bill) => sum + bill.amount, 0);
+    const refundedAmount = billsData.filter(bill => bill.status === 'refunded').reduce((sum, bill) => sum + bill.amount, 0);
+
+    return {
+      totalAmount,
+      completedAmount,
+      pendingAmount,
+      failedAmount,
+      refundedAmount
+    };
+  }, [billsData]);
+
+  const statsCards = useMemo(() => [
+    {
+      icon: <MoneyIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
+      title: 'Tổng giao dịch',
+      value: formatPrice(stats.totalAmount),
+      color: 'primary'
+    },
+    {
+      icon: <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />,
+      title: 'Đã hoàn thành',
+      value: formatPrice(stats.completedAmount),
+      color: 'success'
+    },
+    {
+      icon: <PendingIcon sx={{ fontSize: 40, color: 'warning.main' }} />,
+      title: 'Đang xử lý',
+      value: formatPrice(stats.pendingAmount),
+      color: 'warning'
+    },
+    {
+      icon: <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />,
+      title: 'Thất bại',
+      value: formatPrice(stats.failedAmount),
+      color: 'error'
+    },
+    {
+      icon: <RefreshIcon sx={{ fontSize: 40, color: 'info.main' }} />,
+      title: 'Đã hoàn tiền',
+      value: formatPrice(stats.refundedAmount),
+      color: 'info'
+    }
+  ], [stats, formatPrice]);
 
   if (loading) {
     return (
-      <div className="dashboard">
-        <div className="dashboard__header">
-          <div className="dashboard__breadcrumbs">
-            <span>Dashboard</span>
-            <span>/</span>
-            <span>Hóa đơn & Thanh toán</span>
-          </div>
-          <h1 className="dashboard__title">Hóa đơn & Thanh toán</h1>
-        </div>
-        <div className="dashboard__content">
-          <div className="dashboard__loading">
-            <div className="dashboard__loading-spinner"></div>
-            <p>Đang tải dữ liệu...</p>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Hóa đơn & Thanh toán
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Quản lý tất cả giao dịch thanh toán của bạn
+          </Typography>
+        </Box>
+
+        {/* Loading State */}
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 8 }}>
+            <CircularProgress size={60} sx={{ mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">
+              Đang tải dữ liệu...
+            </Typography>
+          </CardContent>
+        </Card>
+      </Container>
     );
   }
 
   if (!billsData) {
     return (
-      <div className="dashboard">
-        <div className="dashboard__header">
-          <div className="dashboard__breadcrumbs">
-            <span>Dashboard</span>
-            <span>/</span>
-            <span>Hóa đơn & Thanh toán</span>
-          </div>
-          <h1 className="dashboard__title">Hóa đơn & Thanh toán</h1>
-        </div>
-        <div className="dashboard__content">
-          <div className="dashboard__error">
-            <h2>Không thể tải dữ liệu</h2>
-            <p>Vui lòng thử lại sau</p>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Hóa đơn & Thanh toán
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Quản lý tất cả giao dịch thanh toán của bạn
+          </Typography>
+        </Box>
+
+        {/* Error State */}
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <Typography variant="h6">Không thể tải dữ liệu</Typography>
+          <Typography>Vui lòng thử lại sau</Typography>
+        </Alert>
+      </Container>
     );
   }
 
   return (
-    <div className="dashboard">
+    <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Header */}
-      <div className="dashboard__header">
-        <div className="dashboard__breadcrumbs">
-          <span>Dashboard</span>
-          <span>/</span>
-          <span>Hóa đơn & Thanh toán</span>
-        </div>
-        <h1 className="dashboard__title">Hóa đơn & Thanh toán</h1>
-      </div>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Hóa đơn & Thanh toán
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Quản lý tất cả giao dịch thanh toán của bạn
+        </Typography>
+      </Box>
 
-      {/* Content */}
-      <div className="dashboard__content">
-        {/* Stats Overview */}
-        <div className="dashboard__bills-stats">
-          <div className="dashboard__bills-stat">
-            <div className="dashboard__bills-stat-icon">💰</div>
-            <div className="dashboard__bills-stat-content">
-              <h4>Tổng giao dịch</h4>
-              <span>{formatPrice(totalAmount)}</span>
-            </div>
-          </div>
+      {/* Stats Overview */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {statsCards.map((stat, index) => (
+          <Grid item xs={12} sm={6} md={2.4} key={index}>
+            <Card
+              sx={{
+                height: '100%',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4
+                }
+              }}
+            >
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: `${stat.color}.light`, width: 60, height: 60 }}>
+                    {stat.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      {stat.title}
+                    </Typography>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
+                      {stat.value}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-          <div className="dashboard__bills-stat">
-            <div className="dashboard__bills-stat-icon">✅</div>
-            <div className="dashboard__bills-stat-content">
-              <h4>Đã hoàn thành</h4>
-              <span>{formatPrice(completedAmount)}</span>
-            </div>
-          </div>
-
-          <div className="dashboard__bills-stat">
-            <div className="dashboard__bills-stat-icon">⏳</div>
-            <div className="dashboard__bills-stat-content">
-              <h4>Đang xử lý</h4>
-              <span>{formatPrice(pendingAmount)}</span>
-            </div>
-          </div>
-
-          <div className="dashboard__bills-stat">
-            <div className="dashboard__bills-stat-icon">❌</div>
-            <div className="dashboard__bills-stat-content">
-              <h4>Thất bại</h4>
-              <span>{formatPrice(failedAmount)}</span>
-            </div>
-          </div>
-
-          <div className="dashboard__bills-stat">
-            <div className="dashboard__bills-stat-icon">🔄</div>
-            <div className="dashboard__bills-stat-content">
-              <h4>Đã hoàn tiền</h4>
-              <span>{formatPrice(refundedAmount)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="dashboard__tabs">
-          <button
-            className={`dashboard__tab ${selectedFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('all')}
+      {/* Filter Tabs */}
+      <Card sx={{ mb: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={selectedFilter}
+            onChange={(_, newValue) => setSelectedFilter(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
           >
-            Tất cả ({billsData.length})
-          </button>
-          <button
-            className={`dashboard__tab ${selectedFilter === 'completed' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('completed')}
-          >
-            Hoàn thành ({billsData.filter((bill) => bill.status === 'completed').length})
-          </button>
-          <button
-            className={`dashboard__tab ${selectedFilter === 'pending' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('pending')}
-          >
-            Đang xử lý ({billsData.filter((bill) => bill.status === 'pending').length})
-          </button>
-          <button
-            className={`dashboard__tab ${selectedFilter === 'failed' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('failed')}
-          >
-            Thất bại ({billsData.filter((bill) => bill.status === 'failed').length})
-          </button>
-          <button
-            className={`dashboard__tab ${selectedFilter === 'refunded' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('refunded')}
-          >
-            Đã hoàn tiền ({billsData.filter((bill) => bill.status === 'refunded').length})
-          </button>
-        </div>
+            <Tab
+              label={`Tất cả (${billsData.length})`}
+              value="all"
+              icon={<MoneyIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label={`Hoàn thành (${billsData.filter((bill) => bill.status === 'completed').length})`}
+              value="completed"
+              icon={<CheckCircleIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label={`Đang xử lý (${billsData.filter((bill) => bill.status === 'pending').length})`}
+              value="pending"
+              icon={<PendingIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label={`Thất bại (${billsData.filter((bill) => bill.status === 'failed').length})`}
+              value="failed"
+              icon={<CancelIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label={`Đã hoàn tiền (${billsData.filter((bill) => bill.status === 'refunded').length})`}
+              value="refunded"
+              icon={<RefreshIcon />}
+              iconPosition="start"
+            />
+          </Tabs>
+        </Box>
+      </Card>
 
-        {/* Bills List */}
-        <div className="dashboard__section">
-          <div className="dashboard__section-header">
-            <h2>Danh sách hóa đơn</h2>
-            <p>Quản lý tất cả giao dịch thanh toán của bạn</p>
-          </div>
+      {/* Bills List */}
+      <Card>
+        <CardContent>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" component="h2" gutterBottom>
+              Danh sách hóa đơn
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Quản lý tất cả giao dịch thanh toán của bạn
+            </Typography>
+          </Box>
 
-          {getFilteredBills().length === 0 ? (
-            <div className="dashboard__empty">
-              <div className="dashboard__empty-icon">💰</div>
-              <h3>Không có hóa đơn nào</h3>
-              <p>Bạn chưa có giao dịch thanh toán nào</p>
-            </div>
+          {filteredBills.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <MoneyIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Không có hóa đơn nào
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Bạn chưa có giao dịch thanh toán nào
+              </Typography>
+            </Box>
           ) : (
-            <div className="dashboard__bills-list">
-              {getFilteredBills().map((bill) => (
-                <div key={bill._id} className="dashboard__bill-card">
-                  <div className="dashboard__bill-header">
-                    <div className="dashboard__bill-info">
-                      <h4>Giao dịch #{bill.transactionId}</h4>
-                      <p>Mục đích: {getPurposeLabel(bill.purpose)}</p>
-                      <span className="dashboard__bill-date">{formatDate(bill.createdAt)}</span>
-                    </div>
-                    <div className="dashboard__bill-amount">
-                      <span className="dashboard__bill-price">{formatPrice(bill.amount)}</span>
-                      <span className={`dashboard__status-badge ${getStatusClass(bill.status)}`}>
-                        {getStatusLabel(bill.status)}
-                      </span>
-                    </div>
-                  </div>
+            <TableContainer component={Paper} variant="outlined">
+              <Table>
+                <TableBody>
+                  {filteredBills.map((bill, index) => (
+                    <React.Fragment key={bill._id}>
+                      <TableRow
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}
+                      >
+                        <TableCell>
+                          <Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              Giao dịch #{bill.transactionId}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {getPurposeLabel(bill.purpose)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDate(bill.createdAt)}
+                            </Typography>
+                          </Box>
+                        </TableCell>
 
-                  <div className="dashboard__bill-details">
-                    <div className="dashboard__bill-method">
-                      <strong>Phương thức:</strong> {getPaymentMethodLabel(bill.paymentMethod)}
-                    </div>
-                    {bill.paidAt && (
-                      <div className="dashboard__bill-paid">
-                        <strong>Thanh toán:</strong> {formatDate(bill.paidAt)}
-                      </div>
-                    )}
-                    {/* {bill.refundedAt && (
-                      <div className="dashboard__bill-refunded">
-                        <strong>Hoàn tiền:</strong> {formatDate(bill.refundedAt)}
-                      </div>
-                    )} */}
-                  </div>
+                        <TableCell>
+                          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                            {formatPrice(bill.amount)}
+                          </Typography>
+                        </TableCell>
 
-                  <div className="dashboard__bill-actions">
-                    <button className="dashboard__btn dashboard__btn--outline">
-                      <span>👁️</span>
-                      Xem chi tiết
-                    </button>
-                    {bill.status === 'pending' && (
-                      <button className="dashboard__btn dashboard__btn--primary">
-                        <span>💳</span>
-                        Thanh toán ngay
-                      </button>
-                    )}
-                    {bill.status === 'failed' && (
-                      <button className="dashboard__btn dashboard__btn--secondary">
-                        <span>🔄</span>
-                        Thử lại
-                      </button>
-                    )}
-                    {bill.status === 'completed' && (
-                      <button className="dashboard__btn dashboard__btn--outline">
-                        <span>📄</span>
-                        Tải hóa đơn
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                        <TableCell>
+                          <Chip
+                            label={getStatusLabel(bill.status)}
+                            color={getStatusColor(bill.status)}
+                            size="small"
+                          />
+                        </TableCell>
+
+                        <TableCell>
+                          <Typography variant="body2">
+                            {getPaymentMethodLabel(bill.paymentMethod)}
+                          </Typography>
+                          {bill.paidAt && (
+                            <Typography variant="caption" color="text.secondary">
+                              Thanh toán: {formatDate(bill.paidAt)}
+                            </Typography>
+                          )}
+                        </TableCell>
+
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<VisibilityIcon />}
+                            >
+                              Chi tiết
+                            </Button>
+
+                            {bill.status === 'pending' && (
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<PaymentIcon />}
+                              >
+                                Thanh toán
+                              </Button>
+                            )}
+
+                            {bill.status === 'failed' && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<RedoIcon />}
+                                color="warning"
+                              >
+                                Thử lại
+                              </Button>
+                            )}
+
+                            {bill.status === 'completed' && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<ReceiptIcon />}
+                              >
+                                Tải hóa đơn
+                              </Button>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                      {index < filteredBills.length - 1 && (
+                        <TableRow>
+                          <TableCell colSpan={5} sx={{ py: 0 }}>
+                            <Divider />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

@@ -196,15 +196,41 @@ export const clientCoursesService = {
     return response.data;
   },
 
-  // Create VNPay payment
+  // Create VNPay payment (mock)
   async createVNPayPayment(courseId: string, data: {
     amount: number;
     courseTitle: string;
+    userInfo?: {
+      fullName: string;
+      phone: string;
+      address: string;
+    };
   }) {
     const response = await api.post(`/client/payments/vnpay/${courseId}`, {
       amount: data.amount,
       courseTitle: data.courseTitle,
-      returnUrl: `${import.meta.env.VITE_API_BASE_URL || 'https://lms-backend-cf11.onrender.com'}/api/payments/vnpay/return`,
+      userInfo: data.userInfo,
+      returnUrl: `${import.meta.env.VITE_API_BASE_URL || 'https://lms-backend-cf11.onrender.com'}/api/client/payments/vnpay/return`,
+      cancelUrl: `${window.location.origin}/courses/${courseId}`
+    });
+    return response.data;
+  },
+
+  // Create VNPay payment (real)
+  async createVNPayPaymentReal(courseId: string, data: {
+    amount: number;
+    courseTitle: string;
+    userInfo?: {
+      fullName: string;
+      phone: string;
+      address: string;
+    };
+  }) {
+    const response = await api.post(`/client/payments/vnpay-real/${courseId}`, {
+      amount: data.amount,
+      courseTitle: data.courseTitle,
+      userInfo: data.userInfo,
+      returnUrl: `${import.meta.env.VITE_API_BASE_URL || 'https://lms-backend-cf11.onrender.com'}/api/client/payments/vnpay/return`,
       cancelUrl: `${window.location.origin}/courses/${courseId}`
     });
     return response.data;

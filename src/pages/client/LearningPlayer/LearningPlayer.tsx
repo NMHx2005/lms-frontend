@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/client/Header';
 import Footer from '@/components/Layout/client/Footer';
 import LearningSidebar from '@/components/Client/LearningPlayer/LearningSidebar/LearningSidebar';
-import LearningContent from '@/components/Client/LearningPlayer/LearningContent/LearningContent';
+import { clientAuthService } from '@/services/client/auth.service';
+import { clientCoursesService } from '@/services/client/courses.service';
 import './LearningPlayer.css';
 
 interface Lesson {
@@ -29,35 +30,87 @@ interface Course {
   instructor: string;
   image: string;
   description: string;
+  domain: string;
+  level: string;
+  price: number;
+  enrolledStudents: string[];
+  instructorId: {
+    _id: string;
+    name: string;
+    avatar: string;
+  };
 }
 
 const LearningPlayer: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  
+
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [enrollment, setEnrollment] = useState<any>(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mock course data
-        const mockCourse: Course = {
-          id: courseId || '1',
-          title: 'Đào tạo lập trình viên quốc tế',
-          instructor: 'Nguyễn Văn A',
-          image: 'https://storage.googleapis.com/a1aa/image/0820ec3b-33e6-468b-cc54-d7317c4a00fd.jpg',
-          description: 'Khóa học toàn diện về lập trình web từ cơ bản đến nâng cao'
-        };
-        
-        // Mock sections and lessons data
+
+        if (!courseId) {
+          setError('Khóa học không tồn tại');
+          return;
+        }
+
+        // Fetch course details and enrollment data
+        const [courseResponse, enrolledCoursesResponse] = await Promise.allSettled([
+          clientCoursesService.getCourseById(courseId),
+          clientAuthService.getEnrolledCourses({ limit: 100 })
+        ]);
+
+        let courseData: Course | null = null;
+        let enrollmentData: any = null;
+
+        // Get course data
+        if (courseResponse.status === 'fulfilled' && courseResponse.value.success) {
+          const courseInfo = courseResponse.value.data;
+          courseData = {
+            id: courseInfo._id,
+            title: courseInfo.title,
+            instructor: courseInfo.instructorId?.name || 'N/A',
+            image: courseInfo.thumbnail,
+            description: courseInfo.description,
+            domain: courseInfo.domain,
+            level: courseInfo.level,
+            price: courseInfo.price,
+            enrolledStudents: courseInfo.enrolledStudents || [],
+            instructorId: courseInfo.instructorId
+          };
+        }
+
+        // Get enrollment data
+        if (enrolledCoursesResponse.status === 'fulfilled' && enrolledCoursesResponse.value.success) {
+          const enrollments = enrolledCoursesResponse.value.data.enrollments || enrolledCoursesResponse.value.data;
+          enrollmentData = enrollments.find((e: any) => e.courseId._id === courseId);
+        }
+
+        if (!courseData) {
+          setError('Không thể tải thông tin khóa học');
+          return;
+        }
+
+        if (!enrollmentData) {
+          setError('Bạn chưa đăng ký khóa học này');
+          return;
+        }
+
+        setCourse(courseData);
+        setEnrollment(enrollmentData);
+        setProgress(enrollmentData.progress || 0);
+
+        // Tạm thời sử dụng dữ liệu mock cho sections và lessons
+        // TODO: Thay thế bằng API thật khi có
         const mockSections: Section[] = [
           {
             id: '1',
@@ -192,15 +245,14 @@ const LearningPlayer: React.FC = () => {
             ]
           }
         ];
-        
-        setCourse(mockCourse);
+
         setSections(mockSections);
-        
+
         // Set first lesson as current
         if (mockSections.length > 0 && mockSections[0].lessons.length > 0) {
           setCurrentLessonId(mockSections[0].lessons[0].id);
         }
-        
+
       } catch (err) {
         setError('Không thể tải thông tin khóa học');
       } finally {
@@ -218,28 +270,13 @@ const LearningPlayer: React.FC = () => {
   };
 
   const handleSectionToggle = (sectionId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
+    setSections(prev => prev.map(section =>
+      section.id === sectionId
         ? { ...section, isExpanded: !section.isExpanded }
         : section
     ));
   };
 
-  const handleLessonComplete = (lessonId: string) => {
-    setSections(prev => prev.map(section => ({
-      ...section,
-      lessons: section.lessons.map(lesson =>
-        lesson.id === lessonId
-          ? { ...lesson, isCompleted: true }
-          : lesson
-      )
-    })));
-  };
-
-  const handleProgressUpdate = (lessonId: string, progress: number) => {
-    // Update progress for video lessons
-    console.log(`Lesson ${lessonId} progress: ${progress}%`);
-  };
 
   const getCurrentLesson = (): Lesson | null => {
     for (const section of sections) {
@@ -283,41 +320,156 @@ const LearningPlayer: React.FC = () => {
   return (
     <div className="learning-player-page">
       <Header />
-      
+
       <main className="learning-player__main">
         <div className="learning-player__container">
           <div className="learning-player__header">
             <div className="learning-player__course-info">
               <img src={course.image} alt={course.title} className="learning-player__course-image" />
               <div className="learning-player__course-details">
-                <h1 className="learning-player__course-title">{course.title}</h1>
-                <p className="learning-player__course-instructor">Giảng viên: {course.instructor}</p>
+                <div className="learning-player__course-header">
+                  <h1 className="learning-player__course-title">{course.title}</h1>
+                  <div className="learning-player__course-badges">
+                    <span className="learning-player__course-level">{course.level}</span>
+                    <span className="learning-player__course-domain">{course.domain}</span>
+                  </div>
+                </div>
+                <p className="learning-player__course-instructor">
+                  <img src={course.instructorId?.avatar} alt={course.instructor} className="learning-player__instructor-avatar" />
+                  Giảng viên: {course.instructor}
+                </p>
+                <div className="learning-player__course-stats">
+                  <div className="learning-player__stat">
+                    <span className="learning-player__stat-icon">👥</span>
+                    <span className="learning-player__stat-text">{course.enrolledStudents?.length || 0} học viên</span>
+                  </div>
+                  <div className="learning-player__stat">
+                    <span className="learning-player__stat-icon">📊</span>
+                    <span className="learning-player__stat-text">Tiến độ: {progress}%</span>
+                  </div>
+                  <div className="learning-player__stat">
+                    <span className="learning-player__stat-icon">📅</span>
+                    <span className="learning-player__stat-text">Đăng ký: {enrollment?.enrolledAt ? new Date(enrollment.enrolledAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                  </div>
+                </div>
+
+                {/* Thông báo về dữ liệu mock */}
+                <div className="learning-player__mock-notice">
+                  <div className="learning-player__notice-icon">ℹ️</div>
+                  <div className="learning-player__notice-content">
+                    <strong>Lưu ý:</strong> Nội dung khóa học hiện đang sử dụng dữ liệu mẫu. Nội dung thật sẽ được cập nhật sớm!
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="learning-player__content">
-            <LearningSidebar
-              courseId={courseId || ''}
-              currentLessonId={currentLessonId}
-              onLessonSelect={handleLessonSelect}
-              sections={sections}
-              onSectionToggle={handleSectionToggle}
-            />
-            
-            {currentLesson ? (
-              <LearningContent
-                lesson={currentLesson}
-                onComplete={handleLessonComplete}
-                onProgressUpdate={handleProgressUpdate}
-              />
-            ) : (
-              <div className="learning-player__no-lesson">
-                <div className="learning-player__no-lesson-icon">📚</div>
-                <h3>Chọn bài học để bắt đầu</h3>
-                <p>Vui lòng chọn một bài học từ danh sách bên trái để bắt đầu học tập</p>
+            {/* Video Player Section */}
+            <div className="learning-player__video-section">
+              {currentLesson ? (
+                <div className="learning-player__video-container">
+                  {currentLesson.type === 'video' ? (
+                    <div className="learning-player__video-player">
+                      <video
+                        controls
+                        className="learning-player__video"
+                        poster={course.image}
+                      >
+                        <source src={currentLesson.content} type="video/mp4" />
+                        Trình duyệt của bạn không hỗ trợ video.
+                      </video>
+                    </div>
+                  ) : (
+                    <div className="learning-player__video-placeholder">
+                      <div className="learning-player__placeholder-content">
+                        <div className="learning-player__play-icon">▶️</div>
+                        <h3>{currentLesson.title}</h3>
+                        <p>{currentLesson.type === 'text' ? 'Nội dung văn bản' : 'Tài liệu học tập'}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="learning-player__video-placeholder">
+                  <div className="learning-player__placeholder-content">
+                    <div className="learning-player__play-icon">📚</div>
+                    <h3>Chọn bài học để bắt đầu</h3>
+                    <p>Vui lòng chọn một bài học từ danh sách bên phải</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Main Content Area */}
+            <div className="learning-player__main-content">
+              {/* Course Tabs */}
+              <div className="learning-player__tabs">
+                <div className="learning-player__tab active">Tổng quan</div>
+                <div className="learning-player__tab">Hỏi đáp</div>
+                <div className="learning-player__tab">Ghi chú</div>
+                <div className="learning-player__tab">Thông báo</div>
+                <div className="learning-player__tab">Đánh giá</div>
+                <div className="learning-player__tab">Công cụ học tập</div>
               </div>
-            )}
+
+              {/* Course Details */}
+              <div className="learning-player__course-details">
+                <h2 className="learning-player__course-title-main">{course.title}</h2>
+
+                <div className="learning-player__course-rating">
+                  <div className="learning-player__stars">⭐⭐⭐⭐⭐</div>
+                  <span className="learning-player__rating-text">4.9 (154 đánh giá)</span>
+                </div>
+
+                <div className="learning-player__course-meta">
+                  <div className="learning-player__meta-item">
+                    <span className="learning-player__meta-icon">👥</span>
+                    <span className="learning-player__meta-text">{course.enrolledStudents?.length || 0} Học viên</span>
+                  </div>
+                  <div className="learning-player__meta-item">
+                    <span className="learning-player__meta-icon">⏱️</span>
+                    <span className="learning-player__meta-text">14,5 giờ Tổng thời gian</span>
+                  </div>
+                  <div className="learning-player__meta-item">
+                    <span className="learning-player__meta-icon">📅</span>
+                    <span className="learning-player__meta-text">Cập nhật tháng 9/2025</span>
+                  </div>
+                  <div className="learning-player__meta-item">
+                    <span className="learning-player__meta-icon">🌐</span>
+                    <span className="learning-player__meta-text">Tiếng Việt</span>
+                  </div>
+                </div>
+
+                {/* Course Description */}
+                <div className="learning-player__description">
+                  <h3>Mô tả khóa học</h3>
+                  <p>{course.description}</p>
+                </div>
+
+                {/* Learning Objectives */}
+                <div className="learning-player__objectives">
+                  <h3>Bạn sẽ học được gì</h3>
+                  <ul>
+                    <li>Nắm vững kiến thức cơ bản về {course.domain}</li>
+                    <li>Thực hành các dự án thực tế</li>
+                    <li>Phát triển kỹ năng lập trình chuyên nghiệp</li>
+                    <li>Chuẩn bị cho các cơ hội nghề nghiệp</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="learning-player__sidebar">
+              <LearningSidebar
+                courseId={courseId || ''}
+                currentLessonId={currentLessonId}
+                onLessonSelect={handleLessonSelect}
+                sections={sections}
+                onSectionToggle={handleSectionToggle}
+              />
+            </div>
           </div>
         </div>
       </main>

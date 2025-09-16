@@ -29,14 +29,14 @@
   font-weight: 700;
   color: #111827;
   line-height: 1.2;
-  margin: 0;
+  margin: 0 0 20px 0;
 }
 
 .course-cta__description {
   font-size: 1.125rem;
   color: #6b7280;
   line-height: 1.6;
-  margin: 0;
+ margin: 0 0 20px 0;
 }
 
 .course-cta__features {

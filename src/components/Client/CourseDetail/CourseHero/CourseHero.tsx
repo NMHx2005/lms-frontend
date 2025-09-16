@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientCoursesService } from '../../../../services/client/courses.service';
+import { wishlistService } from '../../../../services/client/wishlist.service';
+import PaymentForm from '../PaymentForm/PaymentForm';
+import { toast } from 'react-hot-toast';
 import './CourseHero.css';
 
 interface CourseHeroProps {
@@ -35,9 +38,15 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'vnpay' | 'contact_teacher'>('vnpay');
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [isProcessingVNPay, setIsProcessingVNPay] = useState(false);
+
+  // Wishlist states
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isCheckingWishlist, setIsCheckingWishlist] = useState(true);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+  const [wishlistId, setWishlistId] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
   // Check if user is already enrolled in this course
@@ -61,6 +70,27 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
     };
 
     checkEnrollmentStatus();
+  }, [course.id]);
+
+  // Check if course is in wishlist
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      try {
+        setIsCheckingWishlist(true);
+        const response = await wishlistService.isInWishlist(course.id);
+
+        if (response.success && response.data) {
+          setIsInWishlist(response.data.isInWishlist);
+          setWishlistId(response.data.wishlistId || null);
+        }
+      } catch (error) {
+        console.error('Error checking wishlist status:', error);
+      } finally {
+        setIsCheckingWishlist(false);
+      }
+    };
+
+    checkWishlistStatus();
   }, [course.id]);
 
   const formatPrice = (price: number) => {
@@ -101,6 +131,7 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
       );
     }
 
+    // Add empty stars
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
@@ -113,122 +144,90 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
     return stars;
   };
 
-  const handleEnroll = async () => {
-    if (isEnrolled) {
-      // If already enrolled, navigate to course content
-      navigate(`/dashboard/courses/${course.id}`);
-      return;
-    }
-
-    // Check enrollment status first
+  // Handle wishlist toggle
+  const handleWishlistToggle = async () => {
     try {
-      const enrollments = await clientCoursesService.getUserEnrollments();
-      const existingEnrollment = enrollments.data?.find(
-        (enrollment: any) => enrollment.courseId === course.id
-      );
+      setIsTogglingWishlist(true);
 
-      if (existingEnrollment) {
-        setIsEnrolled(true);
-        setEnrollmentStatus('success');
-        setErrorMessage('Bạn đã đăng ký khóa học này rồi! Đang chuyển hướng...');
-
-        // Auto-navigate to course content after a short delay
-        setTimeout(() => {
-          navigate(`/dashboard/courses/${course.id}`);
-        }, 2000);
-        return;
+      if (isInWishlist && wishlistId) {
+        // Remove from wishlist
+        const response = await wishlistService.removeFromWishlist(wishlistId);
+        if (response.success) {
+          setIsInWishlist(false);
+          setWishlistId(null);
+          toast.success('Đã xóa khỏi danh sách yêu thích');
+        } else {
+          toast.error('Không thể xóa khỏi danh sách yêu thích');
+        }
+      } else {
+        // Add to wishlist
+        const response = await wishlistService.addToWishlist({
+          courseId: course.id,
+          notes: ''
+        });
+        if (response.success) {
+          setIsInWishlist(true);
+          setWishlistId(response.data?._id || null);
+          toast.success('Đã thêm vào danh sách yêu thích');
+        } else {
+          toast.error('Không thể thêm vào danh sách yêu thích');
+        }
       }
-
-      // Show payment modal if not enrolled
-      setShowPaymentModal(true);
     } catch (error) {
-      console.error('Error checking enrollment:', error);
-      // If error checking enrollment, still show payment modal
-      setShowPaymentModal(true);
+      console.error('Error toggling wishlist:', error);
+      toast.error('Có lỗi xảy ra khi thao tác với danh sách yêu thích');
+    } finally {
+      setIsTogglingWishlist(false);
     }
   };
 
-  const handleVNPayPayment = async () => {
+  const handleEnroll = () => {
+    if (isEnrolled) {
+      navigate(`/dashboard/courses/${course.id}`);
+      return;
+    }
+    setShowPaymentForm(true);
+  };
+
+  const handleVNPayPayment = async (paymentInfo: { fullName: string; phone: string; address: string }) => {
     try {
       setIsProcessingVNPay(true);
-      setEnrollmentStatus('idle');
-      setErrorMessage('');
 
-      // Create VNPay payment
-      const paymentResponse = await clientCoursesService.createVNPayPayment(course.id, {
-        amount: course.price,
-        courseTitle: course.title
-      });
-      console.log(paymentResponse);
+      // Use real VNPay for production, mock for development
+      const useRealVNPay = import.meta.env.PROD || import.meta.env.VITE_USE_REAL_VNPAY === 'true';
 
-      if (paymentResponse.success && paymentResponse.data?.paymentUrl) {
-        // Redirect to VNPay payment gateway
-        window.location.href = paymentResponse.data.paymentUrl;
-      } else if (paymentResponse.success) {
-        setIsEnrolled(true);
-        setEnrollmentStatus('success');
-        setErrorMessage('Bạn đã đăng ký khóa học này rồi! Đang chuyển hướng...');
-        setShowPaymentModal(false);
-        setTimeout(() => {
-          navigate(`/dashboard/courses/${course.id}`);
-        }, 2000);
+      const response = useRealVNPay
+        ? await clientCoursesService.createVNPayPaymentReal(course.id, {
+          amount: course.price,
+          courseTitle: course.title,
+          userInfo: paymentInfo
+        })
+        : await clientCoursesService.createVNPayPayment(course.id, {
+          amount: course.price,
+          courseTitle: course.title,
+          userInfo: paymentInfo
+        });
+
+      if (response.success && response.data?.paymentUrl) {
+        // Redirect to VNPay payment page
+        window.location.href = response.data.paymentUrl;
       } else {
         setEnrollmentStatus('error');
-        setErrorMessage('VNPay gặp sự cố kỹ thuật (Error code 99). Vui lòng thử phương thức "Liên hệ giảng viên" hoặc thử lại sau.');
+        setErrorMessage(response.error || 'Không thể tạo liên kết thanh toán VNPay');
+        setShowPaymentForm(false);
+        toast.error(response.error || 'Không thể tạo liên kết thanh toán VNPay');
       }
     } catch (error: any) {
-      setEnrollmentStatus('error');
-      setErrorMessage('Có lỗi xảy ra khi tạo thanh toán VNPay');
       console.error('VNPay payment error:', error);
+      setEnrollmentStatus('error');
+      setErrorMessage('Có lỗi xảy ra khi tạo liên kết thanh toán VNPay. Vui lòng thử lại.');
+      setShowPaymentForm(false);
+      toast.error('Có lỗi xảy ra khi tạo liên kết thanh toán VNPay. Vui lòng thử lại.');
     } finally {
       setIsProcessingVNPay(false);
     }
   };
 
-  const handleContactTeacher = async () => {
-    try {
-      setIsEnrolling(true);
-      setEnrollmentStatus('idle');
-      setErrorMessage('');
-      setShowPaymentModal(false);
-
-      // Create pending enrollment with contact_teacher method
-      const response = await clientCoursesService.enrollInCourseDirect(course.id, {
-        paymentMethod: 'contact_teacher',
-        agreeToTerms: true
-      });
-
-      if (response.success) {
-        // Check if user is already enrolled
-        if (response.data?.alreadyEnrolled) {
-          setIsEnrolled(true);
-          setEnrollmentStatus('success');
-          setErrorMessage('Bạn đã đăng ký khóa học này rồi! Đang chuyển hướng...');
-          setShowPaymentModal(false);
-
-          // Auto-navigate to course content after a short delay
-          setTimeout(() => {
-            navigate(`/dashboard/courses/${course.id}`);
-          }, 2000);
-        } else {
-          setEnrollmentStatus('success');
-          setIsEnrolled(true);
-          // Show success message and redirect
-          setTimeout(() => {
-            navigate('/dashboard/courses');
-          }, 3000);
-        }
-      } else {
-        setEnrollmentStatus('error');
-        setErrorMessage(response.error || 'Có lỗi xảy ra khi đăng ký khóa học');
-      }
-    } catch (error: any) {
-      setEnrollmentStatus('error');
-      setErrorMessage('Có lỗi xảy ra khi đăng ký khóa học');
-    } finally {
-      setIsEnrolling(false);
-    }
-  };
 
   const getEnrollButtonText = () => {
     if (isCheckingEnrollment) return 'Đang kiểm tra...';
@@ -333,7 +332,7 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
                     <div className="course-hero__error-actions">
                       <button
                         className="course-hero__error-retry-btn"
-                        onClick={() => setShowPaymentModal(true)}
+                        onClick={() => setShowPaymentForm(true)}
                       >
                         Thử phương thức khác
                       </button>
@@ -414,6 +413,38 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
                     </div>
                   </div>
 
+                  {/* Wishlist Button */}
+                  <button
+                    className={`course-hero__wishlist-btn ${isInWishlist ? 'course-hero__wishlist-btn--active' : ''}`}
+                    onClick={handleWishlistToggle}
+                    disabled={isCheckingWishlist || isTogglingWishlist}
+                    title={isInWishlist ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích'}
+                  >
+                    {isCheckingWishlist ? (
+                      <div className="course-hero__wishlist-loading">
+                        <div className="course-hero__wishlist-spinner"></div>
+                      </div>
+                    ) : isTogglingWishlist ? (
+                      <div className="course-hero__wishlist-loading">
+                        <div className="course-hero__wishlist-spinner"></div>
+                      </div>
+                    ) : (
+                      <svg
+                        width="24"
+                        height="24"
+                        fill={isInWishlist ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    )}
+                    <span>
+                      {isInWishlist ? 'Đã yêu thích' : 'Yêu thích'}
+                    </span>
+                  </button>
+
                   <button
                     className={getEnrollButtonClass()}
                     onClick={handleEnroll}
@@ -453,95 +484,15 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
         </div>
       </section>
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="course-hero__payment-modal">
-          <div className="course-hero__payment-modal-content">
-            <div className="course-hero__payment-modal-header">
-              <h3>Chọn phương thức thanh toán</h3>
-              <button
-                className="course-hero__payment-modal-close"
-                onClick={() => setShowPaymentModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="course-hero__payment-modal-body">
-              <div className="course-hero__payment-methods">
-                <div className="course-hero__payment-method">
-                  <input
-                    type="radio"
-                    id="vnpay"
-                    name="paymentMethod"
-                    value="vnpay"
-                    checked={selectedPaymentMethod === 'vnpay'}
-                    onChange={(e) => setSelectedPaymentMethod(e.target.value as any)}
-                  />
-                  <label htmlFor="vnpay">
-                    <span className="course-hero__payment-method-icon">🏦</span>
-                    <span className="course-hero__payment-method-name">Thanh toán qua VNPay</span>
-                    <span className="course-hero__payment-method-desc">Thanh toán trực tuyến an toàn</span>
-                  </label>
-                </div>
-
-                <div className="course-hero__payment-method">
-                  <input
-                    type="radio"
-                    id="contact_teacher"
-                    name="paymentMethod"
-                    value="contact_teacher"
-                    checked={selectedPaymentMethod === 'contact_teacher'}
-                    onChange={(e) => setSelectedPaymentMethod(e.target.value as any)}
-                  />
-                  <label htmlFor="contact_teacher">
-                    <span className="course-hero__payment-method-icon">👨‍🏫</span>
-                    <span className="course-hero__payment-method-name">Liên hệ giáo viên</span>
-                    <span className="course-hero__payment-method-desc">Đăng ký trực tiếp với giáo viên</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="course-hero__payment-summary">
-                <div className="course-hero__payment-summary-item">
-                  <span>Giá khóa học:</span>
-                  <span>{formatPrice(course.price)}</span>
-                </div>
-                <div className="course-hero__payment-summary-item course-hero__payment-summary-total">
-                  <span>Tổng cộng:</span>
-                  <span>{formatPrice(course.price)}</span>
-                </div>
-              </div>
-
-              <div className="course-hero__payment-actions">
-                <button
-                  className="course-hero__payment-cancel-btn"
-                  onClick={() => setShowPaymentModal(false)}
-                >
-                  Hủy
-                </button>
-                {selectedPaymentMethod === 'vnpay' ? (
-                  <button
-                    className="course-hero__payment-confirm-btn course-hero__payment-confirm-btn--vnpay"
-                    onClick={handleVNPayPayment}
-                    disabled={isProcessingVNPay}
-                  >
-                    {isProcessingVNPay ? 'Đang xử lý...' : 'Thanh toán VNPay'}
-                  </button>
-                ) : (
-                  <button
-                    className="course-hero__payment-confirm-btn course-hero__payment-confirm-btn--contact"
-                    onClick={handleContactTeacher}
-                    disabled={isEnrolling}
-                  >
-                    {isEnrolling ? 'Đang xử lý...' : 'Liên hệ giáo viên'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Payment Form Modal */}
+      <PaymentForm
+        visible={showPaymentForm}
+        onCancel={() => setShowPaymentForm(false)}
+        onConfirm={handleVNPayPayment}
+        courseTitle={course.title}
+        coursePrice={course.price}
+        loading={isProcessingVNPay}
+      />
     </>
   );
 };

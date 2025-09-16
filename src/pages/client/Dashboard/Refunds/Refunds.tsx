@@ -1,6 +1,40 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import './Refunds.css';
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Stack,
+  Chip,
+  Button,
+  Tabs,
+  Tab,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Avatar,
+  Divider,
+  IconButton
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  Add as AddIcon,
+  Cancel as CancelIcon,
+  CheckCircle as CheckCircleIcon,
+  Pending as PendingIcon,
+  Refresh as RefreshIcon,
+  Assignment as AssignmentIcon,
+  MonetizationOn as MoneyIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
 
 interface RefundRequest {
   id: string;
@@ -20,6 +54,9 @@ const Refunds: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'processing'>('all');
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedReason, setSelectedReason] = useState('');
+  const [description, setDescription] = useState('');
 
   // Mock data
   const refundRequests: RefundRequest[] = [
@@ -75,30 +112,46 @@ const Refunds: React.FC = () => {
     }
   ];
 
-  const filteredRequests = refundRequests.filter(request => {
-    const matchesTab = activeTab === 'all' || request.status === activeTab;
-    const matchesSearch = request.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.reason.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+  const filteredRequests = useMemo(() => {
+    return refundRequests.filter(request => {
+      const matchesTab = activeTab === 'all' || request.status === activeTab;
+      const matchesSearch = request.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.reason.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesTab && matchesSearch;
+    });
+  }, [refundRequests, activeTab, searchTerm]);
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { label: 'Chờ xử lý', class: 'status-badge--pending' },
-      approved: { label: 'Đã duyệt', class: 'status-badge--approved' },
-      rejected: { label: 'Từ chối', class: 'status-badge--rejected' },
-      processing: { label: 'Đang xử lý', class: 'status-badge--processing' }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig];
-    return (
-      <span className={`status-badge ${config.class}`}>
-        {config.label}
-      </span>
-    );
-  };
+  const getStatusColor = useCallback((status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
+    switch (status) {
+      case 'pending':
+        return 'warning';
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      case 'processing':
+        return 'info';
+      default:
+        return 'default';
+    }
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const getStatusLabel = useCallback((status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Chờ xử lý';
+      case 'approved':
+        return 'Đã duyệt';
+      case 'rejected':
+        return 'Từ chối';
+      case 'processing':
+        return 'Đang xử lý';
+      default:
+        return status;
+    }
+  }, []);
+
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'short',
@@ -106,197 +159,305 @@ const Refunds: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
-  const formatPrice = (amount: number) => {
+  const formatPrice = useCallback((amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
     }).format(amount);
-  };
+  }, []);
+
+  const handleSubmitRequest = useCallback(() => {
+    // Handle form submission
+    console.log('Submitting refund request:', {
+      courseId: selectedCourse,
+      reason: selectedReason,
+      description
+    });
+    setShowForm(false);
+    setSelectedCourse('');
+    setSelectedReason('');
+    setDescription('');
+  }, [selectedCourse, selectedReason, description]);
+
+  const handleCancelRequest = useCallback((requestId: string) => {
+    // Handle cancel request
+    console.log('Canceling request:', requestId);
+  }, []);
+
+  const handleViewDetails = useCallback((requestId: string) => {
+    // Handle view details
+    console.log('Viewing details for request:', requestId);
+  }, []);
 
   return (
-    <div className="dashboard">
-      <div className="dashboard__header">
-        <div className="dashboard__breadcrumbs">
-          <Link to="/dashboard">Dashboard</Link>
-          <span>Refund Requests</span>
-        </div>
-        <h1 className="dashboard__title">Yêu cầu hoàn tiền</h1>
-      </div>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Yêu cầu hoàn tiền
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Quản lý các yêu cầu hoàn tiền của bạn
+        </Typography>
+      </Box>
 
-      <div className="dashboard__content">
-        {/* Tabs */}
-        <div className="dashboard__tabs">
-          <button
-            className={`dashboard__tab ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
+      {/* Tabs */}
+      <Card sx={{ mb: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
           >
-            Tất cả
-          </button>
-          <button
-            className={`dashboard__tab ${activeTab === 'pending' ? 'active' : ''}`}
-            onClick={() => setActiveTab('pending')}
-          >
-            Chờ xử lý
-          </button>
-          <button
-            className={`dashboard__tab ${activeTab === 'processing' ? 'active' : ''}`}
-            onClick={() => setActiveTab('processing')}
-          >
-            Đang xử lý
-          </button>
-          <button
-            className={`dashboard__tab ${activeTab === 'approved' ? 'active' : ''}`}
-            onClick={() => setActiveTab('approved')}
-          >
-            Đã duyệt
-          </button>
-          <button
-            className={`dashboard__tab ${activeTab === 'rejected' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rejected')}
-          >
-            Từ chối
-          </button>
-        </div>
+            <Tab
+              label="Tất cả"
+              value="all"
+              icon={<AssignmentIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Chờ xử lý"
+              value="pending"
+              icon={<PendingIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Đang xử lý"
+              value="processing"
+              icon={<RefreshIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Đã duyệt"
+              value="approved"
+              icon={<CheckCircleIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Từ chối"
+              value="rejected"
+              icon={<CancelIcon />}
+              iconPosition="start"
+            />
+          </Tabs>
+        </Box>
+      </Card>
 
-        {/* Filter Bar */}
-        <div className="dashboard__filter-bar">
-          <div className="dashboard__search">
-            <input
-              type="text"
+      {/* Filter Bar */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+            <TextField
+              fullWidth
               placeholder="Tìm kiếm theo tên khóa học hoặc lý do..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+              sx={{ maxWidth: 500 }}
             />
-            <button>🔍</button>
-          </div>
-          <button
-            className="dashboard__btn dashboard__btn--primary"
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm ? 'Đóng form' : 'Gửi yêu cầu mới'}
-          </button>
-        </div>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowForm(true)}
+              sx={{ minWidth: 180 }}
+            >
+              Gửi yêu cầu mới
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
-        {/* New Request Form */}
-        {showForm && (
-          <div className="dashboard__form-section">
-            <h3>Gửi yêu cầu hoàn tiền mới</h3>
-            <div className="refund-form">
-              <div className="form-group">
-                <label>Chọn khóa học:</label>
-                <select>
-                  <option value="">-- Chọn khóa học --</option>
-                  <option value="1">React Advanced Patterns</option>
-                  <option value="2">Node.js Backend Development</option>
-                  <option value="3">UI/UX Design Fundamentals</option>
-                  <option value="4">Python Data Science</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Lý do hoàn tiền:</label>
-                <select>
-                  <option value="">-- Chọn lý do --</option>
-                  <option value="not-suitable">Không phù hợp với nhu cầu</option>
-                  <option value="wrong-content">Nội dung không đúng mô tả</option>
-                  <option value="poor-quality">Chất lượng kém</option>
-                  <option value="change-plan">Thay đổi kế hoạch học tập</option>
-                  <option value="other">Lý do khác</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Mô tả chi tiết:</label>
-                <textarea
-                  rows={4}
-                  placeholder="Mô tả chi tiết lý do bạn muốn hoàn tiền..."
-                ></textarea>
-              </div>
-              <div className="form-actions">
-                <button className="dashboard__btn dashboard__btn--primary">
-                  Gửi yêu cầu
-                </button>
-                <button 
-                  className="dashboard__btn dashboard__btn--outline"
-                  onClick={() => setShowForm(false)}
-                >
-                  Hủy
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Refund Requests List */}
-        <div className="dashboard__refunds">
+      {/* Refund Requests List */}
+      <Card>
+        <CardContent>
           {filteredRequests.length === 0 ? (
-            <div className="dashboard__empty">
-              <div className="dashboard__empty-icon">📋</div>
-              <h3>Không có yêu cầu hoàn tiền</h3>
-              <p>Bạn chưa có yêu cầu hoàn tiền nào hoặc không có yêu cầu nào khớp với bộ lọc hiện tại.</p>
-            </div>
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <AssignmentIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Không có yêu cầu hoàn tiền
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Bạn chưa có yêu cầu hoàn tiền nào hoặc không có yêu cầu nào khớp với bộ lọc hiện tại.
+              </Typography>
+            </Box>
           ) : (
-            <div className="dashboard__refunds-list">
+            <Stack spacing={3}>
               {filteredRequests.map((request) => (
-                <div key={request.id} className="dashboard__refund-card">
-                  <div className="refund-card__header">
-                    <div className="refund-card__course">
-                      <img 
-                        src={request.courseImage} 
+                <Card key={request.id} variant="outlined">
+                  <CardContent>
+                    {/* Header */}
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start" sx={{ mb: 2 }}>
+                      <Avatar
+                        src={request.courseImage}
                         alt={request.courseName}
-                        className="refund-card__course-image"
+                        sx={{ width: 80, height: 60 }}
+                        variant="rounded"
                       />
-                      <div className="refund-card__course-info">
-                        <h4>{request.courseName}</h4>
-                        <p className="refund-card__amount">{formatPrice(request.amount)}</p>
-                      </div>
-                    </div>
-                    <div className="refund-card__status">
-                      {getStatusBadge(request.status)}
-                    </div>
-                  </div>
-                  
-                  <div className="refund-card__content">
-                    <div className="refund-card__reason">
-                      <strong>Lý do:</strong> {request.reason}
-                    </div>
-                    {request.description && (
-                      <div className="refund-card__description">
-                        <strong>Mô tả:</strong> {request.description}
-                      </div>
-                    )}
-                    {request.adminNote && (
-                      <div className="refund-card__admin-note">
-                        <strong>Ghi chú từ admin:</strong> {request.adminNote}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="refund-card__footer">
-                    <div className="refund-card__dates">
-                      <span>Gửi: {formatDate(request.createdAt)}</span>
-                      <span>Cập nhật: {formatDate(request.updatedAt)}</span>
-                    </div>
-                    <div className="refund-card__actions">
-                      {request.status === 'pending' && (
-                        <button className="dashboard__btn dashboard__btn--outline">
-                          Hủy yêu cầu
-                        </button>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="h6" gutterBottom>
+                          {request.courseName}
+                        </Typography>
+                        <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
+                          {formatPrice(request.amount)}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={getStatusLabel(request.status)}
+                        color={getStatusColor(request.status)}
+                        size="small"
+                      />
+                    </Stack>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* Content */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" gutterBottom>
+                        <strong>Lý do:</strong> {request.reason}
+                      </Typography>
+                      {request.description && (
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <strong>Mô tả:</strong> {request.description}
+                        </Typography>
                       )}
-                      {request.status === 'approved' && (
-                        <button className="dashboard__btn dashboard__btn--secondary">
-                          Xem chi tiết hoàn tiền
-                        </button>
+                      {request.adminNote && (
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                          <Typography variant="body2">
+                            <strong>Ghi chú từ admin:</strong> {request.adminNote}
+                          </Typography>
+                        </Alert>
                       )}
-                    </div>
-                  </div>
-                </div>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* Footer */}
+                    <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Gửi: {formatDate(request.createdAt)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Cập nhật: {formatDate(request.updatedAt)}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1}>
+                        {request.status === 'pending' && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<CancelIcon />}
+                            onClick={() => handleCancelRequest(request.id)}
+                          >
+                            Hủy yêu cầu
+                          </Button>
+                        )}
+                        {request.status === 'approved' && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<MoneyIcon />}
+                            onClick={() => handleViewDetails(request.id)}
+                          >
+                            Xem chi tiết hoàn tiền
+                          </Button>
+                        )}
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<AssignmentIcon />}
+                          onClick={() => handleViewDetails(request.id)}
+                        >
+                          Chi tiết
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
               ))}
-            </div>
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+
+      {/* New Request Dialog */}
+      <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">Gửi yêu cầu hoàn tiền mới</Typography>
+            <IconButton
+              onClick={() => setShowForm(false)}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <FormControl fullWidth>
+              <InputLabel>Chọn khóa học</InputLabel>
+              <Select
+                value={selectedCourse}
+                label="Chọn khóa học"
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                MenuProps={{ disableScrollLock: true }}
+              >
+                <MenuItem value="">-- Chọn khóa học --</MenuItem>
+                <MenuItem value="1">React Advanced Patterns</MenuItem>
+                <MenuItem value="2">Node.js Backend Development</MenuItem>
+                <MenuItem value="3">UI/UX Design Fundamentals</MenuItem>
+                <MenuItem value="4">Python Data Science</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Lý do hoàn tiền</InputLabel>
+              <Select
+                value={selectedReason}
+                label="Lý do hoàn tiền"
+                onChange={(e) => setSelectedReason(e.target.value)}
+                MenuProps={{ disableScrollLock: true }}
+              >
+                <MenuItem value="">-- Chọn lý do --</MenuItem>
+                <MenuItem value="not-suitable">Không phù hợp với nhu cầu</MenuItem>
+                <MenuItem value="wrong-content">Nội dung không đúng mô tả</MenuItem>
+                <MenuItem value="poor-quality">Chất lượng kém</MenuItem>
+                <MenuItem value="change-plan">Thay đổi kế hoạch học tập</MenuItem>
+                <MenuItem value="other">Lý do khác</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label="Mô tả chi tiết"
+              placeholder="Mô tả chi tiết lý do bạn muốn hoàn tiền..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowForm(false)}>
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmitRequest}
+            disabled={!selectedCourse || !selectedReason}
+          >
+            Gửi yêu cầu
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 

@@ -1,7 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarEvent, CalendarCourse } from '../../../types/index';
-import './Calendar.css';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Chip,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  ToggleButton,
+  ToggleButtonGroup,
+  IconButton,
+  Avatar,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  ListItemSecondaryAction,
+  Breadcrumbs,
+  Link as MuiLink,
+  CircularProgress,
+  Paper,
+} from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import TodayIcon from '@mui/icons-material/Today';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ViewWeekIcon from '@mui/icons-material/ViewWeek';
+import ViewDayIcon from '@mui/icons-material/ViewDay';
+import AddIcon from '@mui/icons-material/Add';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import SchoolIcon from '@mui/icons-material/School';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -12,7 +51,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [filterCourse, setFilterCourse] = useState('');
-console.log(selectedDate, showEventForm);
+  console.log(selectedDate, showEventForm);
   useEffect(() => {
     // Simulate API call
     setLoading(true);
@@ -132,15 +171,15 @@ console.log(selectedDate, showEventForm);
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
+
     const days = [];
     const currentDate = new Date(startDate);
-    
+
     while (currentDate <= lastDay || days.length < 42) {
       days.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return days;
   };
 
@@ -154,14 +193,14 @@ console.log(selectedDate, showEventForm);
   const getWeekDays = (date: Date) => {
     const weekStart = new Date(date);
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    
+
     const days = [];
     for (let i = 0; i < 7; i++) {
       const day = new Date(weekStart);
       day.setDate(day.getDate() + i);
       days.push(day);
     }
-    
+
     return days;
   };
 
@@ -210,252 +249,400 @@ console.log(selectedDate, showEventForm);
     setCurrentDate(new Date());
   };
 
-  const filteredEvents = filterCourse 
+  const filteredEvents = filterCourse
     ? events.filter(event => event.courseId === filterCourse)
     : events;
 
   if (loading) {
     return (
-      <div className="calendar-page">
-        <div className="calendar-loading">
-          <div className="loading-spinner"></div>
-          <p>Đang tải lịch học...</p>
-        </div>
-      </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" alignItems="center" justifyContent="center" minHeight={400}>
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress />
+            <Typography variant="h6">Đang tải lịch học...</Typography>
+          </Stack>
+        </Box>
+      </Container>
     );
   }
 
   return (
-    <div className="calendar-page">
-      <div className="calendar-header">
-        <h1>Lịch học 📅</h1>
-        <p>Quản lý lịch học và deadline của bạn</p>
-      </div>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header */}
+      <Breadcrumbs sx={{ mb: 3 }}>
+        <MuiLink color="inherit" href="/dashboard">Dashboard</MuiLink>
+        <Typography color="text.primary">Lịch học</Typography>
+      </Breadcrumbs>
+
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+        Lịch học 📅
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Quản lý lịch học và deadline của bạn
+      </Typography>
 
       {/* Calendar Controls */}
-      <div className="calendar-controls">
-        <div className="view-controls">
-          <button 
-            className={`view-btn ${viewMode === 'month' ? 'active' : ''}`}
-            onClick={() => setViewMode('month')}
-          >
-            Tháng
-          </button>
-          <button 
-            className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
-            onClick={() => setViewMode('week')}
-          >
-            Tuần
-          </button>
-          <button 
-            className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
-            onClick={() => setViewMode('day')}
-          >
-            Ngày
-          </button>
-        </div>
+      <Card sx={{ mb: 4, borderRadius: 3 }}>
+        <CardContent>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <Typography variant="h6" fontWeight={700} gutterBottom>Chế độ xem</Typography>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="month">
+                  <ViewModuleIcon sx={{ mr: 1 }} />
+                  Tháng
+                </ToggleButton>
+                <ToggleButton value="week">
+                  <ViewWeekIcon sx={{ mr: 1 }} />
+                  Tuần
+                </ToggleButton>
+                <ToggleButton value="day">
+                  <ViewDayIcon sx={{ mr: 1 }} />
+                  Ngày
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Grid>
 
-        <div className="navigation-controls">
-          <button onClick={handlePrevMonth} className="nav-btn">‹</button>
-          <button onClick={handleToday} className="today-btn">Hôm nay</button>
-          <button onClick={handleNextMonth} className="nav-btn">›</button>
-        </div>
+            <Grid item xs={12} md={4}>
+              <Typography variant="h6" fontWeight={700} gutterBottom>Điều hướng</Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <IconButton onClick={handlePrevMonth} size="small">
+                  <ChevronLeftIcon />
+                </IconButton>
+                <Button
+                  variant="outlined"
+                  onClick={handleToday}
+                  startIcon={<TodayIcon />}
+                  size="small"
+                >
+                  Hôm nay
+                </Button>
+                <IconButton onClick={handleNextMonth} size="small">
+                  <ChevronRightIcon />
+                </IconButton>
+              </Stack>
+            </Grid>
 
-        <div className="filter-controls">
-          <select 
-            value={filterCourse} 
-            onChange={(e) => setFilterCourse(e.target.value)}
-            className="course-filter"
-          >
-            <option value="">Tất cả khóa học</option>
-            {courses.map(course => (
-              <option key={course._id} value={course._id}>
-                {course.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+            <Grid item xs={12} md={4}>
+              <Typography variant="h6" fontWeight={700} gutterBottom>Bộ lọc</Typography>
+              <FormControl fullWidth size="small">
+                <InputLabel>Khóa học</InputLabel>
+                <Select
+                  value={filterCourse}
+                  label="Khóa học"
+                  onChange={(e) => setFilterCourse(e.target.value)}
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="">Tất cả khóa học</MenuItem>
+                  {courses.map(course => (
+                    <MenuItem key={course._id} value={course._id}>
+                      {course.title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {/* Current Month/Year Display */}
-      <div className="current-period">
-        <h2>
-          {currentDate.toLocaleDateString('vi-VN', { 
-            month: 'long', 
-            year: 'numeric' 
-          })}
-        </h2>
-      </div>
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h5" fontWeight={700} textAlign="center">
+            {currentDate.toLocaleDateString('vi-VN', {
+              month: 'long',
+              year: 'numeric'
+            })}
+          </Typography>
+        </CardContent>
+      </Card>
 
       {/* Calendar Grid */}
-      <div className="calendar-container">
-        {viewMode === 'month' && (
-          <div className="month-view">
-            {/* Weekday Headers */}
-            <div className="weekday-headers">
-              {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
-                <div key={day} className="weekday-header">{day}</div>
-              ))}
-            </div>
+      <Card sx={{ borderRadius: 3, mb: 4 }}>
+        <CardContent>
+          {viewMode === 'month' && (
+            <Box>
+              {/* Weekday Headers */}
+              <Grid container sx={{ mb: 1 }}>
+                {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
+                  <Grid key={day} item xs={12 / 7} sx={{ textAlign: 'center', py: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                      {day}
+                    </Typography>
+                  </Grid>
+                ))}
+              </Grid>
 
-            {/* Calendar Days */}
-            <div className="calendar-grid">
-              {getMonthDays(currentDate).map((date, index) => {
-                const dayEvents = getEventsForDate(date);
-                const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                const isToday = date.toDateString() === new Date().toDateString();
-                
-                return (
-                  <div 
-                    key={index} 
-                    className={`calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`}
-                    onClick={() => handleDateClick(date)}
-                  >
-                    <div className="day-number">{date.getDate()}</div>
-                    <div className="day-events">
-                      {dayEvents.slice(0, 3).map(event => (
-                        <div
-                          key={event._id}
-                          className={`event-dot ${event.type} ${event.priority}`}
-                          style={{ backgroundColor: event.color }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEventClick(event);
-                          }}
-                          title={event.title}
-                        />
-                      ))}
-                      {dayEvents.length > 3 && (
-                        <div className="more-events">+{dayEvents.length - 3}</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+              {/* Calendar Days */}
+              <Grid container spacing={0.5}>
+                {getMonthDays(currentDate).map((date, index) => {
+                  const dayEvents = getEventsForDate(date);
+                  const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                  const isToday = date.toDateString() === new Date().toDateString();
 
-        {viewMode === 'week' && (
-          <div className="week-view">
-            <div className="weekday-headers">
-              {getWeekDays(currentDate).map(date => (
-                <div key={date.toISOString()} className="weekday-header">
-                  <div className="weekday-name">
-                    {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
-                  </div>
-                  <div className="weekday-date">{date.getDate()}</div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="week-grid">
-              {getWeekDays(currentDate).map(date => {
-                const dayEvents = getEventsForDate(date);
-                return (
-                  <div key={date.toISOString()} className="week-day">
-                    {dayEvents.map(event => (
-                      <div
-                        key={event._id}
-                        className={`week-event ${event.type}`}
-                        style={{ backgroundColor: event.color }}
-                        onClick={() => handleEventClick(event)}
+                  return (
+                    <Grid key={index} item xs={12 / 7}>
+                      <Paper
+                        elevation={isToday ? 3 : 0}
+                        sx={{
+                          minHeight: 100,
+                          p: 1,
+                          cursor: 'pointer',
+                          border: isToday ? 2 : 1,
+                          borderColor: isToday ? 'primary.main' : 'divider',
+                          bgcolor: isToday ? 'primary.light' : isCurrentMonth ? 'background.paper' : 'grey.50',
+                          opacity: isCurrentMonth ? 1 : 0.5,
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            bgcolor: isToday ? 'primary.light' : 'action.hover',
+                            transform: 'scale(1.02)'
+                          }
+                        }}
+                        onClick={() => handleDateClick(date)}
                       >
-                        <div className="event-time">
-                          {formatTime(event.startDate)}
-                        </div>
-                        <div className="event-title">{event.title}</div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                        <Typography
+                          variant="body2"
+                          fontWeight={isToday ? 700 : 400}
+                          color={isToday ? 'primary.contrastText' : 'text.primary'}
+                          sx={{ mb: 0.5 }}
+                        >
+                          {date.getDate()}
+                        </Typography>
 
-        {viewMode === 'day' && (
-          <div className="day-view">
-            <div className="day-header">
-              <h3>{formatDate(currentDate)}</h3>
-            </div>
-            
-            <div className="day-events-list">
-              {getEventsForDate(currentDate).map(event => (
-                <div
-                  key={event._id}
-                  className={`day-event ${event.type} ${event.priority}`}
-                  style={{ borderLeftColor: event.color }}
-                >
-                  <div className="event-time">
-                    {formatTime(event.startDate)}
-                  </div>
-                  <div className="event-content">
-                    <h4 className="event-title">{event.title}</h4>
-                    <p className="event-course">{event.courseTitle}</p>
-                    {event.description && (
-                      <p className="event-description">{event.description}</p>
-                    )}
-                  </div>
-                  <div className="event-actions">
-                    <button className="complete-btn">
-                      {event.isCompleted ? '✓' : '○'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+                        <Stack spacing={0.5}>
+                          {dayEvents.slice(0, 3).map(event => (
+                            <Chip
+                              key={event._id}
+                              label={event.title}
+                              size="small"
+                              sx={{
+                                height: 16,
+                                fontSize: '0.7rem',
+                                bgcolor: event.color,
+                                color: 'white',
+                                '& .MuiChip-label': { px: 0.5 }
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEventClick(event);
+                              }}
+                            />
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <Typography variant="caption" color="text.secondary">
+                              +{dayEvents.length - 3} khác
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+          )}
+
+          {viewMode === 'week' && (
+            <Box>
+              <Grid container sx={{ mb: 2 }}>
+                {getWeekDays(currentDate).map(date => (
+                  <Grid key={date.toISOString()} item xs={12 / 7}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.light' }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
+                      </Typography>
+                      <Typography variant="h6" fontWeight={700}>
+                        {date.getDate()}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+
+              <Grid container spacing={1}>
+                {getWeekDays(currentDate).map(date => {
+                  const dayEvents = getEventsForDate(date);
+                  return (
+                    <Grid key={date.toISOString()} item xs={12 / 7}>
+                      <Stack spacing={1}>
+                        {dayEvents.map(event => (
+                          <Card
+                            key={event._id}
+                            sx={{
+                              bgcolor: event.color,
+                              color: 'white',
+                              cursor: 'pointer',
+                              '&:hover': { transform: 'scale(1.02)' }
+                            }}
+                            onClick={() => handleEventClick(event)}
+                          >
+                            <CardContent sx={{ p: 1 }}>
+                              <Typography variant="caption" display="block">
+                                {formatTime(event.startDate)}
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600} noWrap>
+                                {event.title}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+          )}
+
+          {viewMode === 'day' && (
+            <Box>
+              <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+                {formatDate(currentDate)}
+              </Typography>
+
+              <List>
+                {getEventsForDate(currentDate).map(event => (
+                  <ListItem
+                    key={event._id}
+                    sx={{
+                      borderLeft: 4,
+                      borderLeftColor: event.color,
+                      bgcolor: 'background.paper',
+                      mb: 1,
+                      borderRadius: 1
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: event.color }}>
+                        {event.type === 'lesson' ? <PlayArrowIcon /> : <AssignmentIcon />}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={event.title}
+                      secondary={
+                        <Stack>
+                          <Typography variant="body2" color="text.secondary">
+                            {event.courseTitle}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatTime(event.startDate)}
+                          </Typography>
+                          {event.description && (
+                            <Typography variant="body2" color="text.secondary">
+                              {event.description}
+                            </Typography>
+                          )}
+                        </Stack>
+                      }
+                    />
+                    <ListItemSecondaryAction>
+                      <IconButton>
+                        {event.isCompleted ? <CheckCircleIcon color="success" /> : <RadioButtonUncheckedIcon />}
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Upcoming Events */}
-      <div className="upcoming-events">
-        <h3>Sự kiện sắp tới</h3>
-        <div className="events-list">
-          {filteredEvents
-            .filter(event => new Date(event.startDate) > new Date())
-            .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-            .slice(0, 5)
-            .map(event => (
-              <div
-                key={event._id}
-                className={`upcoming-event ${event.type} ${event.priority}`}
-                style={{ borderLeftColor: event.color }}
-              >
-                <div className="event-date">
-                  {formatDate(new Date(event.startDate))}
-                </div>
-                <div className="event-content">
-                  <h4>{event.title}</h4>
-                  <p>{event.courseTitle}</p>
-                </div>
-                <div className="event-actions">
-                  <Link to={`/courses/${event.courseId}`} className="view-course-btn">
-                    Xem khóa học
-                  </Link>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
+      <Card sx={{ mb: 4, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} gutterBottom>Sự kiện sắp tới</Typography>
+          <List>
+            {filteredEvents
+              .filter(event => new Date(event.startDate) > new Date())
+              .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+              .slice(0, 5)
+              .map(event => (
+                <ListItem
+                  key={event._id}
+                  sx={{
+                    borderLeft: 4,
+                    borderLeftColor: event.color,
+                    bgcolor: 'background.paper',
+                    mb: 1,
+                    borderRadius: 1
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Avatar sx={{ bgcolor: event.color }}>
+                      {event.type === 'lesson' ? <PlayArrowIcon /> : <AssignmentIcon />}
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={event.title}
+                    secondary={
+                      <Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {event.courseTitle}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDate(new Date(event.startDate))} - {formatTime(event.startDate)}
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+                  <ListItemSecondaryAction>
+                    <Button
+                      component={Link}
+                      to={`/courses/${event.courseId}`}
+                      variant="outlined"
+                      size="small"
+                    >
+                      Xem khóa học
+                    </Button>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+          </List>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
-      <div className="quick-actions">
-        <button 
-          onClick={() => setShowEventForm(true)}
-          className="add-event-btn"
-        >
-          ➕ Thêm sự kiện
-        </button>
-        <Link to="/dashboard/assignments" className="view-assignments-btn">
-          📝 Xem bài tập
-        </Link>
-        <Link to="/dashboard/courses" className="view-courses-btn">
-          📚 Khóa học của tôi
-        </Link>
-      </div>
-    </div>
+      <Card sx={{ borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} gutterBottom>Hành động nhanh</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowEventForm(true)}
+              sx={{ flex: 1 }}
+            >
+              Thêm sự kiện
+            </Button>
+            <Button
+              component={Link}
+              to="/dashboard/assignments"
+              variant="outlined"
+              startIcon={<AssignmentIcon />}
+              sx={{ flex: 1 }}
+            >
+              Xem bài tập
+            </Button>
+            <Button
+              component={Link}
+              to="/dashboard/courses"
+              variant="outlined"
+              startIcon={<SchoolIcon />}
+              sx={{ flex: 1 }}
+            >
+              Khóa học của tôi
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

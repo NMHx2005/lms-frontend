@@ -1,6 +1,31 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import './Ratings.css';
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Stack,
+  Chip,
+  Button,
+  Tabs,
+  Tab,
+  TextField,
+  Alert,
+  Avatar,
+  Divider,
+  Paper,
+  Grid
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  ThumbUp as ThumbUpIcon,
+  ThumbDown as ThumbDownIcon,
+  Report as ReportIcon,
+  CheckCircle as CheckCircleIcon,
+  Undo as UndoIcon,
+  Assessment as AssessmentIcon
+} from '@mui/icons-material';
 
 interface RatingAction {
   id: string;
@@ -84,37 +109,45 @@ const Ratings: React.FC = () => {
     }
   ];
 
-  const filteredActions = ratingActions.filter(action => {
-    const matchesTab = activeTab === 'all' || action.actionType === activeTab;
-    const matchesSearch = action.courseName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+  const filteredActions = useMemo(() => {
+    return ratingActions.filter(action => {
+      const matchesTab = activeTab === 'all' || action.actionType === activeTab;
+      const matchesSearch = action.courseName.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesTab && matchesSearch;
+    });
+  }, [ratingActions, activeTab, searchTerm]);
 
-  const getActionIcon = (actionType: string, action: string) => {
+  const stats = useMemo(() => {
+    const totalUpvotes = ratingActions.filter(a => a.actionType === 'upvotes' && a.action === 'added').length;
+    const totalReports = ratingActions.filter(a => a.actionType === 'reports' && a.action === 'added').length;
+    return { totalUpvotes, totalReports };
+  }, [ratingActions]);
+
+  const getActionIcon = useCallback((actionType: string, action: string) => {
     if (actionType === 'upvotes') {
-      return action === 'added' ? '👍' : '👎';
+      return action === 'added' ? <ThumbUpIcon /> : <ThumbDownIcon />;
     } else {
-      return action === 'added' ? '🚨' : '✅';
+      return action === 'added' ? <ReportIcon /> : <CheckCircleIcon />;
     }
-  };
+  }, []);
 
-  const getActionLabel = (actionType: string, action: string) => {
+  const getActionLabel = useCallback((actionType: string, action: string) => {
     if (actionType === 'upvotes') {
       return action === 'added' ? 'Đã upvote' : 'Đã bỏ upvote';
     } else {
       return action === 'added' ? 'Đã báo cáo' : 'Đã hủy báo cáo';
     }
-  };
+  }, []);
 
-  const getActionClass = (actionType: string, action: string) => {
+  const getActionColor = useCallback((actionType: string, action: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
     if (actionType === 'upvotes') {
-      return action === 'added' ? 'action-badge--upvote-added' : 'action-badge--upvote-removed';
+      return action === 'added' ? 'success' : 'error';
     } else {
-      return action === 'added' ? 'action-badge--report-added' : 'action-badge--report-removed';
+      return action === 'added' ? 'warning' : 'info';
     }
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'short',
@@ -122,139 +155,199 @@ const Ratings: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
-  const handleUndoAction = (actionId: string) => {
+  const handleUndoAction = useCallback((actionId: string) => {
     // Mock function - in real app this would call API
     console.log('Undoing action:', actionId);
     alert('Đã hủy hành động thành công!');
-  };
+  }, []);
 
   return (
-    <div className="dashboard">
-      <div className="dashboard__header">
-        <div className="dashboard__breadcrumbs">
-          <Link to="/dashboard">Dashboard</Link>
-          <span>Ratings & Reports</span>
-        </div>
-        <h1 className="dashboard__title">Lịch sử đánh giá & báo cáo</h1>
-      </div>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Lịch sử đánh giá & báo cáo
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Theo dõi các hoạt động đánh giá và báo cáo của bạn
+        </Typography>
+      </Box>
 
-      <div className="dashboard__content">
-        {/* Tabs */}
-        <div className="dashboard__tabs">
-          <button
-            className={`dashboard__tab ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
+      {/* Tabs */}
+      <Card sx={{ mb: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            variant="fullWidth"
           >
-            Tất cả
-          </button>
-          <button
-            className={`dashboard__tab ${activeTab === 'upvotes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('upvotes')}
-          >
-            Upvotes
-          </button>
-          <button
-            className={`dashboard__tab ${activeTab === 'reports' ? 'active' : ''}`}
-            onClick={() => setActiveTab('reports')}
-          >
-            Báo cáo
-          </button>
-        </div>
+            <Tab
+              label="Tất cả"
+              value="all"
+              icon={<AssessmentIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Upvotes"
+              value="upvotes"
+              icon={<ThumbUpIcon />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Báo cáo"
+              value="reports"
+              icon={<ReportIcon />}
+              iconPosition="start"
+            />
+          </Tabs>
+        </Box>
+      </Card>
 
-        {/* Filter Bar */}
-        <div className="dashboard__filter-bar">
-          <div className="dashboard__search">
-            <input
-              type="text"
+      {/* Filter Bar */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+            <TextField
+              fullWidth
               placeholder="Tìm kiếm theo tên khóa học..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+              sx={{ maxWidth: 500 }}
             />
-            <button>🔍</button>
-          </div>
-          <div className="dashboard__stats-summary">
-            <div className="stat-item">
-              <span className="stat-label">Tổng upvotes:</span>
-              <span className="stat-value">{ratingActions.filter(a => a.actionType === 'upvotes' && a.action === 'added').length}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Tổng báo cáo:</span>
-              <span className="stat-value">{ratingActions.filter(a => a.actionType === 'reports' && a.action === 'added').length}</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Rating Actions List */}
-        <div className="dashboard__ratings">
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Paper variant="outlined" sx={{ p: 2, minWidth: 150 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <ThumbUpIcon color="success" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng upvotes
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      {stats.totalUpvotes}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+
+              <Paper variant="outlined" sx={{ p: 2, minWidth: 150 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <ReportIcon color="warning" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Tổng báo cáo
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      {stats.totalReports}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Rating Actions List */}
+      <Card>
+        <CardContent>
           {filteredActions.length === 0 ? (
-            <div className="dashboard__empty">
-              <div className="dashboard__empty-icon">📊</div>
-              <h3>Không có hoạt động nào</h3>
-              <p>Bạn chưa có hoạt động đánh giá hoặc báo cáo nào hoặc không có hoạt động nào khớp với bộ lọc hiện tại.</p>
-            </div>
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <AssessmentIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Không có hoạt động nào
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Bạn chưa có hoạt động đánh giá hoặc báo cáo nào hoặc không có hoạt động nào khớp với bộ lọc hiện tại.
+              </Typography>
+            </Box>
           ) : (
-            <div className="dashboard__ratings-list">
+            <Stack spacing={3}>
               {filteredActions.map((action) => (
-                <div key={action.id} className="dashboard__rating-card">
-                  <div className="rating-card__header">
-                    <div className="rating-card__course">
-                      <img 
-                        src={action.courseImage} 
+                <Card key={action.id} variant="outlined">
+                  <CardContent>
+                    {/* Header */}
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start" sx={{ mb: 2 }}>
+                      <Avatar
+                        src={action.courseImage}
                         alt={action.courseName}
-                        className="rating-card__course-image"
+                        sx={{ width: 80, height: 60 }}
+                        variant="rounded"
                       />
-                      <div className="rating-card__course-info">
-                        <h4>{action.courseName}</h4>
-                        <div className="rating-card__action-info">
-                          <span className={`action-badge ${getActionClass(action.actionType, action.action)}`}>
-                            {getActionIcon(action.actionType, action.action)} {getActionLabel(action.actionType, action.action)}
-                          </span>
-                          <span className="rating-card__date">{formatDate(action.createdAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rating-card__actions">
-                      {action.canUndo && (
-                        <button 
-                          className="dashboard__btn dashboard__btn--outline"
-                          onClick={() => handleUndoAction(action.id)}
-                        >
-                          Hủy hành động
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {action.reason && (
-                    <div className="rating-card__content">
-                      <div className="rating-card__reason">
-                        <strong>Lý do:</strong> {action.reason}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="rating-card__footer">
-                    <div className="rating-card__meta">
-                      <span className="meta-item">
-                        <strong>Loại:</strong> {action.actionType === 'upvotes' ? 'Upvote' : 'Báo cáo'}
-                      </span>
-                      <span className="meta-item">
-                        <strong>Hành động:</strong> {action.action === 'added' ? 'Thêm' : 'Xóa'}
-                      </span>
-                      <span className="meta-item">
-                        <strong>Có thể hủy:</strong> {action.canUndo ? 'Có' : 'Không'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="h6" gutterBottom>
+                          {action.courseName}
+                        </Typography>
+                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                          <Chip
+                            icon={getActionIcon(action.actionType, action.action)}
+                            label={getActionLabel(action.actionType, action.action)}
+                            color={getActionColor(action.actionType, action.action)}
+                            size="small"
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(action.createdAt)}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                      <Box>
+                        {action.canUndo && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<UndoIcon />}
+                            onClick={() => handleUndoAction(action.id)}
+                          >
+                            Hủy hành động
+                          </Button>
+                        )}
+                      </Box>
+                    </Stack>
+
+                    {action.reason && (
+                      <>
+                        <Divider sx={{ my: 2 }} />
+                        <Alert severity="info">
+                          <Typography variant="body2">
+                            <strong>Lý do:</strong> {action.reason}
+                          </Typography>
+                        </Alert>
+                      </>
+                    )}
+
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* Footer */}
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Loại:</strong> {action.actionType === 'upvotes' ? 'Upvote' : 'Báo cáo'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Hành động:</strong> {action.action === 'added' ? 'Thêm' : 'Xóa'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Có thể hủy:</strong> {action.canUndo ? 'Có' : 'Không'}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
               ))}
-            </div>
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

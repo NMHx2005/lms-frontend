@@ -25,6 +25,7 @@ const Login = lazy(() => import('./pages/client/Login/Login.tsx'));
 const Register = lazy(() => import('./pages/client/Register/Register.tsx'));
 const CourseDetail = lazy(() => import('./pages/client/CourseDetail/CourseDetail.tsx'));
 const Learning = lazy(() => import('./pages/client/Learning/Learning.tsx'));
+const LearningPlayer = lazy(() => import('./pages/client/LearningPlayer/LearningPlayer.tsx'));
 import { UserRole } from './components/common/ProtectedRoute.tsx';
 const Dashboard = lazy(() => import('./pages/client/Dashboard/Dashboard.tsx'));
 const Profile = lazy(() => import('./pages/client/Profile/Profile.tsx'));
@@ -62,6 +63,7 @@ const Notifications = lazy(() => import('./pages/client/Dashboard/Notifications/
 const Wishlist = lazy(() => import('./pages/client/Wishlist/Wishlist.tsx'));
 const StudyGroups = lazy(() => import('./pages/client/StudyGroups/StudyGroups.tsx'));
 const Calendar = lazy(() => import('./pages/client/Calendar/Calendar.tsx'));
+const PaymentResult = lazy(() => import('./pages/client/PaymentResult/PaymentResult.tsx'));
 
 // Teacher Pages
 const CourseStudio = lazy(() => import('./pages/client/Teacher/CourseStudio/CourseStudio.tsx'));
@@ -140,13 +142,14 @@ function AppContent() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/checkout/:courseId" element={<Checkout />} />
                   <Route path="/assignments/:id" element={<AssignmentWorkspace />} />
-                  
+                  <Route path="/payment/result" element={<PaymentResult />} />
+
                   {/* Additional Client Pages */}
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/instructor/:id" element={<InstructorProfile />} />
                   <Route path="/category/:slug" element={<CategoryPages />} />
-                  
+
                   {/* Dashboard Routes */}
                   <Route
                     path="/dashboard"
@@ -168,7 +171,7 @@ function AppContent() {
                     <Route path="profile" element={<ProfileDashboard />} />
                     <Route path="notifications" element={<Notifications />} />
                   </Route>
-                  
+
                   {/* Teacher Dashboard Routes */}
                   <Route
                     path="/teacher"
@@ -204,14 +207,22 @@ function AppContent() {
                     <Route path="communication-center" element={<CommunicationCenter />} />
                     <Route path="course-reviews" element={<CourseReviews />} />
                   </Route>
-                  
+
                   <Route path="/courses" element={<Courses />} />
                   <Route path="/courses/:id" element={<CourseDetail />} />
+                  <Route
+                    path="/learning"
+                    element={
+                      <ProtectedRoute>
+                        <Learning />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/learning/:courseId"
                     element={
                       <ProtectedRoute>
-                        <Learning />
+                        <LearningPlayer />
                       </ProtectedRoute>
                     }
                   />

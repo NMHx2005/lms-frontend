@@ -1,7 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { WishlistItem } from '../../../types/index';
-import './Wishlist.css';
+import { wishlistService } from '../../../services/client/wishlist.service';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  CardMedia,
+  Typography,
+  Button,
+  Chip,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  IconButton,
+  Alert,
+  CircularProgress,
+  Avatar,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Breadcrumbs,
+  Link as MuiLink,
+} from '@mui/material';
+import SortIcon from '@mui/icons-material/Sort';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import StarIcon from '@mui/icons-material/Star';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PersonIcon from '@mui/icons-material/Person';
+import SchoolIcon from '@mui/icons-material/School';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
+import ExploreIcon from '@mui/icons-material/Explore';
+import HomeIcon from '@mui/icons-material/Home';
 
 const Wishlist: React.FC = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
@@ -9,355 +51,561 @@ const Wishlist: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [sortBy, setSortBy] = useState<'addedAt' | 'price' | 'rating' | 'title'>('addedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    totalValue: 0,
+    onSaleCount: 0,
+    categories: [] as string[]
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
-  useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      const mockWishlist: WishlistItem[] = [
-        {
-          _id: '1',
-          courseId: 'course1',
-          title: 'React Advanced Patterns & Best Practices',
-          thumbnail: '/images/course1.jpg',
-          instructor: 'Hieu Doan',
-          price: 29.99,
-          originalPrice: 49.99,
-          rating: 4.8,
-          totalStudents: 1247,
-          duration: 12.5,
-          level: 'advanced',
-          category: 'Web Development',
-          addedAt: '2024-01-15T10:30:00Z',
-          isOnSale: true,
-          discountPercentage: 40
-        },
-        {
-          _id: '2',
-          courseId: 'course2',
-          title: 'Node.js Backend Development Masterclass',
-          thumbnail: '/images/course2.jpg',
-          instructor: 'Minh Nguyen',
-          price: 39.99,
-          rating: 4.6,
-          totalStudents: 892,
-          duration: 18.0,
-          level: 'intermediate',
-          category: 'Backend Development',
-          addedAt: '2024-01-12T14:20:00Z',
-          isOnSale: false
-        },
-        {
-          _id: '3',
-          courseId: 'course3',
-          title: 'UI/UX Design Fundamentals & Prototyping',
-          thumbnail: '/images/course3.jpg',
-          instructor: 'Lan Tran',
-          price: 24.99,
-          originalPrice: 34.99,
-          rating: 4.7,
-          totalStudents: 1567,
-          duration: 8.5,
-          level: 'beginner',
-          category: 'Design',
-          addedAt: '2024-01-10T09:15:00Z',
-          isOnSale: true,
-          discountPercentage: 29
-        },
-        {
-          _id: '4',
-          courseId: 'course4',
-          title: 'Machine Learning with Python: From Basics to Advanced',
-          thumbnail: '/images/course4.jpg',
-          instructor: 'David Chen',
-          price: 59.99,
-          rating: 4.9,
-          totalStudents: 2341,
-          duration: 25.0,
-          level: 'advanced',
-          category: 'Data Science',
-          addedAt: '2024-01-08T16:45:00Z',
-          isOnSale: false
-        },
-        {
-          _id: '5',
-          courseId: 'course5',
-          title: 'Mobile App Development with React Native',
-          thumbnail: '/images/course5.jpg',
-          instructor: 'Sarah Johnson',
-          price: 34.99,
-          originalPrice: 44.99,
-          rating: 4.5,
-          totalStudents: 987,
-          duration: 15.5,
-          level: 'intermediate',
-          category: 'Mobile Development',
-          addedAt: '2024-01-05T11:30:00Z',
-          isOnSale: true,
-          discountPercentage: 23
-        }
-      ];
-      
-      setWishlistItems(mockWishlist);
+  // Fetch wishlist data
+  const fetchWishlist = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        sortBy,
+        sortOrder,
+        category: filterCategory || undefined,
+        page: 1,
+        limit: 100 // Get all items for now
+      };
+
+      const response = await wishlistService.getWishlist(params);
+
+      if (response.success) {
+        setWishlistItems(response.data || []);
+      } else {
+        setError(response.message || 'Failed to fetch wishlist');
+        toast.error(response.message || 'Failed to fetch wishlist');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to fetch wishlist';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error fetching wishlist:', err);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  // Fetch wishlist statistics
+  const fetchWishlistStats = async () => {
+    try {
+      const response = await wishlistService.getWishlistStats();
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (err: any) {
+      console.error('Error fetching wishlist stats:', err);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchWishlist();
+    fetchWishlistStats();
   }, []);
 
-  const removeFromWishlist = (itemId: string) => {
-    setWishlistItems(prev => prev.filter(item => item._id !== itemId));
-    // Here you would also call API to remove from wishlist
-  };
+  // Filter and sort local data instead of refetching
+  const filteredAndSortedItems = useMemo(() => {
+    let filtered = wishlistItems;
 
-  const moveToCart = (itemId: string) => {
-    // Here you would call API to move item to cart
-    console.log('Moving to cart:', itemId);
-  };
+    // Filter by category
+    if (filterCategory) {
+      filtered = filtered.filter(item => item.category === filterCategory);
+    }
 
-  const getSortedItems = () => {
-    const sorted = [...wishlistItems].sort((a, b) => {
-      let comparison = 0;
-      
+    // Sort items
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
       switch (sortBy) {
         case 'addedAt':
-          comparison = new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
+          aValue = new Date(a.addedAt).getTime();
+          bValue = new Date(b.addedAt).getTime();
           break;
         case 'price':
-          comparison = a.price - b.price;
+          aValue = a.price;
+          bValue = b.price;
           break;
         case 'rating':
-          comparison = a.rating - b.rating;
+          aValue = a.rating;
+          bValue = b.rating;
           break;
         case 'title':
-          comparison = a.title.localeCompare(b.title);
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
           break;
+        default:
+          return 0;
       }
-      
-      return sortOrder === 'asc' ? comparison : -comparison;
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
     });
 
-    if (filterCategory) {
-      return sorted.filter(item => item.category === filterCategory);
+    return filtered;
+  }, [wishlistItems, filterCategory, sortBy, sortOrder]);
+
+  // Remove item from wishlist
+  const removeFromWishlist = async (itemId: string) => {
+    try {
+      const response = await wishlistService.removeFromWishlist(itemId);
+
+      if (response.success) {
+        setWishlistItems(prev => prev.filter(item => item._id !== itemId));
+        toast.success('Course removed from wishlist');
+
+        // Refresh stats after removal
+        fetchWishlistStats();
+      } else {
+        toast.error(response.message || 'Failed to remove course');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to remove course';
+      toast.error(errorMessage);
+      console.error('Error removing from wishlist:', err);
     }
-    
-    return sorted;
   };
 
-  const getCategories = () => {
-    const categories = [...new Set(wishlistItems.map(item => item.category))];
-    return categories;
+  // Move item to cart
+  const moveToCart = async (itemId: string) => {
+    try {
+      const response = await wishlistService.moveToCart(itemId);
+
+      if (response.success) {
+        toast.success('Course moved to cart successfully');
+        // Optionally remove from wishlist after moving to cart
+        setWishlistItems(prev => prev.filter(item => item._id !== itemId));
+        fetchWishlistStats();
+      } else {
+        toast.error(response.message || 'Failed to move course to cart');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to move course to cart';
+      toast.error(errorMessage);
+      console.error('Error moving to cart:', err);
+    }
   };
 
-  const formatDate = (dateString: string) => {
+  // Clear all wishlist items
+  const clearAllWishlist = async () => {
+    try {
+      const response = await wishlistService.clearWishlist();
+
+      if (response.success) {
+        setWishlistItems([]);
+        setStats(prev => ({ ...prev, totalItems: 0, totalValue: 0, onSaleCount: 0 }));
+        toast.success('Wishlist cleared successfully');
+      } else {
+        toast.error(response.message || 'Failed to clear wishlist');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to clear wishlist';
+      toast.error(errorMessage);
+      console.error('Error clearing wishlist:', err);
+    }
+  };
+
+  // Get available categories from all items (not filtered)
+  const categories = useMemo(() => {
+    return [...new Set(wishlistItems.map(item => item.category))];
+  }, [wishlistItems]);
+
+  // Format date
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
     });
-  };
+  }, []);
 
-  const formatDuration = (hours: number) => {
+  // Format duration
+  const formatDuration = useCallback((hours: number) => {
     const wholeHours = Math.floor(hours);
     const minutes = Math.round((hours - wholeHours) * 60);
     return `${wholeHours}h ${minutes}m`;
-  };
+  }, []);
 
+  // Format price
+  const formatPrice = useCallback((price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price);
+  }, []);
+
+  // Loading state
   if (loading) {
     return (
-      <div className="wishlist-page">
-        <div className="wishlist-loading">
-          <div className="loading-spinner"></div>
-          <p>Đang tải danh sách yêu thích...</p>
-        </div>
-      </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" alignItems="center" justifyContent="center" minHeight={400}>
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress />
+            <Typography variant="h6">Đang tải danh sách yêu thích...</Typography>
+          </Stack>
+        </Box>
+      </Container>
     );
   }
 
-  const sortedItems = getSortedItems();
-  const categories = getCategories();
+  // Error state
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Breadcrumbs sx={{ mb: 3 }}>
+          <MuiLink color="inherit" href="/dashboard">Dashboard</MuiLink>
+          <Typography color="text.primary">Danh sách yêu thích</Typography>
+        </Breadcrumbs>
+
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
+          Danh sách yêu thích
+        </Typography>
+
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="h6" gutterBottom>Đã xảy ra lỗi</Typography>
+          <Typography>{error}</Typography>
+        </Alert>
+
+        <Button variant="contained" onClick={fetchWishlist}>
+          🔄 Thử lại
+        </Button>
+      </Container>
+    );
+  }
 
   return (
-    <div className="wishlist-page">
-      <div className="wishlist-header">
-        <h1>Danh sách yêu thích ❤️</h1>
-        <p>Quản lý các khóa học bạn quan tâm</p>
-      </div>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header */}
+      <Breadcrumbs sx={{ mb: 3 }}>
+        <MuiLink color="inherit" href="/dashboard">Dashboard</MuiLink>
+        <Typography color="text.primary">Danh sách yêu thích</Typography>
+      </Breadcrumbs>
+
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
+        Danh sách yêu thích
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Quản lý các khóa học bạn quan tâm
+      </Typography>
 
       {/* Stats */}
-      <div className="wishlist-stats">
-        <div className="stat-item">
-          <span className="stat-number">{wishlistItems.length}</span>
-          <span className="stat-label">Khóa học yêu thích</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number">
-            ${wishlistItems.reduce((total, item) => total + item.price, 0).toFixed(2)}
-          </span>
-          <span className="stat-label">Tổng giá trị</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number">
-            {wishlistItems.filter(item => item.isOnSale).length}
-          </span>
-          <span className="stat-label">Đang giảm giá</span>
-        </div>
-      </div>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'primary.main', color: 'white' }}>
+                  <FavoriteIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>{stats.totalItems}</Typography>
+                  <Typography color="text.secondary" variant="body2">Khóa học yêu thích</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'success.main', color: 'white' }}>
+                  <LocalOfferIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>{formatPrice(stats.totalValue)}</Typography>
+                  <Typography color="text.secondary" variant="body2">Tổng giá trị</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'warning.main', color: 'white' }}>
+                  <LocalOfferIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>{stats.onSaleCount}</Typography>
+                  <Typography color="text.secondary" variant="body2">Đang giảm giá</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Filters and Controls */}
-      <div className="wishlist-controls">
-        <div className="filters">
-          <select 
-            value={filterCategory} 
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="category-filter"
-          >
-            <option value="">Tất cả danh mục</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="sorting">
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="sort-select"
-          >
-            <option value="addedAt">Ngày thêm</option>
-            <option value="price">Giá</option>
-            <option value="rating">Đánh giá</option>
-            <option value="title">Tên khóa học</option>
-          </select>
-          
-          <button 
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="sort-order-btn"
-          >
-            {sortOrder === 'asc' ? '↑' : '↓'}
-          </button>
-        </div>
-
-        <div className="actions">
-          <button 
-            onClick={() => {
-              // Clear all wishlist items
-              setWishlistItems([]);
-            }}
-            className="clear-all-btn"
-            disabled={wishlistItems.length === 0}
-          >
-            🗑️ Xóa tất cả
-          </button>
-        </div>
-      </div>
+      <Card sx={{ mb: 4, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} gutterBottom>Bộ lọc và sắp xếp</Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Danh mục</InputLabel>
+                <Select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  label="Danh mục"
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="">Tất cả danh mục</MenuItem>
+                  {categories.map(category => (
+                    <MenuItem key={category} value={category}>{category}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Sắp xếp theo</InputLabel>
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  label="Sắp xếp theo"
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="addedAt">Ngày thêm</MenuItem>
+                  <MenuItem value="price">Giá</MenuItem>
+                  <MenuItem value="rating">Đánh giá</MenuItem>
+                  <MenuItem value="title">Tên khóa học</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                variant="outlined"
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                startIcon={<SortIcon />}
+                fullWidth
+              >
+                {sortOrder === 'asc' ? 'Tăng dần' : 'Giảm dần'}
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => setClearDialogOpen(true)}
+                disabled={wishlistItems.length === 0}
+                startIcon={<DeleteIcon />}
+                fullWidth
+              >
+                Xóa tất cả
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       {/* Wishlist Items */}
-      {sortedItems.length === 0 ? (
-        <div className="empty-wishlist">
-          <div className="empty-icon">❤️</div>
-          <h3>Danh sách yêu thích trống</h3>
-          <p>Bạn chưa có khóa học nào trong danh sách yêu thích</p>
-          <Link to="/courses" className="browse-courses-btn">
-            🔍 Khám phá khóa học
-          </Link>
-        </div>
+      {wishlistItems.length === 0 ? (
+        <Card sx={{ borderRadius: 3 }}>
+          <CardContent>
+            <Box textAlign="center" py={6}>
+              <FavoriteBorderIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h5" gutterBottom>Danh sách yêu thích trống</Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Bạn chưa có khóa học nào trong danh sách yêu thích
+              </Typography>
+              <Button component={Link} to="/courses" variant="contained" startIcon={<ExploreIcon />}>
+                Khám phá khóa học
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      ) : filteredAndSortedItems.length === 0 ? (
+        <Card sx={{ borderRadius: 3 }}>
+          <CardContent>
+            <Box textAlign="center" py={6}>
+              <FavoriteBorderIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h5" gutterBottom>Không tìm thấy khóa học</Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Không có khóa học nào phù hợp với bộ lọc hiện tại
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setFilterCategory('');
+                  setSortBy('addedAt');
+                  setSortOrder('desc');
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="wishlist-grid">
-          {sortedItems.map((item) => (
-            <div key={item._id} className="wishlist-item">
-              <div className="item-thumbnail">
-                <img src={item.thumbnail} alt={item.title} />
-                {item.isOnSale && (
-                  <div className="sale-badge">
-                    -{item.discountPercentage}%
-                  </div>
-                )}
-                <div className="item-actions">
-                  <button 
+        <Grid container spacing={3}>
+          {filteredAndSortedItems.map((item) => (
+            <Grid key={item._id} item xs={12} sm={6} md={4}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+                <Box sx={{ position: 'relative' }}>
+                  <CardMedia component="img" height="200" image={item.thumbnail || '/images/default-course.jpg'} alt={item.title} />
+                  {item.isOnSale && (
+                    <Chip
+                      label={`-${item.discountPercentage}%`}
+                      color="error"
+                      size="small"
+                      sx={{ position: 'absolute', top: 12, left: 12, fontWeight: 600 }}
+                    />
+                  )}
+                  <IconButton
                     onClick={() => removeFromWishlist(item._id)}
-                    className="remove-btn"
-                    title="Xóa khỏi danh sách yêu thích"
+                    sx={{ position: 'absolute', top: 12, right: 12, bgcolor: 'rgba(0,0,0,0.5)', color: 'white', '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' } }}
+                    size="small"
                   >
-                    ❌
-                  </button>
-                </div>
-              </div>
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
 
-              <div className="item-content">
-                <div className="item-header">
-                  <h3 className="item-title">
-                    <Link to={`/courses/${item.courseId}`}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" fontWeight={700} gutterBottom noWrap>
+                    <Link to={`/courses/${item.courseId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       {item.title}
                     </Link>
-                  </h3>
-                  <div className="item-meta">
-                    <span className="instructor">👤 {item.instructor}</span>
-                    <span className="level">📊 {item.level}</span>
-                    <span className="duration">⏱️ {formatDuration(item.duration)}</span>
-                  </div>
-                </div>
+                  </Typography>
 
-                <div className="item-stats">
-                  <div className="rating">
-                    <span className="stars">
-                      {'⭐'.repeat(Math.floor(item.rating))}
-                      {item.rating % 1 !== 0 && '⭐'}
-                    </span>
-                    <span className="rating-text">{item.rating}</span>
-                    <span className="total-students">({item.totalStudents} học viên)</span>
-                  </div>
-                  <span className="category">{item.category}</span>
-                </div>
+                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                    <Chip size="small" icon={<PersonIcon />} label={item.instructor} variant="outlined" />
+                    <Chip size="small" label={item.level} color="primary" variant="outlined" />
+                  </Stack>
 
-                <div className="item-price">
-                  {item.isOnSale ? (
-                    <div className="price-info">
-                      <span className="current-price">${item.price}</span>
-                      <span className="original-price">${item.originalPrice}</span>
-                    </div>
-                  ) : (
-                    <span className="current-price">${item.price}</span>
-                  )}
-                </div>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                    <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDuration(item.duration)}
+                    </Typography>
+                  </Stack>
 
-                <div className="item-footer">
-                  <span className="added-date">
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                    <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {item.rating} ({item.totalStudents} học viên)
+                    </Typography>
+                  </Stack>
+
+                  <Chip label={item.category} size="small" color="secondary" sx={{ mb: 2 }} />
+
+                  <Divider sx={{ my: 1 }} />
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    {item.isOnSale ? (
+                      <Box>
+                        <Typography variant="h6" color="error" fontWeight={600}>
+                          {formatPrice(item.price)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                          {formatPrice(item.originalPrice || 0)}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="h6" color="primary" fontWeight={600}>
+                        {formatPrice(item.price)}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  <Typography variant="caption" color="text.secondary">
                     Thêm vào: {formatDate(item.addedAt)}
-                  </span>
-                  <div className="item-buttons">
-                    <button 
-                      onClick={() => moveToCart(item._id)}
-                      className="add-to-cart-btn"
-                    >
-                      🛒 Thêm vào giỏ
-                    </button>
-                    <Link 
-                      to={`/checkout/${item.courseId}`}
-                      className="buy-now-btn"
-                    >
-                      💳 Mua ngay
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </Typography>
+                </CardContent>
+
+                <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<ShoppingCartIcon />}
+                    onClick={() => moveToCart(item._id)}
+                    sx={{ flex: 1 }}
+                  >
+                    Thêm vào giỏ
+                  </Button>
+                  <Button
+                    component={Link}
+                    to={`/checkout/${item.courseId}`}
+                    variant="contained"
+                    startIcon={<ShoppingCartCheckoutIcon />}
+                  >
+                    Mua ngay
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
 
       {/* Quick Actions */}
-      <div className="quick-actions">
-        <Link to="/courses" className="browse-more-btn">
-          🔍 Khám phá thêm khóa học
-        </Link>
-        <Link to="/dashboard/courses" className="my-courses-btn">
-          📚 Khóa học của tôi
-        </Link>
-        <Link to="/dashboard" className="back-dashboard-btn">
-          🏠 Về Dashboard
-        </Link>
-      </div>
-    </div>
+      <Card sx={{ mt: 4, borderRadius: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={700} gutterBottom>Hành động nhanh</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Button
+              component={Link}
+              to="/courses"
+              variant="outlined"
+              startIcon={<ExploreIcon />}
+              sx={{ flex: 1 }}
+            >
+              Khám phá thêm khóa học
+            </Button>
+            <Button
+              component={Link}
+              to="/dashboard/courses"
+              variant="outlined"
+              startIcon={<SchoolIcon />}
+              sx={{ flex: 1 }}
+            >
+              Khóa học của tôi
+            </Button>
+            <Button
+              component={Link}
+              to="/dashboard"
+              variant="outlined"
+              startIcon={<HomeIcon />}
+              sx={{ flex: 1 }}
+            >
+              Về Dashboard
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Clear All Dialog */}
+      <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
+        <DialogTitle>Xác nhận xóa tất cả</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Bạn có chắc chắn muốn xóa tất cả khóa học khỏi danh sách yêu thích? Hành động này không thể hoàn tác.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearDialogOpen(false)}>Hủy</Button>
+          <Button
+            onClick={() => {
+              clearAllWishlist();
+              setClearDialogOpen(false);
+            }}
+            color="error"
+            variant="contained"
+          >
+            Xóa tất cả
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 
