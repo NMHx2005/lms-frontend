@@ -42,7 +42,6 @@ const AssignmentsManager: React.FC = () => {
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [lesson, setLesson] = useState<Lesson | null>(null);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
 
     const [showAddAssignment, setShowAddAssignment] = useState<boolean>(false);
     const [previewAssignmentId, setPreviewAssignmentId] = useState<string | null>(null);
@@ -71,13 +70,11 @@ const AssignmentsManager: React.FC = () => {
                 setSelectedCourseId(mockCourses[0]._id);
                 setSelectedCourse(mockCourses[0]);
             }
-            setLoading(false);
         }, 500);
     }, []);
 
     useEffect(() => {
         if (!selectedCourseId) return;
-        setLoading(true);
         setTimeout(() => {
             const lessonMock: Lesson = { _id: lessonId || '1', title: 'React Hooks Fundamentals', courseTitle: selectedCourse?.title || '', sectionTitle: 'React Hooks Nâng cao' };
             const assignmentsMock: Assignment[] = [
@@ -86,7 +83,6 @@ const AssignmentsManager: React.FC = () => {
             ];
             setLesson(lessonMock);
             setAssignments(assignmentsMock);
-            setLoading(false);
         }, 400);
     }, [selectedCourseId, selectedCourse, lessonId]);
 

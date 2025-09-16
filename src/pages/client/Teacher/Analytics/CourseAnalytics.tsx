@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Box, Container, Typography, Breadcrumbs, Grid, Card, CardContent, CardActions, CardMedia,
-    Button, Chip, Stack, LinearProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
+    Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
 
 interface CourseRow {

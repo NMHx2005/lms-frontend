@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Box, Typography, Breadcrumbs, Card, CardContent, CardActions, Button, Stack, TextField, Avatar, Grid } from '@mui/material';
+import { Container, Box, Typography, Breadcrumbs, Card, CardContent, CardActions, Button, TextField, Avatar, Grid } from '@mui/material';
 
 const AvatarTool: React.FC = () => {
     const [prompt, setPrompt] = useState('Giảng viên trẻ trung, phong cách hiện đại');

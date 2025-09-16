@@ -1,17 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Container, Box, Typography, Breadcrumbs, Grid, Card, CardContent, FormControl, InputLabel, Select, MenuItem, TextField, Stack, Button, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip } from '@mui/material';
+import { Container, Box, Typography, Breadcrumbs, Grid, Card, CardContent, FormControl, InputLabel, Select, MenuItem, TextField, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip } from '@mui/material';
 
 interface Txn { id: string; courseTitle: string; studentName: string; amount: number; type: 'purchase' | 'refund' | 'commission'; status: 'completed' | 'pending' | 'failed'; date: string; transactionId: string }
 
 const EarningsTransactions: React.FC = () => {
-    const [loading, setLoading] = useState(true);
     const [txns, setTxns] = useState<Txn[]>([]);
     const [typeFilter, setTypeFilter] = useState<'all' | 'purchase' | 'refund' | 'commission'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
     const [query, setQuery] = useState('');
 
     useEffect(() => {
-        setLoading(true);
         setTimeout(() => {
             setTxns([
                 { id: '1', courseTitle: 'React Advanced Patterns', studentName: 'Nguyễn Văn A', amount: 299000, type: 'purchase', status: 'completed', date: '2024-01-15T10:30:00Z', transactionId: 'TXN_001' },
@@ -19,7 +17,6 @@ const EarningsTransactions: React.FC = () => {
                 { id: '3', courseTitle: 'React Advanced Patterns', studentName: 'Lê Văn C', amount: 299000, type: 'refund', status: 'completed', date: '2024-01-13T16:45:00Z', transactionId: 'TXN_003' },
                 { id: '4', courseTitle: 'UI/UX Design Fundamentals', studentName: 'Phạm Thị D', amount: 199000, type: 'purchase', status: 'pending', date: '2024-01-12T08:15:00Z', transactionId: 'TXN_004' }
             ]);
-            setLoading(false);
         }, 600);
     }, []);
 

@@ -42,7 +42,6 @@ import {
   Star as StarIcon,
   TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 
 interface Review {
   _id: string;
@@ -75,7 +74,6 @@ interface CourseInfo {
 
 const CourseReviews: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -83,7 +81,7 @@ const CourseReviews: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [ratingFilter, setRatingFilter] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<'date' | 'rating' | 'progress'>('date');
+  const [sortBy] = useState<'date' | 'rating' | 'progress'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedCourse, setSelectedCourse] = useState<CourseInfo | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
@@ -231,7 +229,6 @@ const CourseReviews: React.FC = () => {
     }
   }, []);
 
-  const formatPrice = useCallback((price: number) => new Intl.NumberFormat('vi-VN').format(price), []);
   const formatDate = useCallback((dateString: string) => new Date(dateString).toLocaleDateString('vi-VN'), []);
 
   const ratingDistribution = useMemo(() => {
