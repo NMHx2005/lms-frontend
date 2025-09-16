@@ -1,5 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import './CourseModeration.css';
+// import './CourseModeration.css';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Grid,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Chip,
+  CircularProgress,
+  Avatar,
+  Checkbox,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 interface Course {
   _id: string;
@@ -29,9 +57,9 @@ const CourseModeration: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<CourseFilters>({ 
-    search: '', 
-    status: 'all', 
+  const [filters, setFilters] = useState<CourseFilters>({
+    search: '',
+    status: 'all',
     category: 'all',
     level: 'all'
   });
@@ -118,7 +146,7 @@ const CourseModeration: React.FC = () => {
   useEffect(() => {
     const filtered = courses.filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          course.instructor.name.toLowerCase().includes(filters.search.toLowerCase());
+        course.instructor.name.toLowerCase().includes(filters.search.toLowerCase());
       const matchesStatus = filters.status === 'all' || course.status === filters.status;
       const matchesCategory = filters.category === 'all' || course.category === filters.category;
       const matchesLevel = filters.level === 'all' || course.level === filters.level;
@@ -132,24 +160,16 @@ const CourseModeration: React.FC = () => {
   };
 
   const handleCourseSelection = (courseId: string) => {
-    setSelectedCourses(prev => 
-      prev.includes(courseId) 
-        ? prev.filter(id => id !== courseId) 
+    setSelectedCourses(prev =>
+      prev.includes(courseId)
+        ? prev.filter(id => id !== courseId)
         : [...prev, courseId]
     );
   };
 
-  // const handleSelectAll = () => {
-  //   if (selectedCourses.length === filteredCourses.length) {
-  //     setSelectedCourses([]);
-  //   } else {
-  //     setSelectedCourses(filteredCourses.map(course => course._id));
-  //   }
-  // };
-
   const handleBulkAction = (action: 'approve' | 'reject') => {
     if (selectedCourses.length === 0) return;
-    
+
     const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
     if (confirm(`Bạn có chắc chắn muốn ${actionText} ${selectedCourses.length} khóa học đã chọn?`)) {
       setCourses(prev => prev.map(course => {
@@ -186,341 +206,208 @@ const CourseModeration: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    const labels = { 
-      pending: 'Chờ duyệt', 
-      approved: 'Đã duyệt', 
-      rejected: 'Đã từ chối' 
+    const labels = {
+      pending: 'Chờ duyệt',
+      approved: 'Đã duyệt',
+      rejected: 'Đã từ chối'
     };
     return labels[status as keyof typeof labels] || status;
   };
 
-  const getStatusClass = (status: string) => {
-    const classes = { 
-      pending: 'status-pending', 
-      approved: 'status-approved', 
-      rejected: 'status-rejected' 
-    };
-    return classes[status as keyof typeof classes] || '';
-  };
-
   const getLevelLabel = (level: string) => {
-    const labels = { 
-      beginner: 'Cơ bản', 
-      intermediate: 'Trung cấp', 
-      advanced: 'Nâng cao' 
+    const labels = {
+      beginner: 'Cơ bản',
+      intermediate: 'Trung cấp',
+      advanced: 'Nâng cao'
     };
     return labels[level as keyof typeof labels] || level;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('vi-VN');
 
   if (loading) {
     return (
-      <div className="course-moderation">
-        <div className="course-moderation__loading">
-          <div className="course-moderation__loading-spinner"></div>
-          <p>Đang tải dữ liệu...</p>
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Đang tải dữ liệu...</Typography>
+        </Stack>
+      </Box>
     );
   }
 
   return (
-    <div className="course-moderation">
-      <div className="course-moderation__header">
-        <div className="course-moderation__header-content">
-          <h1 className="course-moderation__title">Duyệt khóa học</h1>
-          <p className="course-moderation__subtitle">Quản lý và duyệt các khóa học mới</p>
-        </div>
-        <div className="course-moderation__header-actions">
-          <button className="course-moderation__refresh-btn">🔄 Làm mới</button>
-          <button className="course-moderation__export-btn">📊 Xuất Excel</button>
-        </div>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Header */}
+      <Card sx={{ background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)', color: 'white', borderRadius: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={2}>
+            <Box>
+              <Typography variant="h5" fontWeight={800}>Duyệt khóa học</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý và duyệt các khóa học mới</Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" color="inherit" startIcon={<AutorenewIcon />} sx={{ color: '#111827' }} onClick={() => window.location.reload()}>Làm mới</Button>
+              <Button variant="contained" color="inherit" startIcon={<FileDownloadIcon />} sx={{ color: '#111827' }}>Xuất Excel</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="course-moderation__stats">
-        <div className="course-moderation__stat-card">
-          <div className="course-moderation__stat-icon">⏳</div>
-          <div className="course-moderation__stat-content">
-            <div className="course-moderation__stat-value">
-              {courses.filter(c => c.status === 'pending').length}
-            </div>
-            <div className="course-moderation__stat-label">Chờ duyệt</div>
-          </div>
-        </div>
-        <div className="course-moderation__stat-card">
-          <div className="course-moderation__stat-icon">✅</div>
-          <div className="course-moderation__stat-content">
-            <div className="course-moderation__stat-value">
-              {courses.filter(c => c.status === 'approved').length}
-            </div>
-            <div className="course-moderation__stat-label">Đã duyệt</div>
-          </div>
-        </div>
-        <div className="course-moderation__stat-card">
-          <div className="course-moderation__stat-icon">❌</div>
-          <div className="course-moderation__stat-content">
-            <div className="course-moderation__stat-value">
-              {courses.filter(c => c.status === 'rejected').length}
-            </div>
-            <div className="course-moderation__stat-label">Đã từ chối</div>
-          </div>
-        </div>
-        <div className="course-moderation__stat-card">
-          <div className="course-moderation__stat-icon">📚</div>
-          <div className="course-moderation__stat-content">
-            <div className="course-moderation__stat-value">{courses.length}</div>
-            <div className="course-moderation__stat-label">Tổng cộng</div>
-          </div>
-        </div>
-      </div>
+      {/* Stats */}
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>⏳</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.filter(c => c.status === 'pending').length}</Typography><Typography variant="body2" color="text.secondary">Chờ duyệt</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>✅</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.filter(c => c.status === 'approved').length}</Typography><Typography variant="body2" color="text.secondary">Đã duyệt</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>❌</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.filter(c => c.status === 'rejected').length}</Typography><Typography variant="body2" color="text.secondary">Đã từ chối</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>📚</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.length}</Typography><Typography variant="body2" color="text.secondary">Tổng cộng</Typography></Box></Stack></CardContent></Card></Grid>
+      </Grid>
 
-      <div className="course-moderation__filters">
-        <div className="course-moderation__search">
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tên khóa học hoặc giảng viên..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange({ search: e.target.value })}
-            className="course-moderation__search-input"
-          />
-          <span className="course-moderation__search-icon">🔍</span>
-        </div>
-        <div className="course-moderation__filter-controls">
-          <select
-            value={filters.status}
-            onChange={(e) => handleFilterChange({ status: e.target.value })}
-            className="course-moderation__filter-select"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="rejected">Đã từ chối</option>
-          </select>
-          <select
-            value={filters.category}
-            onChange={(e) => handleFilterChange({ category: e.target.value })}
-            className="course-moderation__filter-select"
-          >
-            <option value="all">Tất cả danh mục</option>
-            <option value="Programming">Programming</option>
-            <option value="Data Science">Data Science</option>
-            <option value="Design">Design</option>
-            <option value="Mobile">Mobile</option>
-            <option value="Technology">Technology</option>
-          </select>
-          <select
-            value={filters.level}
-            onChange={(e) => handleFilterChange({ level: e.target.value })}
-            className="course-moderation__filter-select"
-          >
-            <option value="all">Tất cả cấp độ</option>
-            <option value="beginner">Cơ bản</option>
-            <option value="intermediate">Trung cấp</option>
-            <option value="advanced">Nâng cao</option>
-          </select>
-        </div>
-      </div>
+      {/* Filters */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField fullWidth placeholder="Tìm kiếm theo tên khóa học hoặc giảng viên..." value={filters.search} onChange={(e) => handleFilterChange({ search: e.target.value })} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }} />
+          </Grid>
+          <Grid item xs={12} sm={4} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái</InputLabel>
+              <Select label="Trạng thái" value={filters.status} onChange={(e) => handleFilterChange({ status: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả trạng thái</MenuItem>
+                <MenuItem value="pending">Chờ duyệt</MenuItem>
+                <MenuItem value="approved">Đã duyệt</MenuItem>
+                <MenuItem value="rejected">Đã từ chối</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Danh mục</InputLabel>
+              <Select label="Danh mục" value={filters.category} onChange={(e) => handleFilterChange({ category: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả danh mục</MenuItem>
+                <MenuItem value="Programming">Programming</MenuItem>
+                <MenuItem value="Data Science">Data Science</MenuItem>
+                <MenuItem value="Design">Design</MenuItem>
+                <MenuItem value="Mobile">Mobile</MenuItem>
+                <MenuItem value="Technology">Technology</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Cấp độ</InputLabel>
+              <Select label="Cấp độ" value={filters.level} onChange={(e) => handleFilterChange({ level: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả cấp độ</MenuItem>
+                <MenuItem value="beginner">Cơ bản</MenuItem>
+                <MenuItem value="intermediate">Trung cấp</MenuItem>
+                <MenuItem value="advanced">Nâng cao</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
 
+      {/* Bulk Actions */}
       {selectedCourses.length > 0 && (
-        <div className="course-moderation__bulk-actions">
-          <div className="course-moderation__bulk-info">
-            <span className="course-moderation__bulk-count">
-              Đã chọn {selectedCourses.length} khóa học
-            </span>
-            <button 
-              className="course-moderation__bulk-clear"
-              onClick={() => setSelectedCourses([])}
-            >
-              Bỏ chọn tất cả
-            </button>
-          </div>
-          <div className="course-moderation__bulk-buttons">
-            <button 
-              className="course-moderation__bulk-btn course-moderation__bulk-btn--approve"
-              onClick={() => handleBulkAction('approve')}
-            >
-              ✅ Duyệt ({selectedCourses.length})
-            </button>
-            <button 
-              className="course-moderation__bulk-btn course-moderation__bulk-btn--reject"
-              onClick={() => handleBulkAction('reject')}
-            >
-              ❌ Từ chối ({selectedCourses.length})
-            </button>
-          </div>
-        </div>
+        <Paper sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip color="primary" label={`Đã chọn ${selectedCourses.length} khóa học`} />
+            <Button onClick={() => setSelectedCourses([])}>Bỏ chọn tất cả</Button>
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" color="success" onClick={() => handleBulkAction('approve')}>Duyệt ({selectedCourses.length})</Button>
+            <Button variant="outlined" color="error" onClick={() => handleBulkAction('reject')}>Từ chối ({selectedCourses.length})</Button>
+          </Stack>
+        </Paper>
       )}
 
-      <div className="course-moderation__courses">
+      {/* Courses List */}
+      <Grid container spacing={2}>
         {filteredCourses.map((course) => (
-          <div key={course._id} className="course-moderation__course-card">
-            <div className="course-moderation__course-header">
-              <div className="course-moderation__course-selection">
-                <input
-                  type="checkbox"
-                  checked={selectedCourses.includes(course._id)}
-                  onChange={() => handleCourseSelection(course._id)}
-                  className="course-moderation__checkbox"
-                />
-              </div>
-              <div className="course-moderation__course-status">
-                <span className={`course-moderation__status-badge ${getStatusClass(course.status)}`}>
-                  {getStatusLabel(course.status)}
-                </span>
-              </div>
-            </div>
-            
-            <div className="course-moderation__course-content">
-              <div className="course-moderation__course-thumbnail">
-                <img src={course.thumbnail} alt={course.title} />
-              </div>
-              
-              <div className="course-moderation__course-info">
-                <h3 className="course-moderation__course-title">{course.title}</h3>
-                <p className="course-moderation__course-description">{course.description}</p>
-                
-                <div className="course-moderation__course-meta">
-                  <div className="course-moderation__meta-item">
-                    <span className="course-moderation__meta-label">Giảng viên:</span>
-                    <span className="course-moderation__meta-value">{course.instructor.name}</span>
-                  </div>
-                  <div className="course-moderation__meta-item">
-                    <span className="course-moderation__meta-label">Danh mục:</span>
-                    <span className="course-moderation__meta-value">{course.category}</span>
-                  </div>
-                  <div className="course-moderation__meta-item">
-                    <span className="course-moderation__meta-label">Cấp độ:</span>
-                    <span className="course-moderation__meta-value">{getLevelLabel(course.level)}</span>
-                  </div>
-                  <div className="course-moderation__meta-item">
-                    <span className="course-moderation__meta-label">Thời lượng:</span>
-                    <span className="course-moderation__meta-value">{course.duration} giờ</span>
-                  </div>
-                  <div className="course-moderation__meta-item">
-                    <span className="course-moderation__meta-label">Giá:</span>
-                    <span className="course-moderation__meta-value course-moderation__price">
-                      {formatCurrency(course.price)}
-                    </span>
-                  </div>
-                  <div className="course-moderation__meta-item">
-                    <span className="course-moderation__meta-label">Ngày nộp:</span>
-                    <span className="course-moderation__meta-value">{formatDate(course.submittedAt)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="course-moderation__course-actions">
-              {course.status === 'pending' && (
-                <>
-                  <button 
-                    className="course-moderation__action-btn course-moderation__action-btn--approve"
-                    onClick={() => handleReviewCourse(course)}
-                  >
-                    ✅ Duyệt
-                  </button>
-                  <button 
-                    className="course-moderation__action-btn course-moderation__action-btn--reject"
-                    onClick={() => handleReviewCourse(course)}
-                  >
-                    ❌ Từ chối
-                  </button>
-                </>
-              )}
-              <button className="course-moderation__action-btn course-moderation__action-btn--view">
-                👁️ Xem chi tiết
-              </button>
-              <button className="course-moderation__action-btn course-moderation__action-btn--edit">
-                ✏️ Chỉnh sửa
-              </button>
-            </div>
-          </div>
+          <Grid key={course._id} item xs={12}>
+            <Card>
+              <CardContent>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <Stack alignItems="center" spacing={1}>
+                    <Checkbox checked={selectedCourses.includes(course._id)} onChange={() => handleCourseSelection(course._id)} />
+                    <Chip label={getStatusLabel(course.status)} color={course.status === 'pending' ? 'warning' : course.status === 'approved' ? 'success' : 'error'} size="small" />
+                  </Stack>
+                  <Box sx={{ width: 240, flexShrink: 0 }}>
+                    <Box component="img" src={course.thumbnail} alt={course.title} sx={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 1 }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" fontWeight={800}>{course.title}</Typography>
+                    <Typography variant="body2" color="text.secondary" mt={0.5}>{course.description}</Typography>
+                    <Grid container spacing={2} mt={1}>
+                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Giảng viên</Typography><Typography fontWeight={700}>{course.instructor.name}</Typography></Grid>
+                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Danh mục</Typography><Typography fontWeight={700}>{course.category}</Typography></Grid>
+                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Cấp độ</Typography><Typography fontWeight={700}>{getLevelLabel(course.level)}</Typography></Grid>
+                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Thời lượng</Typography><Typography fontWeight={700}>{course.duration} giờ</Typography></Grid>
+                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Giá</Typography><Typography fontWeight={700}>{formatCurrency(course.price)}</Typography></Grid>
+                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Ngày nộp</Typography><Typography fontWeight={700}>{formatDate(course.submittedAt)}</Typography></Grid>
+                    </Grid>
+                    <Stack direction="row" spacing={1.5} mt={2}>
+                      {course.status === 'pending' && (
+                        <>
+                          <Button variant="contained" color="success" onClick={() => handleReviewCourse(course)}>Duyệt</Button>
+                          <Button variant="outlined" color="error" onClick={() => handleReviewCourse(course)}>Từ chối</Button>
+                        </>
+                      )}
+                      <Button variant="text">Xem chi tiết</Button>
+                      <Button variant="text">Chỉnh sửa</Button>
+                    </Stack>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
+      {/* Empty State */}
       {filteredCourses.length === 0 && (
-        <div className="course-moderation__empty">
-          <div className="course-moderation__empty-icon">📚</div>
-          <h3>Không có khóa học nào</h3>
-          <p>
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>Không có khóa học nào</Typography>
+          <Typography variant="body2" color="text.secondary">
             {filters.search || filters.status !== 'all' || filters.category !== 'all' || filters.level !== 'all'
               ? 'Không tìm thấy khóa học nào phù hợp với bộ lọc hiện tại'
-              : 'Chưa có khóa học nào trong hệ thống'
-            }
-          </p>
-        </div>
+              : 'Chưa có khóa học nào trong hệ thống'}
+          </Typography>
+        </Paper>
       )}
 
       {/* Review Modal */}
-      {showReviewModal && selectedCourse && (
-        <div className="course-moderation__modal-overlay">
-          <div className="course-moderation__modal">
-            <div className="course-moderation__modal-header">
-              <h3>Duyệt khóa học: {selectedCourse.title}</h3>
-              <button 
-                className="course-moderation__modal-close"
-                onClick={() => setShowReviewModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="course-moderation__modal-content">
-              <div className="course-moderation__modal-info">
-                <p><strong>Giảng viên:</strong> {selectedCourse.instructor.name}</p>
-                <p><strong>Danh mục:</strong> {selectedCourse.category}</p>
-                <p><strong>Giá:</strong> {formatCurrency(selectedCourse.price)}</p>
-              </div>
-              
-              <div className="course-moderation__modal-comment">
-                <label htmlFor="reviewComment" className="course-moderation__modal-label">
-                  Ghi chú (tùy chọn):
-                </label>
-                <textarea
-                  id="reviewComment"
+      <Dialog open={showReviewModal && !!selectedCourse} onClose={() => setShowReviewModal(false)} fullWidth maxWidth="sm">
+        {selectedCourse && (
+          <>
+            <DialogTitle>Duyệt khóa học: {selectedCourse.title}</DialogTitle>
+            <DialogContent dividers>
+              <Stack spacing={2}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}><Typography variant="body2" color="text.secondary">Giảng viên</Typography><Typography fontWeight={700}>{selectedCourse.instructor.name}</Typography></Grid>
+                  <Grid item xs={6}><Typography variant="body2" color="text.secondary">Danh mục</Typography><Typography fontWeight={700}>{selectedCourse.category}</Typography></Grid>
+                  <Grid item xs={6}><Typography variant="body2" color="text.secondary">Giá</Typography><Typography fontWeight={700}>{formatCurrency(selectedCourse.price)}</Typography></Grid>
+                </Grid>
+                <Divider />
+                <TextField
+                  multiline
+                  minRows={4}
+                  label="Ghi chú (tùy chọn)"
+                  placeholder="Nhập ghi chú về quyết định duyệt/từ chối..."
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Nhập ghi chú về quyết định duyệt/từ chối..."
-                  className="course-moderation__modal-textarea"
-                  rows={4}
                 />
-              </div>
-            </div>
-            
-            <div className="course-moderation__modal-actions">
-              <button 
-                className="course-moderation__modal-btn course-moderation__modal-btn--approve"
-                onClick={() => handleSubmitReview('approve')}
-              >
-                ✅ Duyệt khóa học
-              </button>
-              <button 
-                className="course-moderation__modal-btn course-moderation__modal-btn--reject"
-                onClick={() => handleSubmitReview('reject')}
-              >
-                ❌ Từ chối khóa học
-              </button>
-              <button 
-                className="course-moderation__modal-btn course-moderation__modal-btn--cancel"
-                onClick={() => setShowReviewModal(false)}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button color="success" variant="contained" onClick={() => handleSubmitReview('approve')}>Duyệt khóa học</Button>
+              <Button color="error" variant="outlined" onClick={() => handleSubmitReview('reject')}>Từ chối khóa học</Button>
+              <Button onClick={() => setShowReviewModal(false)}>Hủy</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+    </Box>
   );
 };
 

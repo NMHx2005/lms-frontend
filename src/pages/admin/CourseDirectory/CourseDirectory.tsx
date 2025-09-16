@@ -1,5 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import './CourseDirectory.css';
+// import './CourseDirectory.css';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Grid,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Chip,
+  CircularProgress,
+  Avatar,
+  Checkbox,
+  Table,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
+  Tooltip,
+  IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Divider,
+  TableSortLabel
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import AddIcon from '@mui/icons-material/Add';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PublishIcon from '@mui/icons-material/Publish';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import StarIcon from '@mui/icons-material/Star';
 
 interface Course {
   _id: string;
@@ -210,16 +252,16 @@ const CourseDirectory: React.FC = () => {
   useEffect(() => {
     const filtered = courses.filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          course.instructor.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          course.tags.some(tag => tag.toLowerCase().includes(filters.search.toLowerCase()));
+        course.instructor.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        course.tags.some(tag => tag.toLowerCase().includes(filters.search.toLowerCase()));
       const matchesStatus = filters.status === 'all' || course.status === filters.status;
       const matchesCategory = filters.category === 'all' || course.category === filters.category;
       const matchesLevel = filters.level === 'all' || course.level === filters.level;
-      const matchesFeatured = filters.featured === 'all' || 
-                             (filters.featured === 'true' && course.featured) ||
-                             (filters.featured === 'false' && !course.featured);
+      const matchesFeatured = filters.featured === 'all' ||
+        (filters.featured === 'true' && course.featured) ||
+        (filters.featured === 'false' && !course.featured);
       const matchesInstructor = !filters.instructor || course.instructor.name.toLowerCase().includes(filters.instructor.toLowerCase());
-      
+
       return matchesSearch && matchesStatus && matchesCategory && matchesLevel && matchesFeatured && matchesInstructor;
     });
 
@@ -253,9 +295,9 @@ const CourseDirectory: React.FC = () => {
   };
 
   const handleCourseSelection = (courseId: string) => {
-    setSelectedCourses(prev => 
-      prev.includes(courseId) 
-        ? prev.filter(id => id !== courseId) 
+    setSelectedCourses(prev =>
+      prev.includes(courseId)
+        ? prev.filter(id => id !== courseId)
         : [...prev, courseId]
     );
   };
@@ -270,7 +312,7 @@ const CourseDirectory: React.FC = () => {
 
   const handleBulkAction = (action: 'publish' | 'suspend' | 'archive' | 'feature' | 'unfeature') => {
     if (selectedCourses.length === 0) return;
-    
+
     const actionText = {
       publish: 'xuất bản',
       suspend: 'tạm ngưng',
@@ -313,30 +355,20 @@ const CourseDirectory: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    const labels = { 
-      published: 'Đã xuất bản', 
-      draft: 'Bản nháp', 
+    const labels = {
+      published: 'Đã xuất bản',
+      draft: 'Bản nháp',
       archived: 'Đã lưu trữ',
       suspended: 'Tạm ngưng'
     };
     return labels[status as keyof typeof labels] || status;
   };
 
-  const getStatusClass = (status: string) => {
-    const classes = { 
-      published: 'status-published', 
-      draft: 'status-draft', 
-      archived: 'status-archived',
-      suspended: 'status-suspended'
-    };
-    return classes[status as keyof typeof classes] || '';
-  };
-
   const getLevelLabel = (level: string) => {
-    const labels = { 
-      beginner: 'Cơ bản', 
-      intermediate: 'Trung cấp', 
-      advanced: 'Nâng cao' 
+    const labels = {
+      beginner: 'Cơ bản',
+      intermediate: 'Trung cấp',
+      advanced: 'Nâng cao'
     };
     return labels[level as keyof typeof labels] || level;
   };
@@ -359,543 +391,416 @@ const CourseDirectory: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="course-directory">
-        <div className="course-directory__loading">
-          <div className="course-directory__loading-spinner"></div>
-          <p>Đang tải dữ liệu...</p>
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Đang tải dữ liệu...</Typography>
+        </Stack>
+      </Box>
     );
   }
 
   return (
-    <div className="course-directory">
-      <div className="course-directory__header">
-        <div className="course-directory__header-content">
-          <h1 className="course-directory__title">Quản lý khóa học</h1>
-          <p className="course-directory__subtitle">Quản lý tất cả khóa học trong hệ thống</p>
-        </div>
-        <div className="course-directory__header-actions">
-          <button className="course-directory__refresh-btn">🔄 Làm mới</button>
-          <button className="course-directory__export-btn">📊 Xuất Excel</button>
-          <button className="course-directory__add-btn">➕ Thêm khóa học</button>
-        </div>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Header */}
+      <Card sx={{ background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)', color: 'white', borderRadius: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={2}>
+            <Box>
+              <Typography variant="h5" fontWeight={800}>Quản lý khóa học</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý tất cả khóa học trong hệ thống</Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" color="inherit" startIcon={<AutorenewIcon />} sx={{ color: '#111827' }} onClick={() => window.location.reload()}>Làm mới</Button>
+              <Button variant="contained" color="inherit" startIcon={<FileDownloadIcon />} sx={{ color: '#111827' }}>Xuất Excel</Button>
+              <Button variant="contained" color="secondary" startIcon={<AddIcon />}>Thêm khóa học</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="course-directory__stats">
-        <div className="course-directory__stat-card">
-          <div className="course-directory__stat-icon">📚</div>
-          <div className="course-directory__stat-content">
-            <div className="course-directory__stat-value">{formatNumber(courses.length)}</div>
-            <div className="course-directory__stat-label">Tổng khóa học</div>
-          </div>
-        </div>
-        <div className="course-directory__stat-card">
-          <div className="course-directory__stat-icon">✅</div>
-          <div className="course-directory__stat-content">
-            <div className="course-directory__stat-value">
-              {formatNumber(courses.filter(c => c.status === 'published').length)}
-            </div>
-            <div className="course-directory__stat-label">Đã xuất bản</div>
-          </div>
-        </div>
-        <div className="course-directory__stat-card">
-          <div className="course-directory__stat-card">
-            <div className="course-directory__stat-icon">⭐</div>
-            <div className="course-directory__stat-content">
-              <div className="course-directory__stat-value">
-                {formatNumber(courses.filter(c => c.featured).length)}
-              </div>
-              <div className="course-directory__stat-label">Nổi bật</div>
-            </div>
-          </div>
-        </div>
-        <div className="course-directory__stat-card">
-          <div className="course-directory__stat-icon">💰</div>
-          <div className="course-directory__stat-content">
-            <div className="course-directory__stat-value">
-              {formatCurrency(courses.reduce((sum, c) => sum + c.revenue, 0))}
-            </div>
-            <div className="course-directory__stat-label">Tổng doanh thu</div>
-          </div>
-        </div>
-      </div>
+      {/* Stats */}
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card><CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar>📚</Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{formatNumber(courses.length)}</Typography>
+                <Typography variant="body2" color="text.secondary">Tổng khóa học</Typography>
+              </Box>
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card><CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar>✅</Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{formatNumber(courses.filter(c => c.status === 'published').length)}</Typography>
+                <Typography variant="body2" color="text.secondary">Đã xuất bản</Typography>
+              </Box>
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card><CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar><StarIcon /></Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{formatNumber(courses.filter(c => c.featured).length)}</Typography>
+                <Typography variant="body2" color="text.secondary">Nổi bật</Typography>
+              </Box>
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card><CardContent>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar>💰</Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{formatCurrency(courses.reduce((sum, c) => sum + c.revenue, 0))}</Typography>
+                <Typography variant="body2" color="text.secondary">Tổng doanh thu</Typography>
+              </Box>
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+      </Grid>
 
-      <div className="course-directory__controls">
-        <div className="course-directory__filters">
-          <div className="course-directory__search">
-            <input
-              type="text"
+      {/* Filters & Controls */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={5}>
+            <TextField
+              fullWidth
               placeholder="Tìm kiếm khóa học, giảng viên hoặc tags..."
               value={filters.search}
               onChange={(e) => handleFilterChange({ search: e.target.value })}
-              className="course-directory__search-input"
+              InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
             />
-            <span className="course-directory__search-icon">🔍</span>
-          </div>
-          <div className="course-directory__filter-controls">
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange({ status: e.target.value })}
-              className="course-directory__filter-select"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="published">Đã xuất bản</option>
-              <option value="draft">Bản nháp</option>
-              <option value="archived">Đã lưu trữ</option>
-              <option value="suspended">Tạm ngưng</option>
-            </select>
-            <select
-              value={filters.category}
-              onChange={(e) => handleFilterChange({ category: e.target.value })}
-              className="course-directory__filter-select"
-            >
-              <option value="all">Tất cả danh mục</option>
-              <option value="Programming">Programming</option>
-              <option value="Data Science">Data Science</option>
-              <option value="Design">Design</option>
-              <option value="Mobile">Mobile</option>
-              <option value="Technology">Technology</option>
-            </select>
-            <select
-              value={filters.level}
-              onChange={(e) => handleFilterChange({ level: e.target.value })}
-              className="course-directory__filter-select"
-            >
-              <option value="all">Tất cả cấp độ</option>
-              <option value="beginner">Cơ bản</option>
-              <option value="intermediate">Trung cấp</option>
-              <option value="advanced">Nâng cao</option>
-            </select>
-            <select
-              value={filters.featured}
-              onChange={(e) => handleFilterChange({ featured: e.target.value })}
-              className="course-directory__filter-select"
-            >
-              <option value="all">Tất cả</option>
-              <option value="true">Nổi bật</option>
-              <option value="false">Không nổi bật</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Tìm giảng viên..."
-              value={filters.instructor}
-              onChange={(e) => handleFilterChange({ instructor: e.target.value })}
-              className="course-directory__filter-select"
-            />
-          </div>
-        </div>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái</InputLabel>
+              <Select label="Trạng thái" value={filters.status} onChange={(e) => handleFilterChange({ status: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="published">Đã xuất bản</MenuItem>
+                <MenuItem value="draft">Bản nháp</MenuItem>
+                <MenuItem value="archived">Đã lưu trữ</MenuItem>
+                <MenuItem value="suspended">Tạm ngưng</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Danh mục</InputLabel>
+              <Select label="Danh mục" value={filters.category} onChange={(e) => handleFilterChange({ category: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="Programming">Programming</MenuItem>
+                <MenuItem value="Data Science">Data Science</MenuItem>
+                <MenuItem value="Design">Design</MenuItem>
+                <MenuItem value="Mobile">Mobile</MenuItem>
+                <MenuItem value="Technology">Technology</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Cấp độ</InputLabel>
+              <Select label="Cấp độ" value={filters.level} onChange={(e) => handleFilterChange({ level: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="beginner">Cơ bản</MenuItem>
+                <MenuItem value="intermediate">Trung cấp</MenuItem>
+                <MenuItem value="advanced">Nâng cao</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={1.5}>
+            <FormControl fullWidth>
+              <InputLabel>Nổi bật</InputLabel>
+              <Select label="Nổi bật" value={filters.featured} onChange={(e) => handleFilterChange({ featured: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="true">Nổi bật</MenuItem>
+                <MenuItem value="false">Không nổi bật</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={1.5}>
+            <TextField fullWidth label="Giảng viên" value={filters.instructor} onChange={(e) => handleFilterChange({ instructor: e.target.value })} />
+          </Grid>
+        </Grid>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" mt={2}>
+          <ToggleButtonGroup exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)} size="small">
+            <ToggleButton value="table">Bảng</ToggleButton>
+            <ToggleButton value="grid">Lưới</ToggleButton>
+          </ToggleButtonGroup>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Sắp xếp</InputLabel>
+            <Select label="Sắp xếp" value={`${sortBy}-${sortOrder}`} onChange={(e) => { const [field, order] = String(e.target.value).split('-'); setSortBy(field); setSortOrder(order as 'asc' | 'desc'); }} MenuProps={{ disableScrollLock: true }}>
+              <MenuItem value="createdAt-desc">Mới nhất</MenuItem>
+              <MenuItem value="createdAt-asc">Cũ nhất</MenuItem>
+              <MenuItem value="title-asc">Tên A-Z</MenuItem>
+              <MenuItem value="title-desc">Tên Z-A</MenuItem>
+              <MenuItem value="enrollmentCount-desc">Nhiều học viên nhất</MenuItem>
+              <MenuItem value="rating-desc">Đánh giá cao nhất</MenuItem>
+              <MenuItem value="price-desc">Giá cao nhất</MenuItem>
+              <MenuItem value="price-asc">Giá thấp nhất</MenuItem>
+              <MenuItem value="revenue-desc">Doanh thu cao nhất</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
 
-        <div className="course-directory__view-controls">
-          <div className="course-directory__view-mode">
-            <button
-              className={`course-directory__view-btn ${viewMode === 'table' ? 'active' : ''}`}
-              onClick={() => setViewMode('table')}
-              title="Chế độ bảng"
-            >
-              📊
-            </button>
-            <button
-              className={`course-directory__view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-              title="Chế độ lưới"
-            >
-              🔲
-            </button>
-          </div>
-          <div className="course-directory__sort">
-            <select
-              value={`${sortBy}-${sortOrder}`}
-              onChange={(e) => {
-                const [field, order] = e.target.value.split('-');
-                setSortBy(field);
-                setSortOrder(order as 'asc' | 'desc');
-              }}
-              className="course-directory__sort-select"
-            >
-              <option value="createdAt-desc">Mới nhất</option>
-              <option value="createdAt-asc">Cũ nhất</option>
-              <option value="title-asc">Tên A-Z</option>
-              <option value="title-desc">Tên Z-A</option>
-              <option value="enrollmentCount-desc">Nhiều học viên nhất</option>
-              <option value="rating-desc">Đánh giá cao nhất</option>
-              <option value="price-desc">Giá cao nhất</option>
-              <option value="price-asc">Giá thấp nhất</option>
-              <option value="revenue-desc">Doanh thu cao nhất</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
+      {/* Bulk Actions */}
       {selectedCourses.length > 0 && (
-        <div className="course-directory__bulk-actions">
-          <div className="course-directory__bulk-info">
-            <span className="course-directory__bulk-count">
-              Đã chọn {selectedCourses.length} khóa học
-            </span>
-            <button 
-              className="course-directory__bulk-clear"
-              onClick={() => setSelectedCourses([])}
-            >
-              Bỏ chọn tất cả
-            </button>
-          </div>
-          <div className="course-directory__bulk-buttons">
-            <button 
-              className="course-directory__bulk-btn course-directory__bulk-btn--publish"
-              onClick={() => handleBulkAction('publish')}
-            >
-              ✅ Xuất bản ({selectedCourses.length})
-            </button>
-            <button 
-              className="course-directory__bulk-btn course-directory__bulk-btn--suspend"
-              onClick={() => handleBulkAction('suspend')}
-            >
-              ⏸️ Tạm ngưng ({selectedCourses.length})
-            </button>
-            <button 
-              className="course-directory__bulk-btn course-directory__bulk-btn--archive"
-              onClick={() => handleBulkAction('archive')}
-            >
-              📦 Lưu trữ ({selectedCourses.length})
-            </button>
-            <button 
-              className="course-directory__bulk-btn course-directory__bulk-btn--feature"
-              onClick={() => handleBulkAction('feature')}
-            >
-              ⭐ Nổi bật ({selectedCourses.length})
-            </button>
-            <button 
-              className="course-directory__bulk-btn course-directory__bulk-btn--unfeature"
-              onClick={() => handleBulkAction('unfeature')}
-            >
-              🔲 Bỏ nổi bật ({selectedCourses.length})
-            </button>
-          </div>
-        </div>
+        <Paper sx={{ p: 2, borderRadius: 2 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Chip color="primary" label={`Đã chọn ${selectedCourses.length} khóa học`} />
+              <Button onClick={() => setSelectedCourses([])}>Bỏ chọn tất cả</Button>
+            </Stack>
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" color="success" onClick={() => handleBulkAction('publish')}>Xuất bản ({selectedCourses.length})</Button>
+              <Button variant="outlined" color="warning" onClick={() => handleBulkAction('suspend')}>Tạm ngưng ({selectedCourses.length})</Button>
+              <Button variant="outlined" onClick={() => handleBulkAction('archive')}>Lưu trữ ({selectedCourses.length})</Button>
+              <Button variant="outlined" startIcon={<StarIcon />} onClick={() => handleBulkAction('feature')}>Nổi bật</Button>
+              <Button variant="outlined" onClick={() => handleBulkAction('unfeature')}>Bỏ nổi bật</Button>
+            </Stack>
+          </Stack>
+        </Paper>
       )}
 
       {viewMode === 'table' ? (
-        <div className="course-directory__table-container">
-          <table className="course-directory__table">
-            <thead className="course-directory__table-header">
-              <tr>
-                <th className="course-directory__table-th">
-                  <input
-                    type="checkbox"
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
                     checked={selectedCourses.length === filteredCourses.length && filteredCourses.length > 0}
                     onChange={handleSelectAll}
-                    className="course-directory__checkbox"
                   />
-                </th>
-                <th 
-                  className="course-directory__table-th course-directory__table-th--sortable"
-                  onClick={() => handleSort('title')}
-                >
-                  Khóa học
-                  {sortBy === 'title' && (
-                    <span className="course-directory__sort-indicator">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th 
-                  className="course-directory__table-th course-directory__table-th--sortable"
-                  onClick={() => handleSort('instructor')}
-                >
-                  Giảng viên
-                  {sortBy === 'instructor' && (
-                    <span className="course-directory__sort-indicator">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th className="course-directory__table-th">Danh mục</th>
-                <th className="course-directory__table-th">Trạng thái</th>
-                <th 
-                  className="course-directory__table-th course-directory__table-th--sortable"
-                  onClick={() => handleSort('enrollmentCount')}
-                >
-                  Học viên
-                  {sortBy === 'enrollmentCount' && (
-                    <span className="course-directory__sort-indicator">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th 
-                  className="course-directory__table-th course-directory__table-th--sortable"
-                  onClick={() => handleSort('rating')}
-                >
-                  Đánh giá
-                  {sortBy === 'rating' && (
-                    <span className="course-directory__sort-indicator">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th 
-                  className="course-directory__table-th course-directory__table-th--sortable"
-                  onClick={() => handleSort('price')}
-                >
-                  Giá
-                  {sortBy === 'price' && (
-                    <span className="course-directory__sort-indicator">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th 
-                  className="course-directory__table-th course-directory__table-th--sortable"
-                  onClick={() => handleSort('revenue')}
-                >
-                  Doanh thu
-                  {sortBy === 'revenue' && (
-                    <span className="course-directory__sort-indicator">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </th>
-                <th className="course-directory__table-th">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="course-directory__table-body">
+                </TableCell>
+                <TableCell sortDirection={sortBy === 'title' ? sortOrder : false} sx={{ fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortBy === 'title'}
+                    direction={sortBy === 'title' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('title')}
+                  >
+                    Khóa học
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sortDirection={sortBy === 'instructor' ? sortOrder : false} sx={{ fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortBy === 'instructor'}
+                    direction={sortBy === 'instructor' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('instructor')}
+                  >
+                    Giảng viên
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Danh mục</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
+                <TableCell align="right" sortDirection={sortBy === 'enrollmentCount' ? sortOrder : false} sx={{ fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortBy === 'enrollmentCount'}
+                    direction={sortBy === 'enrollmentCount' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('enrollmentCount')}
+                  >
+                    Học viên
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sortDirection={sortBy === 'rating' ? sortOrder : false} sx={{ fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortBy === 'rating'}
+                    direction={sortBy === 'rating' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('rating')}
+                  >
+                    Đánh giá
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sortDirection={sortBy === 'price' ? sortOrder : false} sx={{ fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortBy === 'price'}
+                    direction={sortBy === 'price' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('price')}
+                  >
+                    Giá
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sortDirection={sortBy === 'revenue' ? sortOrder : false} sx={{ fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortBy === 'revenue'}
+                    direction={sortBy === 'revenue' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('revenue')}
+                  >
+                    Doanh thu
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 700 }}>Hành động</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {filteredCourses.map((course) => (
-                <tr key={course._id} className="course-directory__table-row">
-                  <td className="course-directory__table-td">
-                    <input
-                      type="checkbox"
+                <TableRow key={course._id} hover>
+                  <TableCell padding="checkbox">
+                    <Checkbox
                       checked={selectedCourses.includes(course._id)}
                       onChange={() => handleCourseSelection(course._id)}
-                      className="course-directory__checkbox"
                     />
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__course-info">
-                      <div className="course-directory__course-title">
-                        {course.title}
-                        {course.featured && (
-                          <span className="course-directory__featured-badge">⭐</span>
-                        )}
-                      </div>
-                      <div className="course-directory__course-meta">
-                        <span className="course-directory__course-level">{getLevelLabel(course.level)}</span>
-                        <span className="course-directory__course-duration">{course.duration}h</span>
-                        <span className="course-directory__course-lessons">{course.lessons} bài</span>
-                      </div>
-                      <div className="course-directory__course-tags">
-                        {course.tags.slice(0, 3).map((tag, index) => (
-                          <span key={index} className="course-directory__course-tag">{tag}</span>
-                        ))}
-                        {course.tags.length > 3 && (
-                          <span className="course-directory__course-tag-more">+{course.tags.length - 3}</span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__instructor">
-                      <img 
-                        src={course.instructor.avatar} 
-                        alt={course.instructor.name}
-                        className="course-directory__instructor-avatar"
-                      />
-                      <div className="course-directory__instructor-info">
-                        <div className="course-directory__instructor-name">{course.instructor.name}</div>
-                        <div className="course-directory__instructor-email">{course.instructor.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__category">
-                      <div className="course-directory__category-main">{course.category}</div>
-                      <div className="course-directory__category-sub">{course.subcategory}</div>
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <span className={`course-directory__status-badge ${getStatusClass(course.status)}`}>
-                      {getStatusLabel(course.status)}
-                    </span>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__enrollment">
-                      <div className="course-directory__enrollment-count">{formatNumber(course.enrollmentCount)}</div>
-                      <div className="course-directory__enrollment-last">
-                        Cuối: {course.lastEnrollment ? formatDate(course.lastEnrollment) : 'N/A'}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__rating">
-                      <div className="course-directory__rating-score">
-                        ⭐ {course.rating.toFixed(1)}
-                      </div>
-                      <div className="course-directory__rating-count">
-                        ({formatNumber(course.reviewCount)} đánh giá)
-                      </div>
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__price">
-                      <div className="course-directory__price-current">
-                        {formatCurrency(course.price)}
-                      </div>
-                      {course.originalPrice && course.originalPrice > course.price && (
-                        <div className="course-directory__price-original">
-                          {formatCurrency(course.originalPrice)}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__revenue">
-                      {formatCurrency(course.revenue)}
-                    </div>
-                  </td>
-                  <td className="course-directory__table-td">
-                    <div className="course-directory__actions">
-                      <button className="course-directory__action-btn course-directory__action-btn--view" title="Xem chi tiết">
-                        👁️
-                      </button>
-                      <button className="course-directory__action-btn course-directory__action-btn--edit" title="Chỉnh sửa">
-                        ✏️
-                      </button>
+                  </TableCell>
+                  <TableCell sx={{ py: 1.25 }}>
+                    <Stack spacing={0.5}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography fontWeight={700}>{course.title}</Typography>
+                        {course.featured && (<Chip size="small" color="warning" icon={<StarIcon />} label="Nổi bật" />)}
+                      </Stack>
+                      <Stack direction="row" spacing={1}>
+                        <Chip size="small" label={getLevelLabel(course.level)} />
+                        <Chip size="small" label={`${course.duration}h`} />
+                        <Chip size="small" label={`${course.lessons} bài`} />
+                      </Stack>
+                      <Stack direction="row" spacing={1}>
+                        {course.tags.slice(0, 3).map((tag, idx) => (<Chip key={idx} size="small" variant="outlined" label={tag} />))}
+                        {course.tags.length > 3 && (<Chip size="small" label={`+${course.tags.length - 3}`} />)}
+                      </Stack>
+                    </Stack>
+                  </TableCell>
+                  <TableCell sx={{ py: 1.25 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar src={course.instructor.avatar} alt={course.instructor.name} />
+                      <Box>
+                        <Typography>{course.instructor.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">{course.instructor.email}</Typography>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell sx={{ py: 1.25 }}>
+                    <Typography>{course.category}</Typography>
+                    <Typography variant="body2" color="text.secondary">{course.subcategory}</Typography>
+                  </TableCell>
+                  <TableCell sx={{ py: 1.25 }}>
+                    <Chip
+                      label={getStatusLabel(course.status)}
+                      color={course.status === 'published' ? 'success' : course.status === 'draft' ? 'default' : course.status === 'archived' ? 'info' : 'warning'}
+                      variant={course.status === 'draft' ? 'outlined' : 'filled'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 1.25 }}>
+                    <Typography fontWeight={700}>{formatNumber(course.enrollmentCount)}</Typography>
+                    <Typography variant="body2" color="text.secondary">Cuối: {course.lastEnrollment ? formatDate(course.lastEnrollment) : 'N/A'}</Typography>
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 1.25 }}>
+                    <Typography fontWeight={700}>⭐ {course.rating.toFixed(1)}</Typography>
+                    <Typography variant="body2" color="text.secondary">({formatNumber(course.reviewCount)} đánh giá)</Typography>
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 1.25 }}>
+                    <Typography fontWeight={700}>{formatCurrency(course.price)}</Typography>
+                    {course.originalPrice && course.originalPrice > course.price && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                        {formatCurrency(course.originalPrice)}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 1.25 }}>
+                    <Typography fontWeight={700}>{formatCurrency(course.revenue)}</Typography>
+                  </TableCell>
+                  <TableCell align="center" sx={{ py: 1.25 }}>
+                    <Stack direction="row" spacing={0.5} justifyContent="center">
+                      <Tooltip title="Xem chi tiết"><span><IconButton size="small"><VisibilityIcon /></IconButton></span></Tooltip>
+                      <Tooltip title="Chỉnh sửa"><span><IconButton size="small" color="primary"><EditIcon /></IconButton></span></Tooltip>
                       {course.status === 'published' ? (
-                        <button className="course-directory__action-btn course-directory__action-btn--suspend" title="Tạm ngưng">
-                          ⏸️
-                        </button>
+                        <Tooltip title="Tạm ngưng"><span><IconButton size="small" color="warning"><PauseCircleOutlineIcon /></IconButton></span></Tooltip>
                       ) : (
-                        <button className="course-directory__action-btn course-directory__action-btn--publish" title="Xuất bản">
-                          ✅
-                        </button>
+                        <Tooltip title="Xuất bản"><span><IconButton size="small" color="success"><PublishIcon /></IconButton></span></Tooltip>
                       )}
-                      <button className="course-directory__action-btn course-directory__action-btn--delete" title="Xóa">
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      <Tooltip title="Xóa"><span><IconButton size="small" color="error"><DeleteOutlineIcon /></IconButton></span></Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
       ) : (
-        <div className="course-directory__grid">
+        <Grid container spacing={2}>
           {filteredCourses.map((course) => (
-            <div key={course._id} className="course-directory__course-card">
-              <div className="course-directory__course-card-header">
-                <input
-                  type="checkbox"
-                  checked={selectedCourses.includes(course._id)}
-                  onChange={() => handleCourseSelection(course._id)}
-                  className="course-directory__checkbox"
-                />
-                <span className={`course-directory__status-badge ${getStatusClass(course.status)}`}>
-                  {getStatusLabel(course.status)}
-                </span>
-              </div>
-              
-              <div className="course-directory__course-card-content">
-                <h3 className="course-directory__course-card-title">
-                  {course.title}
-                  {course.featured && (
-                    <span className="course-directory__featured-badge">⭐</span>
-                  )}
-                </h3>
-                
-                <div className="course-directory__course-card-instructor">
-                  <img 
-                    src={course.instructor.avatar} 
-                    alt={course.instructor.name}
-                    className="course-directory__instructor-avatar"
-                  />
-                  <span className="course-directory__instructor-name">{course.instructor.name}</span>
-                </div>
-                
-                <div className="course-directory__course-card-meta">
-                  <div className="course-directory__course-card-category">
+            <Grid item xs={12} sm={6} md={4} key={course._id}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Checkbox checked={selectedCourses.includes(course._id)} onChange={() => handleCourseSelection(course._id)} />
+                    <Chip
+                      label={getStatusLabel(course.status)}
+                      color={course.status === 'published' ? 'success' : course.status === 'draft' ? 'default' : course.status === 'archived' ? 'info' : 'warning'}
+                      size="small"
+                    />
+                  </Stack>
+                  <Typography variant="h6" fontWeight={800} mt={1}>
+                    {course.title} {course.featured && <Chip size="small" color="warning" icon={<StarIcon />} label="Nổi bật" sx={{ ml: 1 }} />}
+                  </Typography>
+                  <Stack direction="row" spacing={1.5} alignItems="center" mt={1}>
+                    <Avatar src={course.instructor.avatar} />
+                    <Typography>{course.instructor.name}</Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" mt={1}>
                     {course.category} • {course.subcategory}
-                  </div>
-                  <div className="course-directory__course-card-level">
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mt={0.5}>
                     {getLevelLabel(course.level)} • {course.duration}h • {course.lessons} bài
-                  </div>
-                </div>
-                
-                <div className="course-directory__course-card-stats">
-                  <div className="course-directory__course-card-stat">
-                    <span className="course-directory__course-card-stat-label">Học viên:</span>
-                    <span className="course-directory__course-card-stat-value">{formatNumber(course.enrollmentCount)}</span>
-                  </div>
-                  <div className="course-directory__course-card-stat">
-                    <span className="course-directory__course-card-stat-label">Đánh giá:</span>
-                    <span className="course-directory__course-card-stat-value">⭐ {course.rating.toFixed(1)}</span>
-                  </div>
-                  <div className="course-directory__course-card-stat">
-                    <span className="course-directory__course-card-stat-label">Giá:</span>
-                    <span className="course-directory__course-card-stat-value">{formatCurrency(course.price)}</span>
-                  </div>
-                  <div className="course-directory__course-card-stat">
-                    <span className="course-directory__course-card-stat-label">Doanh thu:</span>
-                    <span className="course-directory__course-card-stat-value">{formatCurrency(course.revenue)}</span>
-                  </div>
-                </div>
-                
-                <div className="course-directory__course-card-tags">
-                  {course.tags.slice(0, 3).map((tag, index) => (
-                    <span key={index} className="course-directory__course-card-tag">{tag}</span>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="course-directory__course-card-actions">
-                <button className="course-directory__course-card-btn course-directory__course-card-btn--view">
-                  👁️ Xem
-                </button>
-                <button className="course-directory__course-card-btn course-directory__course-card-btn--edit">
-                  ✏️ Sửa
-                </button>
-                {course.status === 'published' ? (
-                  <button className="course-directory__course-card-btn course-directory__course-card-btn--suspend">
-                    ⏸️ Tạm ngưng
-                  </button>
-                ) : (
-                  <button className="course-directory__course-card-btn course-directory__course-card-btn--publish">
-                    ✅ Xuất bản
-                  </button>
-                )}
-              </div>
-            </div>
+                  </Typography>
+                  <Stack direction="row" spacing={1} mt={1}>
+                    {course.tags.slice(0, 3).map((tag, idx) => (<Chip key={idx} size="small" variant="outlined" label={tag} />))}
+                  </Stack>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Grid container>
+                    <Grid item xs={6}><Typography variant="body2" color="text.secondary">Học viên</Typography><Typography fontWeight={700}>{formatNumber(course.enrollmentCount)}</Typography></Grid>
+                    <Grid item xs={6}><Typography variant="body2" color="text.secondary">Đánh giá</Typography><Typography fontWeight={700}>⭐ {course.rating.toFixed(1)}</Typography></Grid>
+                    <Grid item xs={6} mt={1}><Typography variant="body2" color="text.secondary">Giá</Typography><Typography fontWeight={700}>{formatCurrency(course.price)}</Typography></Grid>
+                    <Grid item xs={6} mt={1}><Typography variant="body2" color="text.secondary">Doanh thu</Typography><Typography fontWeight={700}>{formatCurrency(course.revenue)}</Typography></Grid>
+                  </Grid>
+                  <Stack direction="row" spacing={1} mt={1.5}>
+                    <Button size="small" startIcon={<VisibilityIcon />}>Xem</Button>
+                    <Button size="small" startIcon={<EditIcon />} color="primary">Sửa</Button>
+                    {course.status === 'published' ? (
+                      <Button size="small" startIcon={<PauseCircleOutlineIcon />} color="warning">Tạm ngưng</Button>
+                    ) : (
+                      <Button size="small" startIcon={<PublishIcon />} color="success">Xuất bản</Button>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
 
+      {/* Empty State */}
       {filteredCourses.length === 0 && (
-        <div className="course-directory__empty">
-          <div className="course-directory__empty-icon">📚</div>
-          <h3>Không có khóa học nào</h3>
-          <p>
-            {filters.search || filters.status !== 'all' || filters.category !== 'all' || 
-             filters.level !== 'all' || filters.featured !== 'all' || filters.instructor
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>Không có khóa học nào</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {filters.search || filters.status !== 'all' || filters.category !== 'all' ||
+              filters.level !== 'all' || filters.featured !== 'all' || filters.instructor
               ? 'Không tìm thấy khóa học nào phù hợp với bộ lọc hiện tại'
-              : 'Chưa có khóa học nào trong hệ thống'
-            }
-          </p>
-        </div>
+              : 'Chưa có khóa học nào trong hệ thống'}
+          </Typography>
+        </Paper>
       )}
 
+      {/* Simple Pagination (static like original) */}
       {filteredCourses.length > 0 && (
-        <div className="course-directory__pagination">
-          <div className="course-directory__pagination-info">
-            Hiển thị {filteredCourses.length} trong tổng số {courses.length} khóa học
-          </div>
-          <div className="course-directory__pagination-controls">
-            <button className="course-directory__pagination-btn" disabled>← Trước</button>
-            <span className="course-directory__pagination-page">Trang 1</span>
-            <button className="course-directory__pagination-btn" disabled>Sau →</button>
-          </div>
-        </div>
+        <Paper sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="body2">Hiển thị {filteredCourses.length} trong tổng số {courses.length} khóa học</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button disabled>← Trước</Button>
+            <Typography variant="body2">Trang 1</Typography>
+            <Button disabled>Sau →</Button>
+          </Stack>
+        </Paper>
       )}
-    </div>
+    </Box>
   );
 };
 

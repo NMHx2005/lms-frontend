@@ -1,5 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import './RefundCenter.css';
+// import './RefundCenter.css';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Grid,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Chip,
+  CircularProgress,
+  Avatar,
+  Checkbox,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 interface RefundRequest {
   _id: string;
@@ -159,18 +187,18 @@ const RefundCenter: React.FC = () => {
   useEffect(() => {
     const filtered = refunds.filter(refund => {
       const matchesSearch = refund.courseTitle.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          refund.studentName.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          refund.orderId.toLowerCase().includes(filters.search.toLowerCase());
+        refund.studentName.toLowerCase().includes(filters.search.toLowerCase()) ||
+        refund.orderId.toLowerCase().includes(filters.search.toLowerCase());
       const matchesStatus = filters.status === 'all' || refund.status === filters.status;
       const matchesRefundMethod = filters.refundMethod === 'all' || refund.refundMethod === filters.refundMethod;
-      
+
       let matchesDateRange = true;
       if (filters.dateRange !== 'all') {
         const requestDate = new Date(refund.requestDate);
         const now = new Date();
         const diffTime = Math.abs(now.getTime() - requestDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         switch (filters.dateRange) {
           case 'today':
             matchesDateRange = diffDays === 0;
@@ -183,7 +211,7 @@ const RefundCenter: React.FC = () => {
             break;
         }
       }
-      
+
       return matchesSearch && matchesStatus && matchesRefundMethod && matchesDateRange;
     });
     setFilteredRefunds(filtered);
@@ -194,30 +222,22 @@ const RefundCenter: React.FC = () => {
   };
 
   const handleRefundSelection = (refundId: string) => {
-    setSelectedRefunds(prev => 
-      prev.includes(refundId) 
-        ? prev.filter(id => id !== refundId) 
+    setSelectedRefunds(prev =>
+      prev.includes(refundId)
+        ? prev.filter(id => id !== refundId)
         : [...prev, refundId]
     );
   };
 
-  // const handleSelectAll = () => {
-  //   if (selectedRefunds.length === filteredRefunds.length) {
-  //     setSelectedRefunds([]);
-  //   } else {
-  //     setSelectedRefunds(filteredRefunds.map(refund => refund._id));
-  //   }
-  // };
-
   const handleBulkAction = (action: 'approve' | 'reject') => {
     if (selectedRefunds.length === 0) return;
-    
+
     const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
     if (confirm(`Bạn có chắc chắn muốn ${actionText} ${selectedRefunds.length} yêu cầu hoàn tiền đã chọn?`)) {
       setRefunds(prev => prev.map(refund => {
         if (selectedRefunds.includes(refund._id)) {
-          return { 
-            ...refund, 
+          return {
+            ...refund,
             status: action === 'approve' ? 'approved' : 'rejected' as const,
             processedDate: new Date().toISOString(),
             processedBy: 'admin-1'
@@ -238,11 +258,11 @@ const RefundCenter: React.FC = () => {
 
   const handleSubmitProcess = () => {
     if (!selectedRefund) return;
-    
+
     setRefunds(prev => prev.map(refund => {
       if (refund._id === selectedRefund._id) {
-        return { 
-          ...refund, 
+        return {
+          ...refund,
           status: processAction === 'approve' ? 'approved' : 'rejected' as const,
           processedDate: new Date().toISOString(),
           processedBy: 'admin-1',
@@ -251,408 +271,235 @@ const RefundCenter: React.FC = () => {
       }
       return refund;
     }));
-    
+
     setShowProcessModal(false);
     setSelectedRefund(null);
     setProcessNotes('');
   };
 
   const getStatusLabel = (status: string) => {
-    const labels = { 
-      pending: 'Chờ xử lý', 
-      approved: 'Đã duyệt', 
+    const labels = {
+      pending: 'Chờ xử lý',
+      approved: 'Đã duyệt',
       rejected: 'Đã từ chối',
       completed: 'Hoàn thành'
     };
     return labels[status as keyof typeof labels] || status;
   };
 
-  const getStatusClass = (status: string) => {
-    const classes = {
-      pending: 'status-pending',
-      approved: 'status-approved',
-      rejected: 'status-rejected',
-      completed: 'status-completed'
-    };
-    return classes[status as keyof typeof classes] || '';
-  };
-
   const getRefundMethodLabel = (method: string) => {
-    const labels = { 
-      original_payment: 'Hoàn về phương thức gốc', 
-      credit: 'Tín dụng nội bộ', 
+    const labels = {
+      original_payment: 'Hoàn về phương thức gốc',
+      credit: 'Tín dụng nội bộ',
       bank_transfer: 'Chuyển khoản ngân hàng'
     };
     return labels[method as keyof typeof labels] || method;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
-
-  // const formatDate = (dateString: string) => {
-  //   return new Date(dateString).toLocaleDateString('vi-VN');
-  // };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('vi-VN');
-  };
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  const formatDateTime = (dateString: string) => new Date(dateString).toLocaleString('vi-VN');
 
   if (loading) {
     return (
-      <div className="refund-center">
-        <div className="refund-center__loading">
-          <div className="refund-center__loading-spinner"></div>
-          <p>Đang tải dữ liệu...</p>
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Đang tải dữ liệu...</Typography>
+        </Stack>
+      </Box>
     );
   }
 
   return (
-    <div className="refund-center">
-      <div className="refund-center__header">
-        <div className="refund-center__header-content">
-          <h1 className="refund-center__title">Trung tâm hoàn tiền</h1>
-          <p className="refund-center__subtitle">Quản lý các yêu cầu hoàn tiền từ học viên</p>
-        </div>
-        <div className="refund-center__header-actions">
-          <button className="refund-center__refresh-btn">🔄 Làm mới</button>
-          <button className="refund-center__export-btn">📊 Xuất Excel</button>
-          <button className="refund-center__settings-btn">⚙️ Cài đặt</button>
-        </div>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Header */}
+      <Card sx={{ background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)', color: 'white', borderRadius: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={2}>
+            <Box>
+              <Typography variant="h5" fontWeight={800}>Trung tâm hoàn tiền</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý các yêu cầu hoàn tiền từ học viên</Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" color="inherit" startIcon={<AutorenewIcon />} sx={{ color: '#111827' }} onClick={() => window.location.reload()}>Làm mới</Button>
+              <Button variant="contained" color="inherit" startIcon={<FileDownloadIcon />} sx={{ color: '#111827' }}>Xuất Excel</Button>
+              <Button variant="contained" color="inherit" startIcon={<SettingsIcon />} sx={{ color: '#111827' }}>Cài đặt</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="refund-center__stats">
-        <div className="refund-center__stat-card">
-          <div className="refund-center__stat-icon">⏳</div>
-          <div className="refund-center__stat-content">
-            <div className="refund-center__stat-value">
-              {refunds.filter(r => r.status === 'pending').length}
-            </div>
-            <div className="refund-center__stat-label">Chờ xử lý</div>
-          </div>
-        </div>
-        <div className="refund-center__stat-card">
-          <div className="refund-center__stat-icon">✅</div>
-          <div className="refund-center__stat-content">
-            <div className="refund-center__stat-value">
-              {refunds.filter(r => r.status === 'approved').length}
-            </div>
-            <div className="refund-center__stat-label">Đã duyệt</div>
-          </div>
-        </div>
-        <div className="refund-center__stat-card">
-          <div className="refund-center__stat-icon">❌</div>
-          <div className="refund-center__stat-content">
-            <div className="refund-center__stat-value">
-              {refunds.filter(r => r.status === 'rejected').length}
-            </div>
-            <div className="refund-center__stat-label">Đã từ chối</div>
-          </div>
-        </div>
-        <div className="refund-center__stat-card">
-          <div className="refund-center__stat-icon">💰</div>
-          <div className="refund-center__stat-content">
-            <div className="refund-center__stat-value">
-              {formatCurrency(refunds.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0))}
-            </div>
-            <div className="refund-center__stat-label">Tổng hoàn tiền</div>
-          </div>
-        </div>
-      </div>
+      {/* Stats */}
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>⏳</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds.filter(r => r.status === 'pending').length}</Typography><Typography variant="body2" color="text.secondary">Chờ xử lý</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>✅</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds.filter(r => r.status === 'approved').length}</Typography><Typography variant="body2" color="text.secondary">Đã duyệt</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>❌</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds.filter(r => r.status === 'rejected').length}</Typography><Typography variant="body2" color="text.secondary">Đã từ chối</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>💰</Avatar><Box><Typography variant="h6" fontWeight={700}>{formatCurrency(refunds.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0))}</Typography><Typography variant="body2" color="text.secondary">Tổng hoàn tiền</Typography></Box></Stack></CardContent></Card></Grid>
+      </Grid>
 
-      <div className="refund-center__filters">
-        <div className="refund-center__search">
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo khóa học, học viên hoặc mã đơn hàng..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange({ search: e.target.value })}
-            className="refund-center__search-input"
-          />
-          <span className="refund-center__search-icon">🔍</span>
-        </div>
-        <div className="refund-center__filter-controls">
-          <select
-            value={filters.status}
-            onChange={(e) => handleFilterChange({ status: e.target.value })}
-            className="refund-center__filter-select"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="pending">Chờ xử lý</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="rejected">Đã từ chối</option>
-            <option value="completed">Hoàn thành</option>
-          </select>
-          <select
-            value={filters.refundMethod}
-            onChange={(e) => handleFilterChange({ refundMethod: e.target.value })}
-            className="refund-center__filter-select"
-          >
-            <option value="all">Tất cả phương thức</option>
-            <option value="original_payment">Hoàn về phương thức gốc</option>
-            <option value="credit">Tín dụng nội bộ</option>
-            <option value="bank_transfer">Chuyển khoản ngân hàng</option>
-          </select>
-          <select
-            value={filters.dateRange}
-            onChange={(e) => handleFilterChange({ dateRange: e.target.value })}
-            className="refund-center__filter-select"
-          >
-            <option value="all">Tất cả thời gian</option>
-            <option value="today">Hôm nay</option>
-            <option value="week">7 ngày qua</option>
-            <option value="month">30 ngày qua</option>
-          </select>
-        </div>
-      </div>
+      {/* Filters */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField fullWidth placeholder="Tìm kiếm theo khóa học, học viên hoặc mã đơn hàng..." value={filters.search} onChange={(e) => handleFilterChange({ search: e.target.value })} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái</InputLabel>
+              <Select label="Trạng thái" value={filters.status} onChange={(e) => handleFilterChange({ status: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả trạng thái</MenuItem>
+                <MenuItem value="pending">Chờ xử lý</MenuItem>
+                <MenuItem value="approved">Đã duyệt</MenuItem>
+                <MenuItem value="rejected">Đã từ chối</MenuItem>
+                <MenuItem value="completed">Hoàn thành</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Phương thức</InputLabel>
+              <Select label="Phương thức" value={filters.refundMethod} onChange={(e) => handleFilterChange({ refundMethod: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả phương thức</MenuItem>
+                <MenuItem value="original_payment">Hoàn về phương thức gốc</MenuItem>
+                <MenuItem value="credit">Tín dụng nội bộ</MenuItem>
+                <MenuItem value="bank_transfer">Chuyển khoản ngân hàng</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Thời gian</InputLabel>
+              <Select label="Thời gian" value={filters.dateRange} onChange={(e) => handleFilterChange({ dateRange: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="all">Tất cả thời gian</MenuItem>
+                <MenuItem value="today">Hôm nay</MenuItem>
+                <MenuItem value="week">7 ngày qua</MenuItem>
+                <MenuItem value="month">30 ngày qua</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
 
+      {/* Bulk Actions */}
       {selectedRefunds.length > 0 && (
-        <div className="refund-center__bulk-actions">
-          <div className="refund-center__bulk-info">
-            <span className="refund-center__bulk-count">
-              Đã chọn {selectedRefunds.length} yêu cầu hoàn tiền
-            </span>
-            <button 
-              className="refund-center__bulk-clear"
-              onClick={() => setSelectedRefunds([])}
-            >
-              Bỏ chọn tất cả
-            </button>
-          </div>
-          <div className="refund-center__bulk-buttons">
-            <button 
-              className="refund-center__bulk-btn refund-center__bulk-btn--approve"
-              onClick={() => handleBulkAction('approve')}
-            >
-              ✅ Duyệt ({selectedRefunds.length})
-            </button>
-            <button 
-              className="refund-center__bulk-btn refund-center__bulk-btn--reject"
-              onClick={() => handleBulkAction('reject')}
-            >
-              ❌ Từ chối ({selectedRefunds.length})
-            </button>
-          </div>
-        </div>
+        <Paper sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip color="primary" label={`Đã chọn ${selectedRefunds.length} yêu cầu hoàn tiền`} />
+            <Button onClick={() => setSelectedRefunds([])}>Bỏ chọn tất cả</Button>
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" color="success" onClick={() => handleBulkAction('approve')}>Duyệt ({selectedRefunds.length})</Button>
+            <Button variant="outlined" color="error" onClick={() => handleBulkAction('reject')}>Từ chối ({selectedRefunds.length})</Button>
+          </Stack>
+        </Paper>
       )}
 
-      <div className="refund-center__refunds">
+      {/* Refund list */}
+      <Grid container spacing={2}>
         {filteredRefunds.map((refund) => (
-          <div key={refund._id} className="refund-center__refund-card">
-            <div className="refund-center__refund-header">
-              <div className="refund-center__refund-selection">
-                <input
-                  type="checkbox"
-                  checked={selectedRefunds.includes(refund._id)}
-                  onChange={() => handleRefundSelection(refund._id)}
-                  className="refund-center__checkbox"
-                />
-              </div>
-              <div className="refund-center__refund-status">
-                <span className={`refund-center__status-badge ${getStatusClass(refund.status)}`}>
-                  {getStatusLabel(refund.status)}
-                </span>
-              </div>
-            </div>
-            
-            <div className="refund-center__refund-content">
-              <div className="refund-center__refund-main">
-                <div className="refund-center__refund-info">
-                  <h3 className="refund-center__refund-title">{refund.courseTitle}</h3>
-                  <div className="refund-center__refund-meta">
-                    <div className="refund-center__refund-meta-item">
-                      <span className="refund-center__refund-meta-label">Mã đơn hàng:</span>
-                      <span className="refund-center__refund-meta-value">{refund.orderId}</span>
-                    </div>
-                    <div className="refund-center__refund-meta-item">
-                      <span className="refund-center__refund-meta-label">Số tiền:</span>
-                      <span className="refund-center__refund-meta-value refund-center__amount">
-                        {formatCurrency(refund.amount)}
-                      </span>
-                    </div>
-                    <div className="refund-center__refund-meta-item">
-                      <span className="refund-center__refund-meta-label">Phương thức hoàn tiền:</span>
-                      <span className="refund-center__refund-meta-value">
-                        {getRefundMethodLabel(refund.refundMethod)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="refund-center__refund-reason">
-                  <h4 className="refund-center__refund-reason-title">Lý do hoàn tiền:</h4>
-                  <p className="refund-center__refund-reason-text">{refund.reason}</p>
-                </div>
-              </div>
-              
-              <div className="refund-center__refund-details">
-                <div className="refund-center__refund-party">
-                  <div className="refund-center__refund-party-item">
-                    <h4 className="refund-center__refund-party-title">Học viên</h4>
-                    <div className="refund-center__refund-party-info">
-                      <div className="refund-center__refund-party-name">{refund.studentName}</div>
-                      <div className="refund-center__refund-party-email">{refund.studentEmail}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="refund-center__refund-party-item">
-                    <h4 className="refund-center__refund-party-title">Giảng viên</h4>
-                    <div className="refund-center__refund-party-info">
-                      <div className="refund-center__refund-party-name">{refund.instructorName}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="refund-center__refund-timeline">
-                  <div className="refund-center__refund-timeline-item">
-                    <span className="refund-center__refund-timeline-label">Yêu cầu:</span>
-                    <span className="refund-center__refund-timeline-value">
-                      {formatDateTime(refund.requestDate)}
-                    </span>
-                  </div>
-                  {refund.processedDate && (
-                    <div className="refund-center__refund-timeline-item">
-                      <span className="refund-center__refund-timeline-label">Xử lý:</span>
-                      <span className="refund-center__refund-timeline-value">
-                        {formatDateTime(refund.processedDate)}
-                      </span>
-                    </div>
-                  )}
-                  {refund.notes && (
-                    <div className="refund-center__refund-notes">
-                      <span className="refund-center__refund-notes-label">Ghi chú:</span>
-                      <span className="refund-center__refund-notes-text">{refund.notes}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="refund-center__refund-actions">
-              {refund.status === 'pending' && (
-                <>
-                  <button 
-                    className="refund-center__action-btn refund-center__action-btn--approve"
-                    onClick={() => handleProcessRefund(refund, 'approve')}
-                  >
-                    ✅ Duyệt
-                  </button>
-                  <button 
-                    className="refund-center__action-btn refund-center__action-btn--reject"
-                    onClick={() => handleProcessRefund(refund, 'reject')}
-                  >
-                    ❌ Từ chối
-                  </button>
-                </>
-              )}
-              <button className="refund-center__action-btn refund-center__action-btn--view">
-                👁️ Xem chi tiết
-              </button>
-              <button className="refund-center__action-btn refund-center__action-btn--edit">
-                ✏️ Chỉnh sửa
-              </button>
-              {refund.status === 'approved' && (
-                <button className="refund-center__action-btn refund-center__action-btn--complete">
-                  💰 Hoàn tiền
-                </button>
-              )}
-            </div>
-          </div>
+          <Grid key={refund._id} item xs={12}>
+            <Card>
+              <CardContent>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <Stack alignItems="center" spacing={1}>
+                    <Checkbox checked={selectedRefunds.includes(refund._id)} onChange={() => handleRefundSelection(refund._id)} />
+                    <Chip label={getStatusLabel(refund.status)} color={refund.status === 'pending' ? 'warning' : refund.status === 'approved' ? 'success' : refund.status === 'rejected' ? 'error' : 'info'} size="small" />
+                  </Stack>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" fontWeight={800}>{refund.courseTitle}</Typography>
+                    <Grid container spacing={2} mt={0.5}>
+                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Mã đơn hàng</Typography><Typography fontWeight={700}>{refund.orderId}</Typography></Grid>
+                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Số tiền</Typography><Typography fontWeight={700}>{formatCurrency(refund.amount)}</Typography></Grid>
+                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Phương thức</Typography><Typography fontWeight={700}>{getRefundMethodLabel(refund.refundMethod)}</Typography></Grid>
+                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Ngày yêu cầu</Typography><Typography fontWeight={700}>{formatDateTime(refund.requestDate)}</Typography></Grid>
+                    </Grid>
+                    <Typography variant="body2" color="text.secondary" mt={1}><strong>Lý do:</strong> {refund.reason}</Typography>
+                    <Grid container spacing={2} mt={0.5}>
+                      <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Học viên</Typography><Typography fontWeight={700}>{refund.studentName} — {refund.studentEmail}</Typography></Grid>
+                      <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Giảng viên</Typography><Typography fontWeight={700}>{refund.instructorName}</Typography></Grid>
+                      {refund.processedDate && (
+                        <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Đã xử lý</Typography><Typography fontWeight={700}>{formatDateTime(refund.processedDate)}</Typography></Grid>
+                      )}
+                      {refund.notes && (
+                        <Grid item xs={12}><Typography variant="body2" color="text.secondary">Ghi chú</Typography><Typography>{refund.notes}</Typography></Grid>
+                      )}
+                    </Grid>
+                    <Stack direction="row" spacing={1.5} mt={2}>
+                      {refund.status === 'pending' && (
+                        <>
+                          <Button variant="contained" color="success" onClick={() => handleProcessRefund(refund, 'approve')}>Duyệt</Button>
+                          <Button variant="outlined" color="error" onClick={() => handleProcessRefund(refund, 'reject')}>Từ chối</Button>
+                        </>
+                      )}
+                      <Button variant="text">Xem chi tiết</Button>
+                      <Button variant="text">Chỉnh sửa</Button>
+                      {refund.status === 'approved' && (
+                        <Button variant="contained" color="info">Hoàn tiền</Button>
+                      )}
+                    </Stack>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
+      {/* Empty State */}
       {filteredRefunds.length === 0 && (
-        <div className="refund-center__empty">
-          <div className="refund-center__empty-icon">💰</div>
-          <h3>Không có yêu cầu hoàn tiền nào</h3>
-          <p>
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>Không có yêu cầu hoàn tiền nào</Typography>
+          <Typography variant="body2" color="text.secondary">
             {filters.search || filters.status !== 'all' || filters.refundMethod !== 'all' || filters.dateRange !== 'all'
               ? 'Không tìm thấy yêu cầu hoàn tiền nào phù hợp với bộ lọc hiện tại'
-              : 'Chưa có yêu cầu hoàn tiền nào trong hệ thống'
-            }
-          </p>
-        </div>
+              : 'Chưa có yêu cầu hoàn tiền nào trong hệ thống'}
+          </Typography>
+        </Paper>
       )}
 
+      {/* Pagination (static like original) */}
       {filteredRefunds.length > 0 && (
-        <div className="refund-center__pagination">
-          <div className="refund-center__pagination-info">
-            Hiển thị {filteredRefunds.length} trong tổng số {refunds.length} yêu cầu hoàn tiền
-          </div>
-          <div className="refund-center__pagination-controls">
-            <button className="refund-center__pagination-btn" disabled>← Trước</button>
-            <span className="refund-center__pagination-page">Trang 1</span>
-            <button className="refund-center__pagination-btn" disabled>Sau →</button>
-          </div>
-        </div>
+        <Paper sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="body2">Hiển thị {filteredRefunds.length} trong tổng số {refunds.length} yêu cầu hoàn tiền</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button disabled>← Trước</Button>
+            <Typography variant="body2">Trang 1</Typography>
+            <Button disabled>Sau →</Button>
+          </Stack>
+        </Paper>
       )}
 
       {/* Process Modal */}
-      {showProcessModal && selectedRefund && (
-        <div className="refund-center__modal-overlay">
-          <div className="refund-center__modal">
-            <div className="refund-center__modal-header">
-              <h3>
-                {processAction === 'approve' ? 'Duyệt' : 'Từ chối'} yêu cầu hoàn tiền
-              </h3>
-              <button 
-                className="refund-center__modal-close"
-                onClick={() => setShowProcessModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="refund-center__modal-content">
-              <div className="refund-center__modal-info">
-                <p><strong>Khóa học:</strong> {selectedRefund.courseTitle}</p>
-                <p><strong>Học viên:</strong> {selectedRefund.studentName}</p>
-                <p><strong>Số tiền:</strong> {formatCurrency(selectedRefund.amount)}</p>
-                <p><strong>Lý do:</strong> {selectedRefund.reason}</p>
-              </div>
-              
-              <div className="refund-center__modal-notes">
-                <label htmlFor="processNotes" className="refund-center__modal-label">
-                  Ghi chú xử lý:
-                </label>
-                <textarea
-                  id="processNotes"
+      <Dialog open={showProcessModal && !!selectedRefund} onClose={() => setShowProcessModal(false)} fullWidth maxWidth="sm">
+        {selectedRefund && (
+          <>
+            <DialogTitle>{processAction === 'approve' ? 'Duyệt' : 'Từ chối'} yêu cầu hoàn tiền</DialogTitle>
+            <DialogContent dividers>
+              <Stack spacing={2}>
+                <Typography><strong>Khóa học:</strong> {selectedRefund.courseTitle}</Typography>
+                <Typography><strong>Học viên:</strong> {selectedRefund.studentName}</Typography>
+                <Typography><strong>Số tiền:</strong> {formatCurrency(selectedRefund.amount)}</Typography>
+                <Typography><strong>Lý do:</strong> {selectedRefund.reason}</Typography>
+                <TextField
+                  multiline
+                  minRows={4}
+                  label="Ghi chú xử lý"
+                  placeholder={`Nhập ghi chú về việc ${processAction === 'approve' ? 'duyệt' : 'từ chối'} yêu cầu hoàn tiền...`}
                   value={processNotes}
                   onChange={(e) => setProcessNotes(e.target.value)}
-                  placeholder={`Nhập ghi chú về việc ${processAction === 'approve' ? 'duyệt' : 'từ chối'} yêu cầu hoàn tiền...`}
-                  className="refund-center__modal-textarea"
-                  rows={4}
                 />
-              </div>
-            </div>
-            
-            <div className="refund-center__modal-actions">
-              <button 
-                className={`refund-center__modal-btn ${
-                  processAction === 'approve' 
-                    ? 'refund-center__modal-btn--approve' 
-                    : 'refund-center__modal-btn--reject'
-                }`}
-                onClick={handleSubmitProcess}
-              >
-                {processAction === 'approve' ? '✅ Duyệt' : '❌ Từ chối'}
-              </button>
-              <button 
-                className="refund-center__modal-btn refund-center__modal-btn--cancel"
-                onClick={() => setShowProcessModal(false)}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button variant="contained" color={processAction === 'approve' ? 'success' : 'error'} onClick={handleSubmitProcess}>
+                {processAction === 'approve' ? 'Duyệt' : 'Từ chối'}
+              </Button>
+              <Button onClick={() => setShowProcessModal(false)}>Hủy</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+    </Box>
   );
 };
 

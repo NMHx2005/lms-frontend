@@ -87,7 +87,7 @@ const AssignmentsManager = lazy(() => import('./pages/client/Teacher/Assignments
 const SubmissionsGrading = lazy(() => import('./pages/client/Teacher/SubmissionsGrading/SubmissionsGrading.tsx'));
 const PackagePlans = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlans.tsx'));
 const TeacherProfileManage = lazy(() => import('./pages/client/Teacher/Advanced/TeacherProfileManage.tsx'));
-const PackagePlanDetail = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlanDetail.tsx'));
+const PackagePlanDetail = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlanDetail'));
 const SearchResults = lazy(() => import('./pages/client/SearchResults/SearchResults.tsx'));
 const NotFound = lazy(() => import('./pages/client/NotFound/NotFound.tsx'));
 

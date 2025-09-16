@@ -13,8 +13,13 @@ import {
   Toolbar,
   CssBaseline,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Collapse,
+  Divider,
+  Avatar,
+  Tooltip
 } from '@mui/material';
+import { AppBar } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
@@ -34,7 +39,8 @@ import {
   Backup as BackupIcon,
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Notifications as NotificationsIcon
 } from '@mui/icons-material';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -49,6 +55,7 @@ interface SidebarItem {
 const AdminLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedTabs, setExpandedTabs] = useState<string[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -88,6 +95,14 @@ const AdminLayout: React.FC = () => {
     }
   }, [isMobile, mobileOpen, sidebarCollapsed]);
 
+  const toggleTab = useCallback((tabPath: string) => {
+    setExpandedTabs(prev =>
+      prev.includes(tabPath)
+        ? prev.filter(path => path !== tabPath)
+        : [...prev, tabPath]
+    );
+  }, []);
+
   const isActiveItem = useCallback((path: string) => {
     // Find all items that could be active based on the current path
     const matchingItems = sidebarItems.filter(
@@ -117,13 +132,113 @@ const AdminLayout: React.FC = () => {
   const drawerWidth = 280;
   const collapsedWidth = 80;
 
+  const renderSidebarItem = (item: SidebarItem) => {
+    const isExpanded = expandedTabs.includes(item.path);
+    const hasSubItems = (item as any).subItems && (item as any).subItems.length > 0;
+
+    const rootProps = hasSubItems
+      ? {}
+      : { onClick: () => handleSidebarItemClick(item.path) };
+
+    const button = (
+      <ListItemButton
+        onClick={() => hasSubItems && toggleTab(item.path)}
+        {...rootProps}
+        sx={{
+          borderRadius: 2,
+          mx: 1,
+          minHeight: 48,
+          my: 0.25,
+          '&.Mui-selected': {
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText
+          },
+          '&.Mui-selected:hover': {
+            backgroundColor: theme.palette.primary.dark
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            transform: 'translateX(4px)'
+          },
+          transition: 'all 0.2s ease',
+          ...(sidebarCollapsed && { justifyContent: 'center', px: 2 })
+        }}
+        selected={isActiveItem(item.path)}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: sidebarCollapsed ? 'auto' : 40,
+            color: isActiveItem(item.path) ? theme.palette.primary.contrastText : '#9ca3af',
+            justifyContent: 'center'
+          }}
+        >
+          {item.badge ? (
+            <Badge badgeContent={item.badge} color="error">
+              {item.icon}
+            </Badge>
+          ) : (
+            item.icon
+          )}
+        </ListItemIcon>
+        {!sidebarCollapsed && (
+          <ListItemText
+            primary={item.label}
+            primaryTypographyProps={{ fontWeight: isActiveItem(item.path) ? 600 : 500, fontSize: '0.9rem' }}
+          />
+        )}
+      </ListItemButton>
+    );
+
+    return (
+      <Box key={item.id} sx={{ width: '100%' }}>
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
+          {sidebarCollapsed ? (
+            <Tooltip title={item.label} placement="right">
+              {button}
+            </Tooltip>
+          ) : (
+            button
+          )}
+        </ListItem>
+
+        {hasSubItems && (
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {(item as any).subItems.map((sub: any) => (
+                <ListItem key={sub.path} disablePadding>
+                  <ListItemButton
+                    onClick={() => handleSidebarItemClick(sub.path)}
+                    sx={{
+                      pl: sidebarCollapsed ? 2 : 6,
+                      py: 0.5,
+                      minHeight: 40,
+                      '&:hover': { backgroundColor: 'action.hover' },
+                      ...(isActiveItem(sub.path) && { backgroundColor: 'rgba(25,118,210,0.12)' })
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32, color: 'text.secondary' }}>
+                      {sub.icon}
+                    </ListItemIcon>
+                    {!sidebarCollapsed && (
+                      <ListItemText primary={sub.label} primaryTypographyProps={{ fontSize: '0.85rem' }} />
+                    )}
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Collapse>
+        )}
+      </Box>
+    );
+  };
+
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Toolbar
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
+          background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)',
+          color: '#ffffff',
           minHeight: '80px !important',
           px: 2,
           justifyContent: 'space-between',
@@ -131,16 +246,19 @@ const AdminLayout: React.FC = () => {
         }}
       >
         {!sidebarCollapsed && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#fbbf24' }}>
-              Admin Panel
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: 'warning.main', fontWeight: 700 }}>A</Avatar>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Admin Panel
+              </Typography>
+            </Box>
           </Box>
         )}
         <IconButton
           onClick={handleDrawerToggle}
           sx={{
-            color: 'white',
+            color: 'inherit',
             '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
           }}
         >
@@ -149,75 +267,29 @@ const AdminLayout: React.FC = () => {
       </Toolbar>
 
       {/* Navigation */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{
+        flex: 1, overflow: 'auto',
+        '&::-webkit-scrollbar': { display: 'none' },
+        scrollbarWidth: 'none', msOverflowStyle: 'none',
+        backgroundColor: 'transparent'
+      }}>
         <List sx={{ px: 1, py: 2 }}>
-          {sidebarItems.map((item) => {
-            const isActive = isActiveItem(item.path);
-
-            return (
-              <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  onClick={() => handleSidebarItemClick(item.path)}
-                  sx={{
-                    borderRadius: 2,
-                    mx: 1,
-                    minHeight: 48,
-                    backgroundColor: isActive ? 'primary.main' : 'transparent',
-                    color: isActive ? 'white' : 'text.primary',
-                    '&:hover': {
-                      backgroundColor: isActive ? 'primary.dark' : 'action.hover',
-                      transform: 'translateX(4px)',
-                    },
-                    transition: 'all 0.2s ease',
-                    ...(sidebarCollapsed && {
-                      justifyContent: 'center',
-                      px: 2
-                    })
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: sidebarCollapsed ? 'auto' : 40,
-                      color: isActive ? 'white' : 'text.secondary',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {item.badge ? (
-                      <Badge badgeContent={item.badge} color="error">
-                        {item.icon}
-                      </Badge>
-                    ) : (
-                      item.icon
-                    )}
-                  </ListItemIcon>
-                  {!sidebarCollapsed && (
-                    <ListItemText
-                      primary={item.label}
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          fontWeight: isActive ? 600 : 500,
-                          fontSize: '0.9rem'
-                        }
-                      }}
-                    />
-                  )}
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
+          {sidebarItems.map(renderSidebarItem)}
         </List>
       </Box>
 
+      <Divider />
+
       {/* Footer */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 2 }}>
         <ListItemButton
           onClick={() => navigate('/admin/login')}
           sx={{
             borderRadius: 2,
-            backgroundColor: 'error.light',
-            color: 'error.contrastText',
+            backgroundColor: 'rgba(239,68,68,0.15)',
+            color: '#fecaca',
             '&:hover': {
-              backgroundColor: 'error.main',
+              backgroundColor: 'rgba(239,68,68,0.25)',
             },
             transition: 'all 0.2s ease',
             ...(sidebarCollapsed && {
@@ -255,6 +327,36 @@ const AdminLayout: React.FC = () => {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <CssBaseline />
 
+      {/* Mobile AppBar */}
+      <AppBar
+        position="fixed"
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)',
+          zIndex: (theme) => theme.zIndex.drawer + 1
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 700, flexGrow: 1 }}>
+            Admin Panel
+          </Typography>
+          <IconButton color="inherit">
+            <Badge color="error" variant="dot">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+
       {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
@@ -266,8 +368,9 @@ const AdminLayout: React.FC = () => {
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: drawerWidth,
-            background: 'linear-gradient(180deg, #1e293b 0%, #334155 100%)',
-            color: 'white'
+            backgroundColor: '#1f2a37',
+            color: '#e5e7eb',
+            borderRight: '1px solid #243445'
           }
         }}
       >
@@ -282,9 +385,10 @@ const AdminLayout: React.FC = () => {
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: sidebarCollapsed ? collapsedWidth : drawerWidth,
-            background: 'linear-gradient(180deg, #1e293b 0%, #334155 100%)',
-            color: 'white',
-            transition: 'width 0.3s ease'
+            backgroundColor: '#1f2a37',
+            color: '#e5e7eb',
+            transition: 'width 0.3s ease',
+            borderRight: '1px solid #243445'
           }
         }}
         open
@@ -297,11 +401,14 @@ const AdminLayout: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, md: 3 },
           width: { md: `calc(100% - ${sidebarCollapsed ? collapsedWidth : drawerWidth}px)` },
-          transition: 'width 0.3s ease',
+          transition: 'margin-left 0.3s ease, width 0.3s ease',
           backgroundColor: 'background.default',
-          minHeight: '100vh'
+          color: 'text.primary',
+          minHeight: '100vh',
+          mt: { xs: 7, md: 0 },
+          ml: { md: `${sidebarCollapsed ? collapsedWidth : drawerWidth}px` }
         }}
       >
         <Outlet />

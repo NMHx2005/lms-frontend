@@ -1,559 +1,204 @@
 import React, { useState, useEffect } from 'react';
-import './Announcements.css';
+// import './Announcements.css';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Grid,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Chip,
+  CircularProgress,
+  Paper,
+  Tabs,
+  Tab,
+  ToggleButton,
+  ToggleButtonGroup,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
 
-interface Announcement {
-  _id: string;
-  title: string;
-  content: string;
-  type: 'system' | 'email' | 'push';
-  status: 'draft' | 'scheduled' | 'published' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  targetAudience: 'all' | 'students' | 'teachers' | 'admins' | 'specific';
-  scheduledAt?: string;
-  publishedAt?: string;
-  expiresAt?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  readCount: number;
-  clickCount: number;
-  tags: string[];
-  attachments?: string[];
-}
+interface Announcement { _id: string; title: string; content: string; type: 'system' | 'email' | 'push'; status: 'draft' | 'scheduled' | 'published' | 'archived'; priority: 'low' | 'medium' | 'high' | 'urgent'; targetAudience: 'all' | 'students' | 'teachers' | 'admins' | 'specific'; scheduledAt?: string; publishedAt?: string; expiresAt?: string; createdBy: string; createdAt: string; updatedAt: string; readCount: number; clickCount: number; tags: string[]; attachments?: string[]; }
 
 const Announcements: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [filteredAnnouncements, setFilteredAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'scheduled' | 'published' | 'archived'>('all');
-  const [filters, setFilters] = useState({
-    search: '',
-    type: '',
-    priority: '',
-    targetAudience: '',
-    status: ''
-  });
+  const [filters, setFilters] = useState({ search: '', type: '', priority: '', targetAudience: '', status: '' });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-    console.log(selectedAnnouncement)
-  // Mock data
+
   useEffect(() => {
     const mockAnnouncements: Announcement[] = [
-      {
-        _id: '1',
-        title: 'Hệ thống LMS sẽ bảo trì vào ngày 15/12',
-        content: 'Hệ thống sẽ tạm ngưng hoạt động từ 02:00 - 06:00 để bảo trì và nâng cấp. Vui lòng lưu ý thời gian này.',
-        type: 'system',
-        status: 'published',
-        priority: 'high',
-        targetAudience: 'all',
-        publishedAt: '2024-12-10T08:00:00Z',
-        createdBy: 'Admin System',
-        createdAt: '2024-12-10T08:00:00Z',
-        updatedAt: '2024-12-10T08:00:00Z',
-        readCount: 1247,
-        clickCount: 89,
-        tags: ['maintenance', 'system-update']
-      },
-      {
-        _id: '2',
-        title: 'Khóa học mới: Lập trình Python cơ bản',
-        content: 'Chúng tôi vui mừng giới thiệu khóa học lập trình Python cơ bản dành cho người mới bắt đầu. Khóa học sẽ khai giảng vào ngày 20/12.',
-        type: 'email',
-        status: 'scheduled',
-        priority: 'medium',
-        targetAudience: 'students',
-        scheduledAt: '2024-12-18T09:00:00Z',
-        createdBy: 'Marketing Team',
-        createdAt: '2024-12-10T10:00:00Z',
-        updatedAt: '2024-12-10T10:00:00Z',
-        readCount: 0,
-        clickCount: 0,
-        tags: ['new-course', 'python', 'programming']
-      },
-      {
-        _id: '3',
-        title: 'Cập nhật chính sách hoàn tiền',
-        content: 'Chúng tôi đã cập nhật chính sách hoàn tiền để đảm bảo quyền lợi tốt nhất cho học viên. Xem chi tiết tại đây.',
-        type: 'push',
-        status: 'published',
-        priority: 'medium',
-        targetAudience: 'all',
-        publishedAt: '2024-12-09T14:00:00Z',
-        createdBy: 'Policy Team',
-        createdAt: '2024-12-09T14:00:00Z',
-        updatedAt: '2024-12-09T14:00:00Z',
-        readCount: 892,
-        clickCount: 156,
-        tags: ['policy-update', 'refund']
-      },
-      {
-        _id: '4',
-        title: 'Thông báo về kỳ thi cuối khóa',
-        content: 'Kỳ thi cuối khóa sẽ diễn ra từ ngày 25-30/12. Học viên vui lòng chuẩn bị và kiểm tra lịch thi.',
-        type: 'email',
-        status: 'draft',
-        priority: 'high',
-        targetAudience: 'students',
-        createdBy: 'Academic Team',
-        createdAt: '2024-12-10T11:00:00Z',
-        updatedAt: '2024-12-10T11:00:00Z',
-        readCount: 0,
-        clickCount: 0,
-        tags: ['exam', 'final-term']
-      },
-      {
-        _id: '5',
-        title: 'Chúc mừng năm mới 2025',
-        content: 'Chúc mừng năm mới 2025! Chúng tôi chúc tất cả học viên và giảng viên một năm mới tràn đầy sức khỏe và thành công.',
-        type: 'system',
-        status: 'scheduled',
-        priority: 'low',
-        targetAudience: 'all',
-        scheduledAt: '2024-12-31T00:00:00Z',
-        createdBy: 'Admin System',
-        createdAt: '2024-12-10T12:00:00Z',
-        updatedAt: '2024-12-10T12:00:00Z',
-        readCount: 0,
-        clickCount: 0,
-        tags: ['new-year', 'celebration']
-      }
+      { _id: '1', title: 'Hệ thống LMS sẽ bảo trì vào ngày 15/12', content: 'Hệ thống sẽ tạm ngưng hoạt động từ 02:00 - 06:00 để bảo trì và nâng cấp. Vui lòng lưu ý thời gian này.', type: 'system', status: 'published', priority: 'high', targetAudience: 'all', publishedAt: '2024-12-10T08:00:00Z', createdBy: 'Admin System', createdAt: '2024-12-10T08:00:00Z', updatedAt: '2024-12-10T08:00:00Z', readCount: 1247, clickCount: 89, tags: ['maintenance', 'system-update'] },
+      { _id: '2', title: 'Khóa học mới: Lập trình Python cơ bản', content: 'Chúng tôi vui mừng giới thiệu khóa học lập trình Python cơ bản dành cho người mới bắt đầu. Khóa học sẽ khai giảng vào ngày 20/12.', type: 'email', status: 'scheduled', priority: 'medium', targetAudience: 'students', scheduledAt: '2024-12-18T09:00:00Z', createdBy: 'Marketing Team', createdAt: '2024-12-10T10:00:00Z', updatedAt: '2024-12-10T10:00:00Z', readCount: 0, clickCount: 0, tags: ['new-course', 'python', 'programming'] },
+      { _id: '3', title: 'Cập nhật chính sách hoàn tiền', content: 'Chúng tôi đã cập nhật chính sách hoàn tiền để đảm bảo quyền lợi tốt nhất cho học viên. Xem chi tiết tại đây.', type: 'push', status: 'published', priority: 'medium', targetAudience: 'all', publishedAt: '2024-12-09T14:00:00Z', createdBy: 'Policy Team', createdAt: '2024-12-09T14:00:00Z', updatedAt: '2024-12-09T14:00:00Z', readCount: 892, clickCount: 156, tags: ['policy-update', 'refund'] },
+      { _id: '4', title: 'Thông báo về kỳ thi cuối khóa', content: 'Kỳ thi cuối khóa sẽ diễn ra từ ngày 25-30/12. Học viên vui lòng chuẩn bị và kiểm tra lịch thi.', type: 'email', status: 'draft', priority: 'high', targetAudience: 'students', createdBy: 'Academic Team', createdAt: '2024-12-10T11:00:00Z', updatedAt: '2024-12-10T11:00:00Z', readCount: 0, clickCount: 0, tags: ['exam', 'final-term'] },
+      { _id: '5', title: 'Chúc mừng năm mới 2025', content: 'Chúc mừng năm mới 2025! Chúng tôi chúc tất cả học viên và giảng viên một năm mới tràn đầy sức khỏe và thành công.', type: 'system', status: 'scheduled', priority: 'low', targetAudience: 'all', scheduledAt: '2024-12-31T00:00:00Z', createdBy: 'Admin System', createdAt: '2024-12-10T12:00:00Z', updatedAt: '2024-12-10T12:00:00Z', readCount: 0, clickCount: 0, tags: ['new-year', 'celebration'] }
     ];
-
-    setAnnouncements(mockAnnouncements);
-    setFilteredAnnouncements(mockAnnouncements);
-    setLoading(false);
+    setAnnouncements(mockAnnouncements); setFilteredAnnouncements(mockAnnouncements); setLoading(false);
   }, []);
 
-  // Apply filters
   useEffect(() => {
     let filtered = announcements;
-
-    // Tab filter
-    if (activeTab !== 'all') {
-      filtered = filtered.filter(item => item.status === activeTab);
-    }
-
-    // Search filter
-    if (filters.search) {
-      filtered = filtered.filter(item =>
-        item.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.content.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-
-    // Type filter
-    if (filters.type) {
-      filtered = filtered.filter(item => item.type === filters.type);
-    }
-
-    // Priority filter
-    if (filters.priority) {
-      filtered = filtered.filter(item => item.priority === filters.priority);
-    }
-
-    // Target audience filter
-    if (filters.targetAudience) {
-      filtered = filtered.filter(item => item.targetAudience === filters.targetAudience);
-    }
-
-    // Status filter
-    if (filters.status) {
-      filtered = filtered.filter(item => item.status === filters.status);
-    }
-
+    if (activeTab !== 'all') filtered = filtered.filter(item => item.status === activeTab);
+    if (filters.search) filtered = filtered.filter(item => item.title.toLowerCase().includes(filters.search.toLowerCase()) || item.content.toLowerCase().includes(filters.search.toLowerCase()));
+    if (filters.type) filtered = filtered.filter(item => item.type === filters.type);
+    if (filters.priority) filtered = filtered.filter(item => item.priority === filters.priority);
+    if (filters.targetAudience) filtered = filtered.filter(item => item.targetAudience === filters.targetAudience);
+    if (filters.status) filtered = filtered.filter(item => item.status === filters.status);
     setFilteredAnnouncements(filtered);
   }, [announcements, activeTab, filters]);
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
+  const handleFilterChange = (key: string, value: string) => setFilters(prev => ({ ...prev, [key]: value }));
+  const handleCreateAnnouncement = () => setShowCreateModal(true);
+  const handleEditAnnouncement = (announcement: Announcement) => { setSelectedAnnouncement(announcement); setShowEditModal(true); };
+  const handleDeleteAnnouncement = (id: string) => { if (window.confirm('Bạn có chắc chắn muốn xóa thông báo này?')) setAnnouncements(prev => prev.filter(item => item._id !== id)); };
+  const handleStatusChange = (id: string, newStatus: Announcement['status']) => setAnnouncements(prev => prev.map(item => item._id === id ? { ...item, status: newStatus } : item));
 
-  const handleCreateAnnouncement = () => {
-    setShowCreateModal(true);
-  };
-
-  const handleEditAnnouncement = (announcement: Announcement) => {
-    setSelectedAnnouncement(announcement);
-    setShowEditModal(true);
-  };
-
-  const handleDeleteAnnouncement = (id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa thông báo này?')) {
-      setAnnouncements(prev => prev.filter(item => item._id !== id));
-    }
-  };
-
-  const handleStatusChange = (id: string, newStatus: Announcement['status']) => {
-    setAnnouncements(prev => prev.map(item =>
-      item._id === id ? { ...item, status: newStatus } : item
-    ));
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      draft: 'Bản nháp',
-      scheduled: 'Đã lên lịch',
-      published: 'Đã xuất bản',
-      archived: 'Đã lưu trữ'
-    };
-    return labels[status] || status;
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    const labels: Record<string, string> = {
-      low: 'Thấp',
-      medium: 'Trung bình',
-      high: 'Cao',
-      urgent: 'Khẩn cấp'
-    };
-    return labels[priority] || priority;
-  };
-
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      system: 'Hệ thống',
-      email: 'Email',
-      push: 'Push notification'
-    };
-    return labels[type] || type;
-  };
-
-  const getTargetAudienceLabel = (audience: string) => {
-    const labels: Record<string, string> = {
-      all: 'Tất cả',
-      students: 'Học viên',
-      teachers: 'Giảng viên',
-      admins: 'Quản trị viên',
-      specific: 'Cụ thể'
-    };
-    return labels[audience] || audience;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const getStatusLabel = (s: string) => ({ draft: 'Bản nháp', scheduled: 'Đã lên lịch', published: 'Đã xuất bản', archived: 'Đã lưu trữ' }[s] || s);
+  const getPriorityLabel = (p: string) => ({ low: 'Thấp', medium: 'Trung bình', high: 'Cao', urgent: 'Khẩn cấp' }[p] || p);
+  const getTypeLabel = (t: string) => ({ system: 'Hệ thống', email: 'Email', push: 'Push notification' }[t] || t);
+  const getTargetAudienceLabel = (a: string) => ({ all: 'Tất cả', students: 'Học viên', teachers: 'Giảng viên', admins: 'Quản trị viên', specific: 'Cụ thể' }[a] || a);
+  const formatDate = (d: string) => new Date(d).toLocaleString('vi-VN');
 
   if (loading) {
     return (
-      <div className="announcements loading">
-        <div className="loading-spinner"></div>
-        <p>Đang tải thông báo...</p>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Đang tải thông báo...</Typography>
+        </Stack>
+      </Box>
     );
   }
 
   return (
-    <div className="announcements">
-      <div className="header">
-        <div className='header__title'>
-          <h1>Quản lý thông báo</h1>
-          <p>Quản lý thông báo hệ thống, email campaigns và push notifications</p>
-        </div>
-        <button className="btn btn-primary" onClick={handleCreateAnnouncement}>
-          <span>📢</span>
-          Tạo thông báo mới
-        </button>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Header */}
+      <Card sx={{ background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)', color: 'white', borderRadius: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={2}>
+            <Box>
+              <Typography variant="h5" fontWeight={800}>Quản lý thông báo</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý thông báo hệ thống, email campaigns và push notifications</Typography>
+            </Box>
+            <Button variant="contained" onClick={handleCreateAnnouncement}>📢 Tạo thông báo mới</Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="stats">
-        <div className="stats-card">
-          <div className="value">{announcements.length}</div>
-          <div className="label">Tổng thông báo</div>
-        </div>
-        <div className="stats-card">
-          <div className="value">{announcements.filter(a => a.status === 'published').length}</div>
-          <div className="label">Đã xuất bản</div>
-        </div>
-        <div className="stats-card">
-          <div className="value">{announcements.filter(a => a.status === 'scheduled').length}</div>
-          <div className="label">Đã lên lịch</div>
-        </div>
-        <div className="stats-card">
-          <div className="value">{announcements.filter(a => a.status === 'draft').length}</div>
-          <div className="label">Bản nháp</div>
-        </div>
-      </div>
+      {/* Stats */}
+      <Grid container spacing={2}>
+        <Grid item xs={6} md={3}><Card><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{announcements.length}</Typography><Typography variant="caption">Tổng thông báo</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={6} md={3}><Card><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{announcements.filter(a => a.status === 'published').length}</Typography><Typography variant="caption">Đã xuất bản</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={6} md={3}><Card><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{announcements.filter(a => a.status === 'scheduled').length}</Typography><Typography variant="caption">Đã lên lịch</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={6} md={3}><Card><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{announcements.filter(a => a.status === 'draft').length}</Typography><Typography variant="caption">Bản nháp</Typography></Stack></CardContent></Card></Grid>
+      </Grid>
 
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          Tất cả ({announcements.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'draft' ? 'active' : ''}`}
-          onClick={() => setActiveTab('draft')}
-        >
-          Bản nháp ({announcements.filter(a => a.status === 'draft').length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'scheduled' ? 'active' : ''}`}
-          onClick={() => setActiveTab('scheduled')}
-        >
-          Đã lên lịch ({announcements.filter(a => a.status === 'scheduled').length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'published' ? 'active' : ''}`}
-          onClick={() => setActiveTab('published')}
-        >
-          Đã xuất bản ({announcements.filter(a => a.status === 'published').length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'archived' ? 'active' : ''}`}
-          onClick={() => setActiveTab('archived')}
-        >
-          Đã lưu trữ ({announcements.filter(a => a.status === 'archived').length})
-        </button>
-      </div>
+      {/* Tabs */}
+      <Paper variant="outlined">
+        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="scrollable" scrollButtons allowScrollButtonsMobile>
+          <Tab value="all" label={`Tất cả (${announcements.length})`} />
+          <Tab value="draft" label={`Bản nháp (${announcements.filter(a => a.status === 'draft').length})`} />
+          <Tab value="scheduled" label={`Đã lên lịch (${announcements.filter(a => a.status === 'scheduled').length})`} />
+          <Tab value="published" label={`Đã xuất bản (${announcements.filter(a => a.status === 'published').length})`} />
+          <Tab value="archived" label={`Đã lưu trữ (${announcements.filter(a => a.status === 'archived').length})`} />
+        </Tabs>
+      </Paper>
 
-      <div className="controls">
-        <div className="filters">
-          <div className="filter-group">
-            <input
-              type="text"
-              placeholder="Tìm kiếm thông báo..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-            />
-          </div>
-          <div className="filter-group">
-            <select
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-            >
-              <option value="">Tất cả loại</option>
-              <option value="system">Hệ thống</option>
-              <option value="email">Email</option>
-              <option value="push">Push notification</option>
-            </select>
-          </div>
-          <div className="filter-group">
-            <select
-              value={filters.priority}
-              onChange={(e) => handleFilterChange('priority', e.target.value)}
-            >
-              <option value="">Tất cả mức độ</option>
-              <option value="low">Thấp</option>
-              <option value="medium">Trung bình</option>
-              <option value="high">Cao</option>
-              <option value="urgent">Khẩn cấp</option>
-            </select>
-          </div>
-          <div className="filter-group">
-            <select
-              value={filters.targetAudience}
-              onChange={(e) => handleFilterChange('targetAudience', e.target.value)}
-            >
-              <option value="">Tất cả đối tượng</option>
-              <option value="all">Tất cả</option>
-              <option value="students">Học viên</option>
-              <option value="teachers">Giảng viên</option>
-              <option value="admins">Quản trị viên</option>
-              <option value="specific">Cụ thể</option>
-            </select>
-          </div>
-        </div>
+      {/* Filters & View */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}><TextField fullWidth placeholder="Tìm kiếm thông báo..." value={filters.search} onChange={(e) => handleFilterChange('search', e.target.value)} /></Grid>
+          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>Loại</InputLabel><Select label="Loại" value={filters.type} onChange={(e) => handleFilterChange('type', String(e.target.value))} MenuProps={{ disableScrollLock: true }}><MenuItem value="">Tất cả</MenuItem><MenuItem value="system">Hệ thống</MenuItem><MenuItem value="email">Email</MenuItem><MenuItem value="push">Push notification</MenuItem></Select></FormControl></Grid>
+          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>Mức độ</InputLabel><Select label="Mức độ" value={filters.priority} onChange={(e) => handleFilterChange('priority', String(e.target.value))} MenuProps={{ disableScrollLock: true }}><MenuItem value="">Tất cả</MenuItem><MenuItem value="low">Thấp</MenuItem><MenuItem value="medium">Trung bình</MenuItem><MenuItem value="high">Cao</MenuItem><MenuItem value="urgent">Khẩn cấp</MenuItem></Select></FormControl></Grid>
+          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>Đối tượng</InputLabel><Select label="Đối tượng" value={filters.targetAudience} onChange={(e) => handleFilterChange('targetAudience', String(e.target.value))} MenuProps={{ disableScrollLock: true }}><MenuItem value="">Tất cả</MenuItem><MenuItem value="all">Tất cả</MenuItem><MenuItem value="students">Học viên</MenuItem><MenuItem value="teachers">Giảng viên</MenuItem><MenuItem value="admins">Quản trị viên</MenuItem><MenuItem value="specific">Cụ thể</MenuItem></Select></FormControl></Grid>
+          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>Trạng thái</InputLabel><Select label="Trạng thái" value={filters.status} onChange={(e) => handleFilterChange('status', String(e.target.value))} MenuProps={{ disableScrollLock: true }}><MenuItem value="">Tất cả</MenuItem><MenuItem value="draft">Bản nháp</MenuItem><MenuItem value="scheduled">Đã lên lịch</MenuItem><MenuItem value="published">Đã xuất bản</MenuItem><MenuItem value="archived">Đã lưu trữ</MenuItem></Select></FormControl></Grid>
+        </Grid>
+        <Stack direction="row" justifyContent="flex-end" mt={2}>
+          <ToggleButtonGroup exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)} size="small">
+            <ToggleButton value="list">Danh sách</ToggleButton>
+            <ToggleButton value="calendar">Lịch</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
+      </Paper>
 
-        <div className="view-controls">
-          <button
-            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-            onClick={() => setViewMode('list')}
-          >
-            📋 Danh sách
-          </button>
-          <button
-            className={`view-btn ${viewMode === 'calendar' ? 'active' : ''}`}
-            onClick={() => setViewMode('calendar')}
-          >
-            📅 Lịch
-          </button>
-        </div>
-      </div>
-
-      {viewMode === 'list' && (
-        <div className="announcements-list">
+      {/* List view */}
+      {viewMode === 'list' ? (
+        <Stack spacing={2}>
           {filteredAnnouncements.length === 0 ? (
-            <div className="empty-state">
-              <h3>Không có thông báo nào</h3>
-              <p>Không tìm thấy thông báo nào phù hợp với bộ lọc hiện tại.</p>
-            </div>
+            <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6">Không có thông báo nào</Typography>
+              <Typography variant="body2" color="text.secondary">Không tìm thấy thông báo phù hợp với bộ lọc hiện tại.</Typography>
+            </Paper>
           ) : (
             filteredAnnouncements.map(announcement => (
-              <div key={announcement._id} className="announcement-card">
-                <div className="announcement-header">
-                  <div className="announcement-meta">
-                    <span className={`priority priority-${announcement.priority}`}>
-                      {getPriorityLabel(announcement.priority)}
-                    </span>
-                    <span className={`status status-${announcement.status}`}>
-                      {getStatusLabel(announcement.status)}
-                    </span>
-                    <span className="type">{getTypeLabel(announcement.type)}</span>
-                  </div>
-                  <div className="announcement-actions">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => handleEditAnnouncement(announcement)}
-                    >
-                      ✏️ Sửa
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDeleteAnnouncement(announcement._id)}
-                    >
-                      🗑️ Xóa
-                    </button>
-                  </div>
-                </div>
-
-                <div className="announcement-content">
-                  <h3 className="announcement-title">{announcement.title}</h3>
-                  <p className="announcement-description">{announcement.content}</p>
-                  
-                  <div className="announcement-details">
-                    <div className="detail-item">
-                      <span className="label">Đối tượng:</span>
-                      <span className="value">{getTargetAudienceLabel(announcement.targetAudience)}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="label">Người tạo:</span>
-                      <span className="value">{announcement.createdBy}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="label">Ngày tạo:</span>
-                      <span className="value">{formatDate(announcement.createdAt)}</span>
-                    </div>
-                    {announcement.scheduledAt && (
-                      <div className="detail-item">
-                        <span className="label">Lên lịch:</span>
-                        <span className="value">{formatDate(announcement.scheduledAt)}</span>
-                      </div>
-                    )}
-                    {announcement.publishedAt && (
-                      <div className="detail-item">
-                        <span className="label">Xuất bản:</span>
-                        <span className="value">{formatDate(announcement.publishedAt)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="announcement-stats">
-                    <div className="stat">
-                      <span className="stat-label">📖 Đã đọc:</span>
-                      <span className="stat-value">{announcement.readCount}</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-label">🖱️ Đã click:</span>
-                      <span className="stat-value">{announcement.clickCount}</span>
-                    </div>
-                  </div>
-
-                  {announcement.tags.length > 0 && (
-                    <div className="announcement-tags">
-                      {announcement.tags.map(tag => (
-                        <span key={tag} className="tag">{tag}</span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="announcement-actions-bottom">
-                    {announcement.status === 'draft' && (
-                      <button
-                        className="btn btn-success"
-                        onClick={() => handleStatusChange(announcement._id, 'scheduled')}
-                      >
-                        📅 Lên lịch
-                      </button>
-                    )}
-                    {announcement.status === 'scheduled' && (
-                      <button
-                        className="btn btn-success"
-                        onClick={() => handleStatusChange(announcement._id, 'published')}
-                      >
-                        🚀 Xuất bản ngay
-                      </button>
-                    )}
-                    {announcement.status === 'published' && (
-                      <button
-                        className="btn btn-warning"
-                        onClick={() => handleStatusChange(announcement._id, 'archived')}
-                      >
-                        📦 Lưu trữ
-                      </button>
-                    )}
-                    {announcement.status === 'archived' && (
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => handleStatusChange(announcement._id, 'draft')}
-                      >
-                        📝 Khôi phục
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <Card key={announcement._id} variant="outlined">
+                <CardContent>
+                  <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip label={getPriorityLabel(announcement.priority)} color={announcement.priority === 'urgent' ? 'error' : announcement.priority === 'high' ? 'error' : announcement.priority === 'medium' ? 'warning' : 'success'} />
+                      <Chip label={getStatusLabel(announcement.status)} color={announcement.status === 'published' ? 'success' : announcement.status === 'scheduled' ? 'info' : announcement.status === 'draft' ? 'default' : 'warning'} />
+                      <Chip label={getTypeLabel(announcement.type)} />
+                    </Stack>
+                    <Stack direction="row" spacing={1}>
+                      <Button size="small" variant="outlined" onClick={() => handleEditAnnouncement(announcement)}>Sửa</Button>
+                      <Button size="small" variant="outlined" color="error" onClick={() => handleDeleteAnnouncement(announcement._id)}>Xóa</Button>
+                    </Stack>
+                  </Stack>
+                  <Typography variant="h6" fontWeight={800} mt={1}>{announcement.title}</Typography>
+                  <Typography variant="body2" color="text.secondary" mt={0.5}>{announcement.content}</Typography>
+                  <Grid container spacing={2} mt={1}>
+                    <Grid item xs={12} md={3}><Typography variant="body2" color="text.secondary">Đối tượng</Typography><Typography>{getTargetAudienceLabel(announcement.targetAudience)}</Typography></Grid>
+                    <Grid item xs={12} md={3}><Typography variant="body2" color="text.secondary">Người tạo</Typography><Typography>{announcement.createdBy}</Typography></Grid>
+                    <Grid item xs={12} md={3}><Typography variant="body2" color="text.secondary">Ngày tạo</Typography><Typography>{formatDate(announcement.createdAt)}</Typography></Grid>
+                    {announcement.scheduledAt && (<Grid item xs={12} md={3}><Typography variant="body2" color="text.secondary">Lên lịch</Typography><Typography>{formatDate(announcement.scheduledAt)}</Typography></Grid>)}
+                    {announcement.publishedAt && (<Grid item xs={12} md={3}><Typography variant="body2" color="text.secondary">Xuất bản</Typography><Typography>{formatDate(announcement.publishedAt)}</Typography></Grid>)}
+                  </Grid>
+                  <Stack direction="row" spacing={1} mt={1}>
+                    <Chip size="small" label={`📖 ${announcement.readCount}`} />
+                    <Chip size="small" label={`🖱️ ${announcement.clickCount}`} />
+                    {announcement.tags.map(tag => (<Chip key={tag} size="small" variant="outlined" label={tag} />))}
+                  </Stack>
+                  <Stack direction="row" spacing={1} mt={1}>
+                    {announcement.status === 'draft' && (<Button size="small" variant="contained" onClick={() => handleStatusChange(announcement._id, 'scheduled')}>Lên lịch</Button>)}
+                    {announcement.status === 'scheduled' && (<Button size="small" variant="contained" onClick={() => handleStatusChange(announcement._id, 'published')}>Xuất bản ngay</Button>)}
+                    {announcement.status === 'published' && (<Button size="small" variant="outlined" color="warning" onClick={() => handleStatusChange(announcement._id, 'archived')}>Lưu trữ</Button>)}
+                    {announcement.status === 'archived' && (<Button size="small" variant="outlined" onClick={() => handleStatusChange(announcement._id, 'draft')}>Khôi phục</Button>)}
+                  </Stack>
+                </CardContent>
+              </Card>
             ))
           )}
-        </div>
+        </Stack>
+      ) : (
+        <Card><CardContent>
+          <Typography variant="h6" fontWeight={800}>Chế độ xem lịch</Typography>
+          <Typography variant="body2" color="text.secondary">Chức năng xem lịch thông báo sẽ được phát triển trong phiên bản tiếp theo.</Typography>
+        </CardContent></Card>
       )}
 
-      {viewMode === 'calendar' && (
-        <div className="calendar-view">
-          <div className="calendar-placeholder">
-            <h3>📅 Chế độ xem lịch</h3>
-            <p>Chức năng xem lịch thông báo sẽ được phát triển trong phiên bản tiếp theo.</p>
-            <p>Hiện tại vui lòng sử dụng chế độ xem danh sách để quản lý thông báo.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Create/Edit Modal Placeholder */}
-      {(showCreateModal || showEditModal) && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2 className="modal-title">
-                {showCreateModal ? 'Tạo thông báo mới' : 'Chỉnh sửa thông báo'}
-              </h2>
-              <p className="modal-subtitle">
-                {showCreateModal 
-                  ? 'Tạo thông báo mới để gửi đến người dùng' 
-                  : 'Chỉnh sửa thông tin thông báo'
-                }
-              </p>
-            </div>
-            <div className="modal-content">
-              <div className="modal-placeholder">
-                <h3>🔄 Modal đang phát triển</h3>
-                <p>Chức năng tạo và chỉnh sửa thông báo sẽ được hoàn thiện trong phiên bản tiếp theo.</p>
-                <div className="modal-actions">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setShowEditModal(false);
-                      setSelectedAnnouncement(null);
-                    }}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Create/Edit Dialog placeholder */}
+      <Dialog open={showCreateModal || showEditModal} onClose={() => { setShowCreateModal(false); setShowEditModal(false); setSelectedAnnouncement(null); }} fullWidth maxWidth="md">
+        <DialogTitle>{showCreateModal ? 'Tạo thông báo mới' : `Chỉnh sửa: ${selectedAnnouncement?.title ?? ''}`}</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary">Biểu mẫu tạo/chỉnh sửa sẽ được thêm ở phiên bản tiếp theo.</Typography>
+        </DialogContent>
+        <DialogActions><Button onClick={() => { setShowCreateModal(false); setShowEditModal(false); setSelectedAnnouncement(null); }}>Đóng</Button></DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 

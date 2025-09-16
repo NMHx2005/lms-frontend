@@ -1,5 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import './BackupRestore.css';
+// import './BackupRestore.css';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Grid,
+  Paper,
+  Tabs,
+  Tab,
+  Button,
+  Chip,
+  Divider,
+  Switch,
+  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress
+} from '@mui/material';
 
 interface BackupJob {
   id: string;
@@ -57,6 +78,7 @@ const BackupRestore: React.FC = () => {
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupJob | null>(null);
+  const [autoCleanup, setAutoCleanup] = useState(true);
 
   // Mock data
   useEffect(() => {
@@ -283,7 +305,7 @@ const BackupRestore: React.FC = () => {
   };
 
   const handleToggleSchedule = (id: string) => {
-    setSchedules(prev => prev.map(s => 
+    setSchedules(prev => prev.map(s =>
       s.id === id ? { ...s, isActive: !s.isActive } : s
     ));
   };
@@ -296,436 +318,248 @@ const BackupRestore: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="backup-restore loading">
-        <div className="loading-spinner"></div>
-        <p>Đang tải thông tin backup...</p>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Đang tải thông tin backup...</Typography>
+        </Stack>
+      </Box>
     );
   }
 
   return (
-    <div className="backup-restore">
-      <div className="header">
-        <div>
-          <h1>Backup & Restore</h1>
-          <p>Quản lý backup database, files và disaster recovery</p>
-        </div>
-        <div className="header-actions">
-          <button className="btn btn-primary" onClick={handleCreateBackup}>
-            <span>💾</span>
-            Tạo backup mới
-          </button>
-          <button className="btn btn-secondary">
-            <span>⚙️</span>
-            Cài đặt
-          </button>
-        </div>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Card sx={{ background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)', color: 'white', borderRadius: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between" spacing={2}>
+            <Box>
+              <Typography variant="h5" fontWeight={800}>Backup & Restore</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý backup database, files và disaster recovery</Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button variant="contained" onClick={handleCreateBackup}>💾 Tạo backup mới</Button>
+              <Button variant="outlined">⚙️ Cài đặt</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="stats">
-        <div className="stats-card">
-          <div className="stats-icon">💾</div>
-          <div className="stats-value">{backups.length}</div>
-          <div className="stats-label">Tổng backup</div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-icon">✅</div>
-          <div className="stats-value">{backups.filter(b => b.status === 'completed').length}</div>
-          <div className="stats-label">Thành công</div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-icon">🔄</div>
-          <div className="stats-value">{backups.filter(b => b.status === 'running').length}</div>
-          <div className="stats-label">Đang chạy</div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-icon">📅</div>
-          <div className="stats-value">{schedules.filter(s => s.isActive).length}</div>
-          <div className="stats-label">Lịch active</div>
-        </div>
-      </div>
+      <Grid container spacing={2}>
+        <Grid item xs={6} md={3}><Card variant="outlined"><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{backups.length}</Typography><Typography variant="caption">Tổng backup</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={6} md={3}><Card variant="outlined"><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{backups.filter(b => b.status === 'completed').length}</Typography><Typography variant="caption">Thành công</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={6} md={3}><Card variant="outlined"><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{backups.filter(b => b.status === 'running').length}</Typography><Typography variant="caption">Đang chạy</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={6} md={3}><Card variant="outlined"><CardContent><Stack alignItems="center"><Typography variant="h6" fontWeight={800}>{schedules.filter(s => s.isActive).length}</Typography><Typography variant="caption">Lịch active</Typography></Stack></CardContent></Card></Grid>
+      </Grid>
 
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === 'backups' ? 'active' : ''}`}
-          onClick={() => setActiveTab('backups')}
-        >
-          💾 Backups ({backups.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'restore' ? 'active' : ''}`}
-          onClick={() => setActiveTab('restore')}
-        >
-          🔄 Restore ({restoreJobs.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'schedules' ? 'active' : ''}`}
-          onClick={() => setActiveTab('schedules')}
-        >
-          📅 Lịch backup ({schedules.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
-        >
-          ⚙️ Cài đặt
-        </button>
-      </div>
+      <Paper variant="outlined">
+        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="scrollable" scrollButtons allowScrollButtonsMobile>
+          <Tab value="backups" label={`💾 Backups (${backups.length})`} />
+          <Tab value="restore" label={`🔄 Restore (${restoreJobs.length})`} />
+          <Tab value="schedules" label={`📅 Lịch backup (${schedules.length})`} />
+          <Tab value="settings" label="⚙️ Cài đặt" />
+        </Tabs>
+      </Paper>
 
       {/* Backups Tab */}
       {activeTab === 'backups' && (
-        <div className="backups-tab">
-          <div className="backups-list">
-            {backups.map(backup => (
-              <div key={backup.id} className="backup-item">
-                <div className="backup-header">
-                  <div className="backup-info">
-                    <h3 className="backup-name">{backup.name}</h3>
-                    <div className="backup-meta">
-                      <span className={`backup-type backup-type-${backup.type}`}>
-                        {getTypeLabel(backup.type)}
-                      </span>
-                      <span className={`backup-status backup-status-${backup.status}`}>
-                        {getStatusIcon(backup.status)} {backup.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="backup-actions">
-                    {backup.status === 'completed' && (
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => handleRestoreBackup(backup)}
-                      >
-                        🔄 Restore
-                      </button>
-                    )}
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDeleteBackup(backup.id)}
-                    >
-                      🗑️ Xóa
-                    </button>
-                  </div>
-                </div>
+        <Stack spacing={2}>
+          {backups.map(backup => (
+            <Card key={backup.id} variant="outlined">
+              <CardContent>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="h6" fontWeight={800}>{backup.name}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip size="small" label={getTypeLabel(backup.type)} />
+                      <Chip size="small" color={backup.status === 'completed' ? 'success' : backup.status === 'running' ? 'info' : backup.status === 'failed' ? 'error' : backup.status === 'cancelled' ? 'warning' : 'default'} label={`${getStatusIcon(backup.status)} ${backup.status}`} />
+                    </Stack>
+                  </Stack>
+                  <Stack direction="row" spacing={1}>
+                    {backup.status === 'completed' && (<Button variant="contained" size="small" onClick={() => handleRestoreBackup(backup)}>🔄 Restore</Button>)}
+                    <Button variant="outlined" color="error" size="small" onClick={() => handleDeleteBackup(backup.id)}>🗑️ Xóa</Button>
+                  </Stack>
+                </Stack>
 
-                <div className="backup-details">
-                  <div className="backup-stats">
-                    <div className="stat">
-                      <span className="stat-label">Kích thước:</span>
-                      <span className="stat-value">{formatBytes(backup.size * 1024 * 1024)}</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-label">Ngày tạo:</span>
-                      <span className="stat-value">{formatDate(backup.createdAt)}</span>
-                    </div>
-                    {backup.completedAt && (
-                      <div className="stat">
-                        <span className="stat-label">Hoàn thành:</span>
-                        <span className="stat-value">{formatDate(backup.completedAt)}</span>
-                      </div>
-                    )}
-                    {backup.duration && (
-                      <div className="stat">
-                        <span className="stat-label">Thời gian:</span>
-                        <span className="stat-value">{formatDuration(backup.duration)}</span>
-                      </div>
-                    )}
-                  </div>
+                <Grid container spacing={2} mt={0.5}>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">Kích thước</Typography>
+                      <Typography>{formatBytes(backup.size)}</Typography>
+                      <Typography variant="body2" color="text.secondary">Ngày tạo</Typography>
+                      <Typography>{formatDate(backup.createdAt)}</Typography>
+                      {backup.completedAt && (<><Typography variant="body2" color="text.secondary">Hoàn thành</Typography><Typography>{formatDate(backup.completedAt)}</Typography></>)}
+                      {backup.duration && (<><Typography variant="body2" color="text.secondary">Thời gian</Typography><Typography>{formatDuration(backup.duration)}</Typography></>)}
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">Vị trí</Typography>
+                      <Typography>{backup.location}</Typography>
+                      <Typography variant="body2" color="text.secondary">Giữ lại</Typography>
+                      <Typography>{backup.retention} ngày</Typography>
+                      <Typography variant="body2" color="text.secondary">Nén</Typography>
+                      <Typography>{backup.compression ? 'Có' : 'Không'}</Typography>
+                      <Typography variant="body2" color="text.secondary">Mã hóa</Typography>
+                      <Typography>{backup.encryption ? 'Có' : 'Không'}</Typography>
+                      {backup.checksum && (<><Typography variant="body2" color="text.secondary">Checksum</Typography><Typography>{backup.checksum}</Typography></>)}
+                    </Stack>
+                  </Grid>
+                </Grid>
 
-                  <div className="backup-properties">
-                    <div className="property">
-                      <span className="property-label">Vị trí:</span>
-                      <span className="property-value">{backup.location}</span>
-                    </div>
-                    <div className="property">
-                      <span className="property-label">Giữ lại:</span>
-                      <span className="property-value">{backup.retention} ngày</span>
-                    </div>
-                    <div className="property">
-                      <span className="property-label">Nén:</span>
-                      <span className="property-value">{backup.compression ? 'Có' : 'Không'}</span>
-                    </div>
-                    <div className="property">
-                      <span className="property-label">Mã hóa:</span>
-                      <span className="property-value">{backup.encryption ? 'Có' : 'Không'}</span>
-                    </div>
-                    {backup.checksum && (
-                      <div className="property">
-                        <span className="property-label">Checksum:</span>
-                        <span className="property-value">{backup.checksum}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {backup.errorMessage && (
-                    <div className="backup-error">
-                      <span className="error-icon">❌</span>
-                      <span className="error-message">{backup.errorMessage}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                {backup.errorMessage && (
+                  <Paper variant="outlined" sx={{ p: 1.5, mt: 1, borderLeft: 4, borderColor: 'error.main' }}>
+                    <Stack direction="row" spacing={1} alignItems="center"><Typography>❌</Typography><Typography variant="body2" color="error.main">{backup.errorMessage}</Typography></Stack>
+                  </Paper>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
       )}
 
       {/* Restore Tab */}
       {activeTab === 'restore' && (
-        <div className="restore-tab">
-          <div className="restore-jobs">
-            {restoreJobs.map(job => (
-              <div key={job.id} className="restore-job-item">
-                <div className="restore-job-header">
-                  <div className="restore-job-info">
-                    <h3 className="restore-job-name">Restore: {job.backupName}</h3>
-                    <div className="restore-job-meta">
-                      <span className={`restore-job-type restore-job-type-${job.type}`}>
-                        {getTypeLabel(job.type)}
-                      </span>
-                      <span className={`restore-job-status restore-job-status-${job.status}`}>
-                        {getStatusIcon(job.status)} {job.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="restore-job-details">
-                  <div className="restore-job-stats">
-                    <div className="stat">
-                      <span className="stat-label">Môi trường:</span>
-                      <span className="stat-value">{job.targetEnvironment}</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-label">Ngày tạo:</span>
-                      <span className="stat-value">{formatDate(job.createdAt)}</span>
-                    </div>
-                    {job.completedAt && (
-                      <div className="stat">
-                        <span className="stat-label">Hoàn thành:</span>
-                        <span className="stat-value">{formatDate(job.completedAt)}</span>
-                      </div>
-                    )}
-                    {job.duration && (
-                      <div className="stat">
-                        <span className="stat-label">Thời gian:</span>
-                        <span className="stat-value">{formatDuration(job.duration)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="restore-job-validation">
-                    <span className="validation-label">Trạng thái validation:</span>
-                    <span className={`validation-status validation-${job.validationStatus}`}>
-                      {job.validationStatus === 'passed' ? '✅ Passed' : 
-                       job.validationStatus === 'failed' ? '❌ Failed' : '⏳ Pending'}
-                    </span>
-                  </div>
-
-                  {job.errorMessage && (
-                    <div className="restore-job-error">
-                      <span className="error-icon">❌</span>
-                      <span className="error-message">{job.errorMessage}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Stack spacing={2}>
+          {restoreJobs.map(job => (
+            <Paper key={job.id} variant="outlined" sx={{ p: 2 }}>
+              <Stack spacing={1}>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="h6" fontWeight={800}>Restore: {job.backupName}</Typography>
+                    <Stack direction="row" spacing={1}>
+                      <Chip size="small" label={getTypeLabel(job.type)} />
+                      <Chip size="small" color={job.status === 'completed' ? 'success' : job.status === 'running' ? 'info' : job.status === 'failed' ? 'error' : job.status === 'cancelled' ? 'warning' : 'default'} label={`${getStatusIcon(job.status)} ${job.status}`} />
+                    </Stack>
+                  </Stack>
+                </Stack>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">Môi trường</Typography>
+                      <Typography>{job.targetEnvironment}</Typography>
+                      <Typography variant="body2" color="text.secondary">Ngày tạo</Typography>
+                      <Typography>{formatDate(job.createdAt)}</Typography>
+                      {job.completedAt && (<><Typography variant="body2" color="text.secondary">Hoàn thành</Typography><Typography>{formatDate(job.completedAt)}</Typography></>)}
+                      {job.duration && (<><Typography variant="body2" color="text.secondary">Thời gian</Typography><Typography>{formatDuration(job.duration)}</Typography></>)}
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">Trạng thái validation</Typography>
+                      <Typography>{job.validationStatus === 'passed' ? '✅ Passed' : job.validationStatus === 'failed' ? '❌ Failed' : '⏳ Pending'}</Typography>
+                      {job.errorMessage && (<><Typography variant="body2" color="error.main">Lỗi</Typography><Typography color="error.main">{job.errorMessage}</Typography></>)}
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Stack>
+            </Paper>
+          ))}
+        </Stack>
       )}
 
       {/* Schedules Tab */}
       {activeTab === 'schedules' && (
-        <div className="schedules-tab">
-          <div className="schedules-header">
-            <button className="btn btn-primary" onClick={() => setShowScheduleModal(true)}>
-              <span>📅</span>
-              Tạo lịch mới
-            </button>
-          </div>
-
-          <div className="schedules-list">
-            {schedules.map(schedule => (
-              <div key={schedule.id} className="schedule-item">
-                <div className="schedule-header">
-                  <div className="schedule-info">
-                    <h3 className="schedule-name">{schedule.name}</h3>
-                    <div className="schedule-meta">
-                      <span className={`schedule-type schedule-type-${schedule.type}`}>
-                        {getTypeLabel(schedule.type)}
-                      </span>
-                      <span className={`schedule-frequency schedule-frequency-${schedule.frequency}`}>
-                        {getFrequencyLabel(schedule.frequency)}
-                      </span>
-                      <span className={`schedule-status ${schedule.isActive ? 'active' : 'inactive'}`}>
-                        {schedule.isActive ? '🟢 Active' : '🔴 Inactive'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="schedule-actions">
-                    <button
-                      className={`btn ${schedule.isActive ? 'btn-warning' : 'btn-success'}`}
-                      onClick={() => handleToggleSchedule(schedule.id)}
-                    >
-                      {schedule.isActive ? '⏸️ Pause' : '▶️ Activate'}
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDeleteSchedule(schedule.id)}
-                    >
-                      🗑️ Xóa
-                    </button>
-                  </div>
-                </div>
-
-                <div className="schedule-details">
-                  <div className="schedule-timing">
-                    <div className="timing-item">
-                      <span className="timing-label">Thời gian:</span>
-                      <span className="timing-value">{schedule.time}</span>
-                    </div>
-                    {schedule.days && (
-                      <div className="timing-item">
-                        <span className="timing-label">Ngày:</span>
-                        <span className="timing-value">{schedule.days.join(', ')}</span>
-                      </div>
-                    )}
-                    <div className="timing-item">
-                      <span className="timing-label">Giữ lại:</span>
-                      <span className="timing-value">{schedule.retention} ngày</span>
-                    </div>
-                  </div>
-
-                  <div className="schedule-properties">
-                    <div className="property">
-                      <span className="property-label">Nén:</span>
-                      <span className="property-value">{schedule.compression ? 'Có' : 'Không'}</span>
-                    </div>
-                    <div className="property">
-                      <span className="property-label">Mã hóa:</span>
-                      <span className="property-value">{schedule.encryption ? 'Có' : 'Không'}</span>
-                    </div>
-                  </div>
-
-                  <div className="schedule-runs">
-                    <div className="run-info">
-                      <span className="run-label">Lần chạy cuối:</span>
-                      <span className="run-value">
-                        {schedule.lastRun ? formatDate(schedule.lastRun) : 'Chưa chạy'}
-                      </span>
-                    </div>
-                    <div className="run-info">
-                      <span className="run-label">Lần chạy tiếp theo:</span>
-                      <span className="run-value">{formatDate(schedule.nextRun)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Stack spacing={2}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Button variant="contained" onClick={() => setShowScheduleModal(true)}>📅 Tạo lịch mới</Button>
+            <FormControlLabel control={<Switch checked={autoCleanup} onChange={(e) => setAutoCleanup(e.target.checked)} />} label="Tự động dọn dẹp bản cũ" />
+          </Stack>
+          {schedules.map(schedule => (
+            <Card key={schedule.id} variant="outlined">
+              <CardContent>
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="h6" fontWeight={800}>{schedule.name}</Typography>
+                    <Stack direction="row" spacing={1}>
+                      <Chip size="small" label={getTypeLabel(schedule.type)} />
+                      <Chip size="small" label={getFrequencyLabel(schedule.frequency)} />
+                      <Chip size="small" color={schedule.isActive ? 'success' : 'default'} label={schedule.isActive ? '🟢 Active' : '🔴 Inactive'} />
+                    </Stack>
+                  </Stack>
+                  <Stack direction="row" spacing={1}>
+                    <Button variant="outlined" color={schedule.isActive ? 'warning' : 'success'} onClick={() => handleToggleSchedule(schedule.id)}>{schedule.isActive ? '⏸️ Pause' : '▶️ Activate'}</Button>
+                    <Button variant="outlined" color="error" onClick={() => handleDeleteSchedule(schedule.id)}>🗑️ Xóa</Button>
+                  </Stack>
+                </Stack>
+                <Grid container spacing={2} mt={0.5}>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">Thời gian</Typography>
+                      <Typography>{schedule.time}</Typography>
+                      {schedule.days && (<><Typography variant="body2" color="text.secondary">Ngày</Typography><Typography>{schedule.days.join(', ')}</Typography></>)}
+                      <Typography variant="body2" color="text.secondary">Giữ lại</Typography>
+                      <Typography>{schedule.retention} ngày</Typography>
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2" color="text.secondary">Nén</Typography>
+                      <Typography>{schedule.compression ? 'Có' : 'Không'}</Typography>
+                      <Typography variant="body2" color="text.secondary">Mã hóa</Typography>
+                      <Typography>{schedule.encryption ? 'Có' : 'Không'}</Typography>
+                      <Typography variant="body2" color="text.secondary">Lần chạy cuối</Typography>
+                      <Typography>{schedule.lastRun ? formatDate(schedule.lastRun) : 'Chưa chạy'}</Typography>
+                      <Typography variant="body2" color="text.secondary">Lần chạy tiếp theo</Typography>
+                      <Typography>{formatDate(schedule.nextRun)}</Typography>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
       )}
 
       {/* Settings Tab */}
       {activeTab === 'settings' && (
-        <div className="settings-tab">
-          <div className="settings-placeholder">
-            <h3>⚙️ Cài đặt Backup & Restore</h3>
-            <p>Chức năng cài đặt sẽ được phát triển trong phiên bản tiếp theo.</p>
-            <p>Bao gồm:</p>
-            <ul>
-              <li>Cấu hình storage backend (S3, Azure, GCS)</li>
-              <li>Thiết lập encryption keys</li>
-              <li>Cấu hình retention policies</li>
-              <li>Thiết lập monitoring và alerts</li>
-              <li>Cấu hình disaster recovery</li>
-            </ul>
-          </div>
-        </div>
+        <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="h6">⚙️ Cài đặt Backup & Restore</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Chức năng cài đặt sẽ được phát triển trong phiên bản tiếp theo.</Typography>
+          <Divider sx={{ my: 2 }} />
+          <Stack spacing={0.5}>
+            <Typography>- Cấu hình storage backend (S3, Azure, GCS)</Typography>
+            <Typography>- Thiết lập encryption keys</Typography>
+            <Typography>- Cấu hình retention policies</Typography>
+            <Typography>- Thiết lập monitoring và alerts</Typography>
+            <Typography>- Cấu hình disaster recovery</Typography>
+          </Stack>
+        </Paper>
       )}
 
-      {/* Create Backup Modal Placeholder */}
-      {showCreateBackup && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2 className="modal-title">Tạo backup mới</h2>
-              <p className="modal-subtitle">Chọn loại backup và cấu hình</p>
-            </div>
-            <div className="modal-content">
-              <div className="modal-placeholder">
-                <h3>🔄 Modal đang phát triển</h3>
-                <p>Chức năng tạo backup sẽ được hoàn thiện trong phiên bản tiếp theo.</p>
-                <div className="modal-actions">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setShowCreateBackup(false)}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create Backup Dialog Placeholder */}
+      <Dialog open={showCreateBackup} onClose={() => setShowCreateBackup(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Tạo backup mới</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary">Chọn loại backup và cấu hình (sẽ được bổ sung biểu mẫu thật ở phiên bản sau).</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCreateBackup(false)}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* Restore Modal Placeholder */}
-      {showRestoreModal && selectedBackup && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2 className="modal-title">Restore Backup</h2>
-              <p className="modal-subtitle">Restore: {selectedBackup.name}</p>
-            </div>
-            <div className="modal-content">
-              <div className="modal-placeholder">
-                <h3>🔄 Modal đang phát triển</h3>
-                <p>Chức năng restore backup sẽ được hoàn thiện trong phiên bản tiếp theo.</p>
-                <div className="modal-actions">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setShowRestoreModal(false);
-                      setSelectedBackup(null);
-                    }}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Restore Dialog Placeholder */}
+      <Dialog open={showRestoreModal && Boolean(selectedBackup)} onClose={() => { setShowRestoreModal(false); setSelectedBackup(null); }} fullWidth maxWidth="sm">
+        <DialogTitle>Restore Backup</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary">Restore: {selectedBackup?.name}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Chức năng restore sẽ được hoàn thiện sau.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setShowRestoreModal(false); setSelectedBackup(null); }}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* Schedule Modal Placeholder */}
-      {showScheduleModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2 className="modal-title">Tạo lịch backup mới</h2>
-              <p className="modal-subtitle">Cấu hình lịch backup tự động</p>
-            </div>
-            <div className="modal-content">
-              <div className="modal-placeholder">
-                <h3>🔄 Modal đang phát triển</h3>
-                <p>Chức năng tạo lịch backup sẽ được hoàn thiện trong phiên bản tiếp theo.</p>
-                <div className="modal-actions">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setShowScheduleModal(false)}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Schedule Dialog Placeholder */}
+      <Dialog open={showScheduleModal} onClose={() => setShowScheduleModal(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Tạo lịch backup mới</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary">Cấu hình lịch backup tự động (sẽ có form chi tiết sau).</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowScheduleModal(false)}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 
