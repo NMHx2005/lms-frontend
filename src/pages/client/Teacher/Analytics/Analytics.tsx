@@ -1,7 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AnalyticsData } from '../../../../types/index';
-import './Analytics.css';
+import {
+  Box,
+  Container,
+  Typography,
+  Breadcrumbs,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  CardMedia,
+  Button,
+  Chip,
+  CircularProgress,
+  Stack,
+  LinearProgress,
+  Divider
+} from '@mui/material';
+import {
+  People as PeopleIcon,
+  School as SchoolIcon,
+  AttachMoney as AttachMoneyIcon,
+  Visibility as VisibilityIcon,
+  Star as StarIcon,
+  CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
 
 const Analytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -124,374 +148,301 @@ const Analytics: React.FC = () => {
           certificateEarned: 72.1
         }
       };
-      
+
       setAnalyticsData(mockData);
       setIsLoading(false);
     }, 1000);
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US').format(num);
-  };
-
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
-  };
+  // Removed unused format helpers (inlined where needed)
 
   if (isLoading) {
     return (
-      <div className="analytics-page">
-        <div className="analytics-loading">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dữ liệu phân tích...</p>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 6 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6" color="text.secondary">Đang tải dữ liệu phân tích...</Typography>
+        </Box>
+      </Container>
     );
   }
 
   if (!analyticsData) return null;
 
   return (
-    <div className="analytics-page">
-      <div className="analytics-header">
-        <h1>Analytics Dashboard 📊</h1>
-        <p>Phân tích hiệu suất giảng dạy và thu nhập của bạn</p>
-      </div>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Breadcrumbs sx={{ mb: 2 }}>
+          <Typography color="text.primary">Teacher Dashboard</Typography>
+          <Typography color="text.secondary">Analytics</Typography>
+        </Breadcrumbs>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>Analytics Dashboard</Typography>
+        <Typography variant="body1" color="text.secondary">Phân tích hiệu suất giảng dạy và thu nhập của bạn</Typography>
+      </Box>
 
       {/* Time Range Selector */}
-      <div className="time-range-selector">
-        <div className="time-buttons">
-          {(['7d', '30d', '90d', '1y'] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`time-btn ${timeRange === range ? 'active' : ''}`}
-            >
-              {range === '7d' ? '7 Ngày' : 
-               range === '30d' ? '30 Ngày' : 
-               range === '90d' ? '90 Ngày' : '1 Năm'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+        {(['7d', '30d', '90d', '1y'] as const).map((range) => (
+          <Button key={range} variant={timeRange === range ? 'contained' : 'outlined'} size="small" onClick={() => setTimeRange(range)}>
+            {range === '7d' ? '7 Ngày' : range === '30d' ? '30 Ngày' : range === '90d' ? '90 Ngày' : '1 Năm'}
+          </Button>
+        ))}
+      </Stack>
 
       {/* Overview Stats */}
-      <div className="overview-stats">
-        <div className="stat-card primary">
-          <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <h3>{formatNumber(analyticsData.overview.totalStudents)}</h3>
-            <p>Tổng học viên</p>
-            <span className="stat-change positive">+12% so với tháng trước</span>
-          </div>
-        </div>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={4} lg={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <PeopleIcon color="primary" sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{new Intl.NumberFormat('en-US').format(analyticsData.overview.totalStudents)}</Typography>
+              <Typography variant="body2" color="text.secondary">Tổng học viên</Typography>
+              <Chip label="+12%" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4} lg={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <SchoolIcon color="success" sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{analyticsData.overview.totalCourses}</Typography>
+              <Typography variant="body2" color="text.secondary">Khóa học</Typography>
+              <Chip label="+2" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4} lg={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <AttachMoneyIcon color="warning" sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(analyticsData.overview.totalRevenue)}</Typography>
+              <Typography variant="body2" color="text.secondary">Tổng thu nhập</Typography>
+              <Chip label="+18%" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4} lg={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <VisibilityIcon color="info" sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{new Intl.NumberFormat('en-US').format(analyticsData.overview.totalViews)}</Typography>
+              <Typography variant="body2" color="text.secondary">Tổng lượt xem</Typography>
+              <Chip label="+8%" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4} lg={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <StarIcon color="warning" sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{analyticsData.overview.averageRating}</Typography>
+              <Typography variant="body2" color="text.secondary">Đánh giá trung bình</Typography>
+              <Chip label="+0.2" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4} lg={2}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <CheckCircleIcon color="secondary" sx={{ fontSize: 36, mb: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{`${analyticsData.overview.completionRate.toFixed(1)}%`}</Typography>
+              <Typography variant="body2" color="text.secondary">Tỷ lệ hoàn thành</Typography>
+              <Chip label="+3.2%" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-        <div className="stat-card success">
-          <div className="stat-icon">📚</div>
-          <div className="stat-content">
-            <h3>{analyticsData.overview.totalCourses}</h3>
-            <p>Khóa học</p>
-            <span className="stat-change positive">+2 khóa mới</span>
-          </div>
-        </div>
-
-        <div className="stat-card warning">
-          <div className="stat-icon">💰</div>
-          <div className="stat-content">
-            <h3>{formatCurrency(analyticsData.overview.totalRevenue)}</h3>
-            <p>Tổng thu nhập</p>
-            <span className="stat-change positive">+18% so với tháng trước</span>
-          </div>
-        </div>
-
-        <div className="stat-card info">
-          <div className="stat-icon">👁️</div>
-          <div className="stat-content">
-            <h3>{formatNumber(analyticsData.overview.totalViews)}</h3>
-            <p>Tổng lượt xem</p>
-            <span className="stat-change positive">+8% so với tháng trước</span>
-          </div>
-        </div>
-
-        <div className="stat-card secondary">
-          <div className="stat-icon">⭐</div>
-          <div className="stat-content">
-            <h3>{analyticsData.overview.averageRating}</h3>
-            <p>Đánh giá trung bình</p>
-            <span className="stat-change positive">+0.2 điểm</span>
-          </div>
-        </div>
-
-        <div className="stat-card tertiary">
-          <div className="stat-icon">🎯</div>
-          <div className="stat-content">
-            <h3>{formatPercentage(analyticsData.overview.completionRate)}</h3>
-            <p>Tỷ lệ hoàn thành</p>
-            <span className="stat-change positive">+3.2%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="charts-section">
-        <div className="chart-container">
-          <h3>Thu nhập & Học viên theo thời gian</h3>
-          <div className="chart-placeholder">
-            <div className="chart-mock">
-              <div className="chart-bars">
-                {analyticsData.revenueData.map((data, index) => (
-                  <div key={index} className="chart-bar">
-                    <div 
-                      className="bar-fill revenue" 
-                      style={{ height: `${(data.revenue / 7000) * 100}%` }}
-                    ></div>
-                    <div 
-                      className="bar-fill students" 
-                      style={{ height: `${(data.students / 100) * 100}%` }}
-                    ></div>
-                    <span className="bar-label">{data.month}</span>
-                  </div>
+      {/* Charts Section (simple placeholders) */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Thu nhập & Học viên theo thời gian</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 180 }}>
+                {analyticsData.revenueData.map((d) => (
+                  <Box key={d.month} sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, width: 24 }}>
+                    <Box sx={{ width: 10, height: `${(d.revenue / 7000) * 100}%`, bgcolor: 'primary.main', borderRadius: 0.5 }} />
+                    <Box sx={{ width: 10, height: `${(d.students / 100) * 100}%`, bgcolor: 'success.main', borderRadius: 0.5 }} />
+                  </Box>
                 ))}
-              </div>
-              <div className="chart-legend">
-                <div className="legend-item">
-                  <span className="legend-color revenue"></span>
-                  <span>Thu nhập ($)</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-color students"></span>
-                  <span>Học viên</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="chart-container">
-          <h3>Tăng trưởng học viên</h3>
-          <div className="chart-placeholder">
-            <div className="chart-mock">
-              <div className="growth-chart">
-                {analyticsData.studentGrowth.map((data, index) => (
-                  <div key={index} className="growth-bar">
-                    <div className="growth-stack">
-                      <div 
-                        className="stack-segment new" 
-                        style={{ height: `${(data.newStudents / 100) * 100}%` }}
-                        title={`Mới: ${data.newStudents}`}
-                      ></div>
-                      <div 
-                        className="stack-segment active" 
-                        style={{ height: `${(data.activeStudents / 400) * 100}%` }}
-                        title={`Hoạt động: ${data.activeStudents}`}
-                      ></div>
-                    </div>
-                    <span className="growth-label">{data.month}</span>
-                  </div>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Stack direction="row" spacing={2}>
+                <Chip label="Thu nhập ($)" color="primary" size="small" />
+                <Chip label="Học viên" color="success" size="small" />
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Tăng trưởng học viên</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 180 }}>
+                {analyticsData.studentGrowth.map((d) => (
+                  <Box key={d.month} sx={{ width: 24 }}>
+                    <Box sx={{ height: `${(d.newStudents / 100) * 100}%`, bgcolor: 'info.light', borderRadius: 0.5 }} />
+                    <Box sx={{ height: 4 }} />
+                    <Box sx={{ height: `${(d.activeStudents / 400) * 100}%`, bgcolor: 'info.main', borderRadius: 0.5 }} />
+                  </Box>
                 ))}
-              </div>
-              <div className="chart-legend">
-                <div className="legend-item">
-                  <span className="legend-color new"></span>
-                  <span>Học viên mới</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-color active"></span>
-                  <span>Học viên hoạt động</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Stack direction="row" spacing={2}>
+                <Chip label="Học viên mới" color="info" size="small" variant="outlined" />
+                <Chip label="Hoạt động" color="info" size="small" />
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Course Performance */}
-      <div className="course-performance">
-        <div className="section-header">
-          <h3>Hiệu suất khóa học</h3>
-          <Link to="/teacher/courses" className="view-all-btn">
-            Xem tất cả khóa học
-          </Link>
-        </div>
-        
-        <div className="performance-grid">
+      <Box sx={{ mb: 3 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>Hiệu suất khóa học</Typography>
+          <Button component={Link} to="/teacher/courses" variant="outlined" size="small">Xem tất cả khóa học</Button>
+        </Stack>
+        <Grid container spacing={3}>
           {analyticsData.coursePerformance.map((course) => (
-            <div key={course._id} className="performance-card">
-              <div className="course-header">
-                <img src={course.thumbnail} alt={course.name} className="course-thumbnail course-thumbnail-analytics" />
-                <div className="course-info">
-                  <h4 className="course-name">{course.name}</h4>
-                  <div className="course-stats">
-                    <span className="stat">👥 {formatNumber(course.students)} học viên</span>
-                    <span className="stat">⭐ {course.rating}</span>
-                  </div>
-
-                </div>
-              </div>
-              
-              <div className="performance-metrics">
-                <div className="metric">
-                  <span className="metric-label">Thu nhập</span>
-                  <span className="metric-value">{formatCurrency(course.revenue)}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric-label">Tỷ lệ hoàn thành</span>
-                  <span className="metric-value">{formatPercentage(course.completionRate)}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric-label">Lượt xem</span>
-                  <span className="metric-value">{formatNumber(course.views)}</span>
-                </div>
-              </div>
-              
-              <div className="course-actions">
-                <Link to={`/teacher/courses/${course._id}`} className="view-course-btn">
-                  Xem chi tiết
-                </Link>
-                <Link to={`/teacher/courses/${course._id}/edit`} className="edit-course-btn">
-                  Chỉnh sửa
-                </Link>
-              </div>
-            </div>
+            <Grid item xs={12} md={6} lg={4} key={course._id}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardMedia component="img" height="160" image={course.thumbnail} alt={course.name} sx={{ objectFit: 'cover' }} />
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>{course.name}</Typography>
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary">👥 {new Intl.NumberFormat('en-US').format(course.students)} học viên</Typography>
+                    <Typography variant="caption" color="text.secondary">⭐ {course.rating}</Typography>
+                  </Stack>
+                  <Grid container spacing={1}>
+                    <Grid item xs={4}><Typography variant="caption" color="text.secondary">Thu nhập</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(course.revenue)}</Typography></Grid>
+                    <Grid item xs={4}><Typography variant="caption" color="text.secondary">Hoàn thành</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{`${course.completionRate.toFixed(1)}%`}</Typography></Grid>
+                    <Grid item xs={4}><Typography variant="caption" color="text.secondary">Lượt xem</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('en-US').format(course.views)}</Typography></Grid>
+                  </Grid>
+                </CardContent>
+                <CardActions sx={{ p: 2, pt: 0 }}>
+                  <Button component={Link} to={`/teacher/analytics/course/${course._id}`} variant="outlined" size="small">Xem chi tiết</Button>
+                  <Button component={Link} to={`/teacher/courses/${course._id}/edit`} variant="contained" size="small">Chỉnh sửa</Button>
+                </CardActions>
+              </Card>
+            </Grid>
           ))}
-        </div>
-      </div>
+        </Grid>
+      </Box>
 
       {/* Student Demographics */}
-      <div className="demographics-section">
-        <div className="section-header">
-          <h3>Thông tin học viên</h3>
-        </div>
-        
-        <div className="demographics-grid">
-          <div className="demographics-card">
-            <h4>Nhóm tuổi</h4>
-            <div className="demographics-chart">
-              {analyticsData.studentDemographics.ageGroups.map((group) => (
-                <div key={group.age} className="demographic-item">
-                  <div className="demographic-bar">
-                    <div 
-                      className="bar-fill" 
-                      style={{ width: `${group.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="demographic-info">
-                    <span className="demographic-label">{group.age}</span>
-                    <span className="demographic-value">{group.count} ({formatPercentage(group.percentage)})</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="demographics-card">
-            <h4>Quốc gia</h4>
-            <div className="demographics-chart">
-              {analyticsData.studentDemographics.countries.map((country) => (
-                <div key={country.country} className="demographic-item">
-                  <div className="demographic-bar">
-                    <div 
-                      className="bar-fill" 
-                      style={{ width: `${country.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="demographic-info">
-                    <span className="demographic-label">{country.country}</span>
-                    <span className="demographic-value">{country.count} ({formatPercentage(country.percentage)})</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="demographics-card">
-            <h4>Trình độ kinh nghiệm</h4>
-            <div className="demographics-chart">
-              {analyticsData.studentDemographics.experienceLevels.map((level) => (
-                <div key={level.level} className="demographic-item">
-                  <div className="demographic-bar">
-                    <div 
-                      className="bar-fill" 
-                      style={{ width: `${level.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="demographic-info">
-                    <span className="demographic-label">{level.level}</span>
-                    <span className="demographic-value">{level.count} ({formatPercentage(level.percentage)})</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Thông tin học viên</Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Nhóm tuổi</Typography>
+                <Stack spacing={1}>
+                  {analyticsData.studentDemographics.ageGroups.map((g) => (
+                    <Box key={g.age}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2">{g.age}</Typography>
+                        <Typography variant="body2" color="text.secondary">{g.count} ({`${g.percentage.toFixed(1)}%`})</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={g.percentage} sx={{ height: 8, borderRadius: 4 }} />
+                    </Box>
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Quốc gia</Typography>
+                <Stack spacing={1}>
+                  {analyticsData.studentDemographics.countries.map((c) => (
+                    <Box key={c.country}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2">{c.country}</Typography>
+                        <Typography variant="body2" color="text.secondary">{c.count} ({`${c.percentage.toFixed(1)}%`})</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={c.percentage} color="info" sx={{ height: 8, borderRadius: 4 }} />
+                    </Box>
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Trình độ kinh nghiệm</Typography>
+                <Stack spacing={1}>
+                  {analyticsData.studentDemographics.experienceLevels.map((l) => (
+                    <Box key={l.level}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2">{l.level}</Typography>
+                        <Typography variant="body2" color="text.secondary">{l.count} ({`${l.percentage.toFixed(1)}%`})</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={l.percentage} color="secondary" sx={{ height: 8, borderRadius: 4 }} />
+                    </Box>
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
 
       {/* Engagement Metrics */}
-      <div className="engagement-section">
-        <div className="section-header">
-          <h3>Chỉ số tương tác</h3>
-        </div>
-        
-        <div className="engagement-grid">
-          <div className="engagement-card">
-            <div className="engagement-icon">⏱️</div>
-            <div className="engagement-content">
-              <h4>Thời gian xem trung bình</h4>
-              <p className="engagement-value">{analyticsData.engagementMetrics.averageWatchTime} phút</p>
-              <span className="engagement-change positive">+5.2 phút</span>
-            </div>
-          </div>
-
-          <div className="engagement-card">
-            <div className="engagement-icon">📝</div>
-            <div className="engagement-content">
-              <h4>Tỷ lệ nộp bài tập</h4>
-              <p className="engagement-value">{formatPercentage(analyticsData.engagementMetrics.assignmentSubmissionRate)}</p>
-              <span className="engagement-change positive">+2.1%</span>
-            </div>
-          </div>
-
-          <div className="engagement-card">
-            <div className="engagement-icon">💬</div>
-            <div className="engagement-content">
-              <h4>Tham gia thảo luận</h4>
-              <p className="engagement-value">{formatPercentage(analyticsData.engagementMetrics.discussionParticipation)}</p>
-              <span className="engagement-change positive">+4.3%</span>
-            </div>
-          </div>
-
-          <div className="engagement-card">
-            <div className="engagement-icon">🏆</div>
-            <div className="engagement-content">
-              <h4>Chứng chỉ đạt được</h4>
-              <p className="engagement-value">{formatPercentage(analyticsData.engagementMetrics.certificateEarned)}</p>
-              <span className="engagement-change positive">+1.8%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Chỉ số tương tác</Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle2" color="text.secondary">Thời gian xem trung bình</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{analyticsData.engagementMetrics.averageWatchTime} phút</Typography>
+                <Chip label="+5.2" color="success" size="small" />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle2" color="text.secondary">Tỷ lệ nộp bài tập</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{`${analyticsData.engagementMetrics.assignmentSubmissionRate.toFixed(1)}%`}</Typography>
+                <Chip label="+2.1%" color="success" size="small" />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle2" color="text.secondary">Tham gia thảo luận</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{`${analyticsData.engagementMetrics.discussionParticipation.toFixed(1)}%`}</Typography>
+                <Chip label="+4.3%" color="success" size="small" />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle2" color="text.secondary">Chứng chỉ đạt được</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{`${analyticsData.engagementMetrics.certificateEarned.toFixed(1)}%`}</Typography>
+                <Chip label="+1.8%" color="success" size="small" />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
 
       {/* Quick Actions */}
-      <div className="quick-actions">
-        <Link to="/teacher/courses/new" className="create-course-btn">
-          ➕ Tạo khóa học mới
-        </Link>
-        <Link to="/teacher/earnings" className="view-earnings-btn">
-          💰 Xem thu nhập chi tiết
-        </Link>
-        <Link to="/teacher/courses" className="manage-courses-btn">
-          📚 Quản lý khóa học
-        </Link>
-      </div>
-    </div>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <Button component={Link} to="/teacher/courses/new" variant="contained">Tạo khóa học mới</Button>
+        <Button component={Link} to="/teacher/earnings" variant="outlined">Xem thu nhập chi tiết</Button>
+        <Button component={Link} to="/teacher/courses" variant="outlined">Quản lý khóa học</Button>
+      </Stack>
+    </Container>
   );
 };
 

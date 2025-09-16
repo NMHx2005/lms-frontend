@@ -1,6 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import './StudentManagement.css';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Breadcrumbs,
+  Card,
+  CardContent,
+  CardActions,
+  CardMedia,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+  Stack,
+  Avatar,
+  CircularProgress,
+  Chip,
+  LinearProgress,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from '@mui/material';
+import {
+  ArrowBack as ArrowBackIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
+  School as SchoolIcon,
+  People as PeopleIcon,
+  TrendingUp as TrendingUpIcon,
+  Star as StarIcon,
+  Assignment as AssignmentIcon,
+  Message as MessageIcon,
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
+  PauseCircle as PauseCircleIcon,
+  RadioButtonUnchecked as RadioButtonUncheckedIcon
+} from '@mui/icons-material';
 
 interface Student {
   _id: string;
@@ -37,6 +81,7 @@ interface CourseInfo {
 
 const StudentManagement: React.FC = () => {
   const { id: courseId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   // const navigate = useNavigate();
   const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
   const [courses, setCourses] = useState<CourseInfo[]>([]);
@@ -112,69 +157,53 @@ const StudentManagement: React.FC = () => {
       ];
 
       setCourses(mockCourses);
+      // Auto select the first course to immediately show students
+      if (!selectedCourse && mockCourses.length) {
+        setSelectedCourse(mockCourses[0]);
+        setCourseInfo(mockCourses[0]);
+      }
       setLoading(false);
     }, 1000);
   }, []);
 
   useEffect(() => {
     if (courseId && selectedCourse) {
-      // Load students for specific course
+      // Load students for specific course (mock)
       setLoading(true);
       setTimeout(() => {
-        const mockStudents: Student[] = [
-          {
-            _id: '1',
-            name: 'Nguyễn Văn A',
-            email: 'nguyenvana@email.com',
-            avatar: '/images/avatar1.jpg',
-            enrolledAt: '2024-01-15T00:00:00Z',
-            lastActive: '2024-06-20T10:30:00Z',
-            progress: 85,
-            completedLessons: 17,
-            totalLessons: 20,
-            assignments: { submitted: 8, total: 10, averageScore: 92 },
-            status: 'active'
-          },
-          {
-            _id: '2',
-            name: 'Trần Thị B',
-            email: 'tranthib@email.com',
-            avatar: '/images/avatar2.jpg',
-            enrolledAt: '2024-02-01T00:00:00Z',
-            lastActive: '2024-06-19T15:45:00Z',
-            progress: 65,
-            completedLessons: 13,
-            totalLessons: 20,
-            assignments: { submitted: 6, total: 10, averageScore: 78 },
-            status: 'active'
-          },
-          {
-            _id: '3',
-            name: 'Lê Văn C',
-            email: 'levanc@email.com',
-            avatar: '/images/avatar3.jpg',
-            enrolledAt: '2024-01-20T00:00:00Z',
-            lastActive: '2024-06-15T09:20:00Z',
-            progress: 100,
-            completedLessons: 20,
-            totalLessons: 20,
-            assignments: { submitted: 10, total: 10, averageScore: 95 },
-            status: 'completed'
-          },
-          {
-            _id: '4',
-            name: 'Phạm Thị D',
-            email: 'phamthid@email.com',
-            avatar: '/images/avatar4.jpg',
-            enrolledAt: '2024-03-10T00:00:00Z',
-            lastActive: '2024-06-10T14:15:00Z',
-            progress: 45,
-            completedLessons: 9,
-            totalLessons: 20,
-            assignments: { submitted: 4, total: 10, averageScore: 65 },
-            status: 'inactive'
-          }
+        const names = [
+          'Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C', 'Phạm Thị D', 'Hoàng Văn E', 'Vũ Thị F', 'Đặng Minh G', 'Bùi Thu H',
+          'Phan Quốc I', 'Đỗ Kim K', 'Trịnh Gia L', 'Võ Thị M', 'Trương Công N', 'Lưu Hải P', 'Tạ Thu Q', 'Lý Minh R',
+          'Đinh Hồng S', 'Ngô Nhật T', 'Cao Thảo U', 'La Bảo V', 'Tôn Nữ W', 'Chu Khánh X', 'Kiều Anh Y', 'Quách Duy Z'
         ];
+        const avatars = ['/images/avatar1.jpg', '/images/avatar2.jpg', '/images/avatar3.jpg', '/images/avatar4.jpg'];
+        const statuses: Array<Student['status']> = ['active', 'inactive', 'completed'];
+
+        const mockStudents: Student[] = names.map((fullName, idx) => {
+          const progress = Math.min(100, Math.max(0, Math.round(((idx * 13) % 101))));
+          const totalLessons = 20 + ((idx * 3) % 10); // 20-29
+          const completedLessons = Math.min(totalLessons, Math.round((progress / 100) * totalLessons));
+          const submitted = Math.min(10, Math.round((progress / 100) * 10));
+          const averageScore = submitted > 0 ? 60 + ((idx * 7) % 41) : 0; // 60-100 if submitted, else 0
+          const status = statuses[idx % statuses.length];
+          const daysAgo = 1 + (idx % 28);
+          const enrolledDaysAgo = 30 + ((idx * 2) % 90);
+
+          return {
+            _id: `${idx + 1}`,
+            name: fullName,
+            email: `${fullName.toLowerCase().replace(/\s+/g, '')}@email.com`,
+            avatar: avatars[idx % avatars.length],
+            enrolledAt: new Date(Date.now() - enrolledDaysAgo * 24 * 3600 * 1000).toISOString(),
+            lastActive: new Date(Date.now() - daysAgo * 24 * 3600 * 1000).toISOString(),
+            progress,
+            completedLessons,
+            totalLessons,
+            assignments: { submitted, total: 10, averageScore },
+            status
+          };
+        });
+
         setStudents(mockStudents);
         setLoading(false);
       }, 500);
@@ -192,288 +221,525 @@ const StudentManagement: React.FC = () => {
     setStudents([]);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string): 'success' | 'warning' | 'info' | 'default' => {
     switch (status) {
-      case 'published': return '#10B981';
-      case 'draft': return '#F59E0B';
-      case 'pending': return '#3B82F6';
-      default: return '#6B7280';
+      case 'published': return 'success';
+      case 'draft': return 'warning';
+      case 'pending': return 'info';
+      default: return 'default';
     }
-  };
+  }, []);
 
-  const getStatusText = (status: string) => {
+  const getStatusText = useCallback((status: string) => {
     switch (status) {
-      case 'published': return 'ĐÃ XUẤT BẢN';
-      case 'draft': return 'BẢN NHÁP';
-      case 'pending': return 'CHỜ DUYỆT';
-      default: return 'KHÔNG XÁC ĐỊNH';
+      case 'published': return 'Đã xuất bản';
+      case 'draft': return 'Bản nháp';
+      case 'pending': return 'Chờ duyệt';
+      default: return 'Không xác định';
     }
-  };
+  }, []);
 
-  const getLevelColor = (level: string) => {
+  const getLevelColor = useCallback((level: string): 'error' | 'warning' | 'info' | 'default' => {
     switch (level) {
-      case 'advanced': return '#F97316';
-      case 'intermediate': return '#F59E0B';
-      case 'basic': return '#3B82F6';
-      default: return '#6B7280';
+      case 'advanced': return 'error';
+      case 'intermediate': return 'warning';
+      case 'basic': return 'info';
+      default: return 'default';
     }
-  };
+  }, []);
 
-  const getLevelText = (level: string) => {
+  const getLevelText = useCallback((level: string) => {
     switch (level) {
-      case 'advanced': return 'NÂNG CAO';
-      case 'intermediate': return 'TRUNG CẤP';
-      case 'basic': return 'CƠ BẢN';
-      default: return 'KHÔNG XÁC ĐỊNH';
+      case 'advanced': return 'Nâng cao';
+      case 'intermediate': return 'Trung cấp';
+      case 'basic': return 'Cơ bản';
+      default: return 'Không xác định';
     }
-  };
+  }, []);
 
-  const formatPrice = (price: number) => {
+  const getStudentStatusColor = useCallback((status: string): 'success' | 'warning' | 'default' => {
+    switch (status) {
+      case 'active': return 'success';
+      case 'inactive': return 'warning';
+      case 'completed': return 'default';
+      default: return 'default';
+    }
+  }, []);
+
+  const getStudentStatusText = useCallback((status: string) => {
+    switch (status) {
+      case 'active': return 'Đang học';
+      case 'inactive': return 'Không hoạt động';
+      case 'completed': return 'Đã hoàn thành';
+      default: return 'Không xác định';
+    }
+  }, []);
+
+  const formatPrice = useCallback((price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price);
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
-  };
+  }, []);
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredStudents = useMemo(() => {
+    return students.filter(student => {
+      const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [students, searchTerm, statusFilter]);
 
-  const sortedStudents = [...filteredStudents].sort((a, b) => {
-    let aValue: any = a[sortBy];
-    let bValue: any = b[sortBy];
-    
-    if (sortBy === 'enrolledAt' || sortBy === 'lastActive') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
-    }
-    
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+  const sortedStudents = useMemo(() => {
+    return [...filteredStudents].sort((a, b) => {
+      let aValue: any = a[sortBy];
+      let bValue: any = b[sortBy];
+
+      if (sortBy === 'enrolledAt' || sortBy === 'lastActive') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  }, [filteredStudents, sortBy, sortOrder]);
 
   // If no course is selected, show course list
   if (!selectedCourse) {
     return (
-      <div className="student-management">
-        <div className="student-management__header">
-          <h1>Quản lý học viên</h1>
-          <p>Chọn khóa học để quản lý học viên</p>
-        </div>
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <Typography color="text.primary">Teacher Dashboard</Typography>
+            <Typography color="text.secondary">Quản lý học viên</Typography>
+          </Breadcrumbs>
+          <Box>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+              Quản lý học viên
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Chọn khóa học để quản lý học viên
+            </Typography>
+          </Box>
+        </Box>
 
         {loading ? (
-          <div className="dashboard__loading">
-            <div className="dashboard__loading-spinner"></div>
-            <p>Đang tải dữ liệu...</p>
-          </div>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+            <CircularProgress size={60} sx={{ mb: 3 }} />
+            <Typography variant="h6" color="text.secondary">
+              Đang tải dữ liệu...
+            </Typography>
+          </Box>
         ) : (
-          <div className="course-grid">
+          <Grid container spacing={3}>
             {courses.map((course) => (
-              <div key={course._id} className="course-card" onClick={() => handleCourseSelect(course)}>
-                <div className="course-card__header">
-                  <div className="course-status" style={{ backgroundColor: getStatusColor(course.status) }}>
-                    {getStatusText(course.status)}
-                  </div>
-                  <div className="course-thumbnail course-thumbnail-analytics">
-                    <img src={course.thumbnail} alt={course.title} />
-                  </div>
-                </div>
-                
-                <div className="course-card__content">
-                  <h3 className="course-title">{course.title}</h3>
-                  
-                  <div className="course-details">
-                    <div className="course-field">
-                      <span className="label">Lĩnh vực:</span>
-                      <span className="value">{course.field}</span>
-                    </div>
-                    <div className="course-level">
-                      <span className="label">Cấp độ:</span>
-                      <span className="value" style={{ backgroundColor: getLevelColor(course.level) }}>
-                        {getLevelText(course.level)}
-                      </span>
-                    </div>
-                    <div className="course-price">
-                      <span className="label">Giá:</span>
-                      <span className="value">{formatPrice(course.price)} ₫</span>
-                    </div>
-                  </div>
-                  
-                  <div className="course-metrics">
-                    <div className="metric">
-                      <span className="icon">📚</span>
-                      <span className="text">{course.sections} sections</span>
-                    </div>
-                    <div className="metric">
-                      <span className="icon">🎯</span>
-                      <span className="text">{course.lessons} lessons</span>
-                    </div>
-                    <div className="metric">
-                      <span className="icon">👥</span>
-                      <span className="text">{course.totalStudents} students</span>
-                    </div>
-                    <div className="metric">
-                      <span className="icon">⭐</span>
-                      <span className="text">{course.rating}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="course-card__actions">
-                  <button className="btn btn--primary" onClick={(e) => {
-                    e.stopPropagation();
-                    handleCourseSelect(course);
-                  }}>
-                    Quản lý học viên
-                  </button>
-                </div>
-              </div>
+              <Grid item xs={12} sm={6} md={4} key={course._id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4
+                    }
+                  }}
+                  onClick={() => handleCourseSelect(course)}
+                >
+                  <Box sx={{ position: 'relative' }}>
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={course.thumbnail}
+                      alt={course.title}
+                      sx={{ objectFit: 'cover' }}
+                    />
+                    <Chip
+                      label={getStatusText(course.status)}
+                      color={getStatusColor(course.status)}
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        fontWeight: 600
+                      }}
+                    />
+                  </Box>
+
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" component="h3" sx={{ fontWeight: 600, mb: 2 }}>
+                      {course.title}
+                    </Typography>
+
+                    <Stack spacing={1} sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Lĩnh vực:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {course.field}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Cấp độ:
+                        </Typography>
+                        <Chip
+                          label={getLevelText(course.level)}
+                          color={getLevelColor(course.level)}
+                          size="small"
+                        />
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Giá:
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: 'primary.main' }}>
+                          {formatPrice(course.price)} ₫
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Grid container spacing={1} sx={{ mb: 2 }}>
+                      <Grid item xs={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <SchoolIcon fontSize="small" color="primary" />
+                          <Typography variant="body2" color="text.secondary">
+                            {course.sections} sections
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <AssignmentIcon fontSize="small" color="primary" />
+                          <Typography variant="body2" color="text.secondary">
+                            {course.lessons} lessons
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PeopleIcon fontSize="small" color="primary" />
+                          <Typography variant="body2" color="text.secondary">
+                            {course.totalStudents} students
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <StarIcon fontSize="small" color="warning" />
+                          <Typography variant="body2" color="text.secondary">
+                            {course.rating}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+
+                  <CardActions sx={{ p: 2, pt: 0 }}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      startIcon={<PeopleIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCourseSelect(course);
+                      }}
+                    >
+                      Quản lý học viên
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
             ))}
-          </div>
+          </Grid>
         )}
-      </div>
+      </Container>
     );
   }
 
   // If course is selected, show student management for that course
   return (
-    <div className="student-management">
-      <div className="student-management__header">
-        <button className="back-button" onClick={handleBackToCourses}>
-          ← Quay lại danh sách khóa học
-        </button>
-        <div className="header-content">
-          <h1>Quản lý học viên - {courseInfo?.title}</h1>
-          <div className="course-overview">
-            <div className="overview-item">
-              <span className="label">Tổng học viên:</span>
-              <span className="value">{courseInfo?.totalStudents}</span>
-            </div>
-            <div className="overview-item">
-              <span className="label">Tiến độ trung bình:</span>
-              <span className="value">{courseInfo?.averageProgress}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Breadcrumbs sx={{ mb: 2 }}>
+          <Typography color="text.primary">Teacher Dashboard</Typography>
+          <Typography color="text.primary">Quản lý học viên</Typography>
+          <Typography color="text.secondary">{courseInfo?.title}</Typography>
+        </Breadcrumbs>
 
-      <div className="student-management__controls">
-        <div className="search-filter">
-          <input
-            type="text"
-            placeholder="Tìm kiếm học viên..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="status-filter"
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBackToCourses}
+            sx={{ minWidth: 'auto' }}
           >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="active">Đang học</option>
-            <option value="inactive">Không hoạt động</option>
-            <option value="completed">Đã hoàn thành</option>
-          </select>
-        </div>
+            Quay lại
+          </Button>
+          <Box>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+              Quản lý học viên - {courseInfo?.title}
+            </Typography>
+            <Stack direction="row" spacing={4}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <PeopleIcon color="primary" />
+                <Typography variant="body1">
+                  <strong>{courseInfo?.totalStudents}</strong> học viên
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TrendingUpIcon color="success" />
+                <Typography variant="body1">
+                  Tiến độ TB: <strong>{courseInfo?.averageProgress}%</strong>
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
 
-        <div className="sort-controls">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="sort-select"
-          >
-            <option value="name">Sắp xếp theo tên</option>
-            <option value="progress">Sắp xếp theo tiến độ</option>
-            <option value="enrolledAt">Sắp xếp theo ngày đăng ký</option>
-            <option value="lastActive">Sắp xếp theo hoạt động cuối</option>
-          </select>
-          
-          <button
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="sort-order-btn"
-          >
-            {sortOrder === 'asc' ? '↑' : '↓'}
-          </button>
-        </div>
-      </div>
+      {/* Controls */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Tìm kiếm học viên..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
 
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Trạng thái</InputLabel>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  label="Trạng thái"
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="all">Tất cả trạng thái</MenuItem>
+                  <MenuItem value="active">Đang học</MenuItem>
+                  <MenuItem value="inactive">Không hoạt động</MenuItem>
+                  <MenuItem value="completed">Đã hoàn thành</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Sắp xếp theo</InputLabel>
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  label="Sắp xếp theo"
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="name">Tên</MenuItem>
+                  <MenuItem value="progress">Tiến độ</MenuItem>
+                  <MenuItem value="enrolledAt">Ngày đăng ký</MenuItem>
+                  <MenuItem value="lastActive">Hoạt động cuối</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<FilterListIcon />}
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              >
+                {sortOrder === 'asc' ? 'Tăng dần' : 'Giảm dần'}
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Students List */}
       {loading ? (
-        <div className="dashboard__loading">
-          <div className="dashboard__loading-spinner"></div>
-          <p>Đang tải dữ liệu...</p>
-        </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6" color="text.secondary">
+            Đang tải dữ liệu...
+          </Typography>
+        </Box>
       ) : (
-        <div className="students-list">
+        <Grid container spacing={3}>
           {sortedStudents.map((student) => (
-            <div key={student._id} className="student-card">
-              <div className="student-info">
-                <div className="student-avatar">
-                  <img src={student.avatar} alt={student.name} />
-                </div>
-                <div className="student-details">
-                  <h3 className="student-name">{student.name}</h3>
-                  <p className="student-email">{student.email}</p>
-                  <div className="student-meta">
-                    <span className="enrolled-date">Đăng ký: {formatDate(student.enrolledAt)}</span>
-                    <span className="last-active">Hoạt động cuối: {formatDate(student.lastActive)}</span>
-                  </div>
-                </div>
-              </div>
+            <Grid item xs={12} md={6} lg={4} key={student._id}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  {/* Student Info */}
+                  <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                    <Avatar
+                      src={student.avatar}
+                      alt={student.name}
+                      sx={{ width: 56, height: 56 }}
+                    />
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {student.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {student.email}
+                      </Typography>
+                      <Stack direction="row" spacing={2}>
+                        <Typography variant="caption" color="text.secondary">
+                          ĐK: {formatDate(student.enrolledAt)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          HĐ: {formatDate(student.lastActive)}
+                        </Typography>
+                      </Stack>
+                    </Box>
+                    <Chip
+                      label={getStudentStatusText(student.status)}
+                      color={getStudentStatusColor(student.status)}
+                      size="small"
+                      icon={
+                        student.status === 'active' ? <CheckCircleIcon /> :
+                          student.status === 'inactive' ? <PauseCircleIcon /> :
+                            <RadioButtonUncheckedIcon />
+                      }
+                    />
+                  </Stack>
 
-              <div className="student-progress">
-                <div className="progress-header">
-                  <span className="progress-label">Tiến độ học tập</span>
-                  <span className="progress-percentage">{student.progress}%</span>
-                </div>
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${student.progress}%` }}
-                  ></div>
-                </div>
-                <div className="progress-details">
-                  <span>{student.completedLessons}/{student.totalLessons} bài học</span>
-                </div>
-              </div>
+                  {/* Progress */}
+                  <Box sx={{ mb: 3 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Tiến độ học tập
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {student.progress}%
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={student.progress}
+                      sx={{ mb: 1, height: 8, borderRadius: 4 }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {student.completedLessons}/{student.totalLessons} bài học
+                    </Typography>
+                  </Box>
 
-              <div className="student-assignments">
-                <div className="assignment-info">
-                  <span className="label">Bài tập:</span>
-                  <span className="value">{student.assignments.submitted}/{student.assignments.total} đã nộp</span>
-                </div>
-                <div className="assignment-score">
-                  <span className="label">Điểm trung bình:</span>
-                  <span className="value">{student.assignments.averageScore}/100</span>
-                </div>
-              </div>
+                  {/* Assignments */}
+                  <Stack spacing={1} sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Bài tập:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {student.assignments.submitted}/{student.assignments.total} đã nộp
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Điểm TB:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'primary.main' }}>
+                        {student.assignments.averageScore}/100
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
 
-              <div className="student-status">
-                <span className={`status-badge status-${student.status}`}>
-                  {student.status === 'active' && 'Đang học'}
-                  {student.status === 'inactive' && 'Không hoạt động'}
-                  {student.status === 'completed' && 'Đã hoàn thành'}
-                </span>
-              </div>
-
-              <div className="student-actions">
-                <button className="btn btn--secondary">Xem chi tiết</button>
-                <button className="btn btn--primary">Gửi tin nhắn</button>
-              </div>
-            </div>
+                <CardActions sx={{ p: 2, pt: 0 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<VisibilityIcon />}
+                    size="small"
+                    sx={{ flexGrow: 1 }}
+                  >
+                    Chi tiết
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<MessageIcon />}
+                    size="small"
+                    sx={{ flexGrow: 1 }}
+                  >
+                    Tin nhắn
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
           ))}
-        </div>
+
+          {/* Table view below */}
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Danh sách học viên</Typography>
+                <TableContainer component={Paper}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Học viên</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell align="right">Tiến độ</TableCell>
+                        <TableCell align="right">Bài đã học</TableCell>
+                        <TableCell align="right">Bài tập</TableCell>
+                        <TableCell align="right">Điểm TB</TableCell>
+                        <TableCell>Trạng thái</TableCell>
+                        <TableCell>Đăng ký</TableCell>
+                        <TableCell>Hoạt động cuối</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {sortedStudents.map((s) => (
+                        <TableRow key={s._id} hover>
+                          <TableCell>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Avatar src={s.avatar} sx={{ width: 28, height: 28 }} />
+                              <Typography variant="body2">{s.name}</Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>{s.email}</TableCell>
+                          <TableCell align="right">{s.progress}%</TableCell>
+                          <TableCell align="right">{s.completedLessons}/{s.totalLessons}</TableCell>
+                          <TableCell align="right">{s.assignments.submitted}/{s.assignments.total}</TableCell>
+                          <TableCell align="right">{s.assignments.averageScore}</TableCell>
+                          <TableCell>
+                            <Chip label={getStudentStatusText(s.status)} color={getStudentStatusColor(s.status)} size="small" />
+                          </TableCell>
+                          <TableCell>{formatDate(s.enrolledAt)}</TableCell>
+                          <TableCell>{formatDate(s.lastActive)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
-    </div>
+    </Container>
   );
 };
 

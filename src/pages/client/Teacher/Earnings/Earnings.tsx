@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import './Earnings.css';
+import {
+  Box, Container, Typography, Breadcrumbs, Grid, Card, CardContent, Chip, CircularProgress, Stack, Button,
+  Select, MenuItem, FormControl, InputLabel, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Divider
+} from '@mui/material';
+import { Download as DownloadIcon, Payment as PaymentIcon, Email as EmailIcon, Settings as SettingsIcon } from '@mui/icons-material';
 
 interface EarningData {
   totalEarnings: number;
@@ -35,7 +39,6 @@ const Earnings: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
 
   useEffect(() => {
-    // Simulate API call
     setTimeout(() => {
       const mockData: EarningData = {
         totalEarnings: 12500000,
@@ -44,46 +47,10 @@ const Earnings: React.FC = () => {
         totalCourses: 4,
         monthlyGrowth: 15.5,
         recentTransactions: [
-          {
-            id: '1',
-            courseTitle: 'React Advanced Patterns',
-            studentName: 'Nguyễn Văn A',
-            amount: 299000,
-            type: 'purchase',
-            status: 'completed',
-            date: '2024-01-15T10:30:00Z',
-            transactionId: 'TXN_001'
-          },
-          {
-            id: '2',
-            courseTitle: 'Python Data Science',
-            studentName: 'Trần Thị B',
-            amount: 499000,
-            type: 'purchase',
-            status: 'completed',
-            date: '2024-01-14T14:20:00Z',
-            transactionId: 'TXN_002'
-          },
-          {
-            id: '3',
-            courseTitle: 'React Advanced Patterns',
-            studentName: 'Lê Văn C',
-            amount: 299000,
-            type: 'refund',
-            status: 'completed',
-            date: '2024-01-13T16:45:00Z',
-            transactionId: 'TXN_003'
-          },
-          {
-            id: '4',
-            courseTitle: 'UI/UX Design Fundamentals',
-            studentName: 'Phạm Thị D',
-            amount: 199000,
-            type: 'purchase',
-            status: 'pending',
-            date: '2024-01-12T08:15:00Z',
-            transactionId: 'TXN_004'
-          }
+          { id: '1', courseTitle: 'React Advanced Patterns', studentName: 'Nguyễn Văn A', amount: 299000, type: 'purchase', status: 'completed', date: '2024-01-15T10:30:00Z', transactionId: 'TXN_001' },
+          { id: '2', courseTitle: 'Python Data Science', studentName: 'Trần Thị B', amount: 499000, type: 'purchase', status: 'completed', date: '2024-01-14T14:20:00Z', transactionId: 'TXN_002' },
+          { id: '3', courseTitle: 'React Advanced Patterns', studentName: 'Lê Văn C', amount: 299000, type: 'refund', status: 'completed', date: '2024-01-13T16:45:00Z', transactionId: 'TXN_003' },
+          { id: '4', courseTitle: 'UI/UX Design Fundamentals', studentName: 'Phạm Thị D', amount: 199000, type: 'purchase', status: 'pending', date: '2024-01-12T08:15:00Z', transactionId: 'TXN_004' }
         ],
         monthlyBreakdown: [
           { month: 'Tháng 1', earnings: 2800000, students: 45, courses: 4 },
@@ -96,232 +63,144 @@ const Earnings: React.FC = () => {
       };
       setEarningData(mockData);
       setLoading(false);
-    }, 1000);
+    }, 800);
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getTransactionIcon = (type: string) => {
-    const icons = {
-      purchase: '💰',
-      refund: '↩️',
-      commission: '💸'
-    };
-    return icons[type as keyof typeof icons] || '💰';
-  };
-
-  const getTransactionClass = (type: string) => {
-    return `transaction-item--${type}`;
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      completed: { label: 'Hoàn thành', class: 'status-badge--completed' },
-      pending: { label: 'Chờ xử lý', class: 'status-badge--pending' },
-      failed: { label: 'Thất bại', class: 'status-badge--failed' }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig];
-    return (
-      <span className={`status-badge ${config.class}`}>
-        {config.label}
-      </span>
-    );
-  };
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   if (loading) {
     return (
-      <div className="teacher-dashboard">
-        <div className="teacher-dashboard__header">
-          <div className="teacher-dashboard__breadcrumbs">
-            <span>Teacher Dashboard</span>
-            <span>/</span>
-            <span>Doanh thu & Hóa đơn</span>
-          </div>
-          <h1 className="teacher-dashboard__title">Doanh thu & Hóa đơn</h1>
-        </div>
-        <div className="teacher-dashboard__content">
-          <div className="dashboard__loading">
-            <div className="dashboard__loading-spinner"></div>
-            <p>Đang tải dữ liệu...</p>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 6 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6" color="text.secondary">Đang tải dữ liệu...</Typography>
+        </Box>
+      </Container>
     );
   }
 
   if (!earningData) return null;
 
   return (
-    <div className="teacher-dashboard">
-      <div className="teacher-dashboard__header">
-        <div className="teacher-dashboard__breadcrumbs">
-          <span>Teacher Dashboard</span>
-          <span>/</span>
-          <span>Doanh thu & Hóa đơn</span>
-        </div>
-        <h1 className="teacher-dashboard__title">Doanh thu & Hóa đơn</h1>
-      </div>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Breadcrumbs sx={{ mb: 1 }}>
+          <Typography color="text.primary">Teacher Dashboard</Typography>
+          <Typography color="text.secondary">Doanh thu & Hóa đơn</Typography>
+        </Breadcrumbs>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Doanh thu & Hóa đơn</Typography>
+      </Box>
 
-      <div className="teacher-dashboard__content">
-        {/* Period Selector */}
-        <div className="earnings__period-selector">
-          <button
-            className={`period-btn ${selectedPeriod === 'month' ? 'active' : ''}`}
-            onClick={() => setSelectedPeriod('month')}
-          >
-            Tháng này
-          </button>
-          <button
-            className={`period-btn ${selectedPeriod === 'quarter' ? 'active' : ''}`}
-            onClick={() => setSelectedPeriod('quarter')}
-          >
-            Quý này
-          </button>
-          <button
-            className={`period-btn ${selectedPeriod === 'year' ? 'active' : ''}`}
-            onClick={() => setSelectedPeriod('year')}
-          >
-            Năm nay
-          </button>
-        </div>
+      {/* Period Selector */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+        <FormControl sx={{ minWidth: 180 }} size="small">
+          <InputLabel>Khoảng thời gian</InputLabel>
+          <Select value={selectedPeriod} label="Khoảng thời gian" onChange={(e) => setSelectedPeriod(e.target.value as any)} MenuProps={{ disableScrollLock: true }}>
+            <MenuItem value="month">Tháng này</MenuItem>
+            <MenuItem value="quarter">Quý này</MenuItem>
+            <MenuItem value="year">Năm nay</MenuItem>
+          </Select>
+        </FormControl>
+        <Chip color="success" label={`Tăng trưởng +${earningData.monthlyGrowth}%`} />
+      </Stack>
 
-        {/* Stats Overview */}
-        <div className="earnings__stats">
-          <div className="stat-card">
-            <div className="stat-card__icon">💰</div>
-            <div className="stat-card__content">
-              <h3>{formatCurrency(earningData.totalEarnings)}</h3>
-              <p>Tổng doanh thu</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__icon">📈</div>
-            <div className="stat-card__content">
-              <h3>{formatCurrency(earningData.monthlyEarnings)}</h3>
-              <p>Doanh thu tháng này</p>
-              <span className="growth-indicator positive">
-                +{earningData.monthlyGrowth}%
-              </span>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__icon">👥</div>
-            <div className="stat-card__content">
-              <h3>{earningData.totalStudents}</h3>
-              <p>Tổng học viên</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__icon">📚</div>
-            <div className="stat-card__content">
-              <h3>{earningData.totalCourses}</h3>
-              <p>Khóa học đang bán</p>
-            </div>
-          </div>
-        </div>
+      {/* Stats Overview */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={3}>
+          <Card><CardContent sx={{ textAlign: 'center' }}>
+            <Typography variant="subtitle2" color="text.secondary">Tổng doanh thu</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>{formatCurrency(earningData.totalEarnings)}</Typography>
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card><CardContent sx={{ textAlign: 'center' }}>
+            <Typography variant="subtitle2" color="text.secondary">Doanh thu tháng này</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>{formatCurrency(earningData.monthlyEarnings)}</Typography>
+            <Chip size="small" color="success" label={`+${earningData.monthlyGrowth}%`} sx={{ mt: 1 }} />
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card><CardContent sx={{ textAlign: 'center' }}>
+            <Typography variant="subtitle2" color="text.secondary">Tổng học viên</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>{earningData.totalStudents}</Typography>
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card><CardContent sx={{ textAlign: 'center' }}>
+            <Typography variant="subtitle2" color="text.secondary">Khóa học đang bán</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>{earningData.totalCourses}</Typography>
+          </CardContent></Card>
+        </Grid>
+      </Grid>
 
-        {/* Monthly Breakdown Chart */}
-        <div className="earnings__chart-section">
-          <h3>Biểu đồ doanh thu theo tháng</h3>
-          <div className="monthly-chart">
-            {earningData.monthlyBreakdown.map((month) => (
-              <div key={month.month} className="chart-bar">
-                <div className="chart-bar__label">{month.month}</div>
-                <div className="chart-bar__container">
-                  <div 
-                    className="chart-bar__fill"
-                    style={{ 
-                      height: `${(month.earnings / Math.max(...earningData.monthlyBreakdown.map(m => m.earnings))) * 100}%` 
-                    }}
-                  ></div>
-                </div>
-                <div className="chart-bar__value">{formatCurrency(month.earnings)}</div>
-              </div>
+      {/* Monthly Breakdown (bar placeholder) */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Biểu đồ doanh thu theo tháng</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 220 }}>
+            {earningData.monthlyBreakdown.map((m) => (
+              <Box key={m.month}>
+                <Box sx={{ width: 24, height: `${(m.earnings / Math.max(...earningData.monthlyBreakdown.map(mm => mm.earnings))) * 100}%`, bgcolor: 'primary.main', borderRadius: 0.5 }} />
+                <Typography variant="caption" color="text.secondary">{m.month}</Typography>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </CardContent>
+      </Card>
 
-        {/* Recent Transactions */}
-        <div className="earnings__transactions">
-          <div className="transactions__header">
-            <h3>Giao dịch gần đây</h3>
-            <button className="teacher-dashboard__btn teacher-dashboard__btn--outline">
-              Xem tất cả
-            </button>
-          </div>
-          
-          <div className="transactions__list">
-            {earningData.recentTransactions.map((transaction) => (
-              <div key={transaction.id} className={`transaction-item ${getTransactionClass(transaction.type)}`}>
-                <div className="transaction__icon">
-                  {getTransactionIcon(transaction.type)}
-                </div>
-                
-                <div className="transaction__content">
-                  <div className="transaction__header">
-                    <h4 className="transaction__title">{transaction.courseTitle}</h4>
-                    <div className="transaction__meta">
-                      <span className="transaction__student">{transaction.studentName}</span>
-                      <span className="transaction__date">{formatDate(transaction.date)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="transaction__details">
-                    <span className="transaction__amount">
-                      {transaction.type === 'refund' ? '-' : '+'}{formatCurrency(transaction.amount)}
-                    </span>
-                    <span className="transaction__id">ID: {transaction.transactionId}</span>
-                  </div>
-                </div>
-                
-                <div className="transaction__status">
-                  {getStatusBadge(transaction.status)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Recent Transactions */}
+      <Card>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>Giao dịch gần đây</Typography>
+            <Button variant="outlined">Xem tất cả</Button>
+          </Stack>
+          <TableContainer component={Paper}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Khóa học</TableCell>
+                  <TableCell>Học viên</TableCell>
+                  <TableCell align="right">Số tiền</TableCell>
+                  <TableCell>Loại</TableCell>
+                  <TableCell>Trạng thái</TableCell>
+                  <TableCell>Thời gian</TableCell>
+                  <TableCell>ID giao dịch</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {earningData.recentTransactions.map((t) => (
+                  <TableRow key={t.id} hover>
+                    <TableCell>{t.courseTitle}</TableCell>
+                    <TableCell>{t.studentName}</TableCell>
+                    <TableCell align="right">{(t.type === 'refund' ? '-' : '+')}{formatCurrency(t.amount)}</TableCell>
+                    <TableCell>
+                      <Chip size="small" label={t.type === 'purchase' ? 'Mua' : 'Hoàn tiền'} color={t.type === 'refund' ? 'warning' : 'primary'} />
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="small" label={t.status === 'completed' ? 'Hoàn thành' : t.status === 'pending' ? 'Chờ xử lý' : 'Thất bại'} color={t.status === 'completed' ? 'success' : t.status === 'pending' ? 'warning' : 'error'} />
+                    </TableCell>
+                    <TableCell>{formatDate(t.date)}</TableCell>
+                    <TableCell>{t.transactionId}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
 
-        {/* Quick Actions */}
-        <div className="earnings__quick-actions">
-          <h3>Thao tác nhanh</h3>
-          <div className="quick-actions__grid">
-            <button className="quick-action-btn">
-              <span className="quick-action__icon">📊</span>
-              <span className="quick-action__label">Xuất báo cáo</span>
-            </button>
-            <button className="quick-action-btn">
-              <span className="quick-action__icon">💳</span>
-              <span className="quick-action__label">Cài đặt thanh toán</span>
-            </button>
-            <button className="quick-action-btn">
-              <span className="quick-action__icon">📧</span>
-              <span className="quick-action__label">Gửi hóa đơn</span>
-            </button>
-            <button className="quick-action-btn">
-              <span className="quick-action__icon">⚙️</span>
-              <span className="quick-action__label">Cài đặt hoa hồng</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      {/* Quick Actions */}
+      <Divider sx={{ my: 3 }} />
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={3}><Button fullWidth variant="contained" startIcon={<DownloadIcon />}>Xuất báo cáo</Button></Grid>
+        <Grid item xs={12} md={3}><Button fullWidth variant="outlined" startIcon={<PaymentIcon />}>Cài đặt thanh toán</Button></Grid>
+        <Grid item xs={12} md={3}><Button fullWidth variant="outlined" startIcon={<EmailIcon />}>Gửi hóa đơn</Button></Grid>
+        <Grid item xs={12} md={3}><Button fullWidth variant="outlined" startIcon={<SettingsIcon />}>Cài đặt hoa hồng</Button></Grid>
+      </Grid>
+    </Container>
   );
 };
 

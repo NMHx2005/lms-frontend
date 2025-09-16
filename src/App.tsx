@@ -68,15 +68,26 @@ const PaymentResult = lazy(() => import('./pages/client/PaymentResult/PaymentRes
 // Teacher Pages
 const CourseStudio = lazy(() => import('./pages/client/Teacher/CourseStudio/CourseStudio.tsx'));
 const Analytics = lazy(() => import('./pages/client/Teacher/Analytics/Analytics.tsx'));
+const CourseAnalyticsDetail = lazy(() => import('./pages/client/Teacher/Analytics/CourseAnalyticsDetail.tsx'));
+const CourseAnalytics = lazy(() => import('./pages/client/Teacher/Analytics/CourseAnalytics.tsx'));
+const StudentAnalytics = lazy(() => import('./pages/client/Teacher/Analytics/StudentAnalytics.tsx'));
 const StudentManagement = lazy(() => import('./pages/client/Teacher/StudentManagement/StudentManagement.tsx'));
 const CommunicationCenter = lazy(() => import('./pages/client/Teacher/CommunicationCenter/CommunicationCenter.tsx'));
 const CourseReviews = lazy(() => import('./pages/client/Teacher/CourseReviews/CourseReviews.tsx'));
 const Earnings = lazy(() => import('./pages/client/Teacher/Earnings/Earnings.tsx'));
+const EarningsTransactions = lazy(() => import('./pages/client/Teacher/Earnings/EarningsTransactions.tsx'));
+const EarningsAnalytics = lazy(() => import('./pages/client/Teacher/Earnings/EarningsAnalytics.tsx'));
 const AITools = lazy(() => import('./pages/client/Teacher/AITools/AITools.tsx'));
+const AvatarTool = lazy(() => import('./pages/client/Teacher/AITools/AvatarTool.tsx'));
+const ThumbnailTool = lazy(() => import('./pages/client/Teacher/AITools/ThumbnailTool.tsx'));
+const ModerationTool = lazy(() => import('./pages/client/Teacher/AITools/ModerationTool.tsx'));
 const CourseEditor = lazy(() => import('./pages/client/Teacher/CourseEditor/CourseEditor.tsx'));
 const CourseStructure = lazy(() => import('./pages/client/Teacher/CourseStructure/CourseStructure.tsx'));
 const AssignmentsManager = lazy(() => import('./pages/client/Teacher/AssignmentsManager/AssignmentsManager.tsx'));
 const SubmissionsGrading = lazy(() => import('./pages/client/Teacher/SubmissionsGrading/SubmissionsGrading.tsx'));
+const PackagePlans = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlans.tsx'));
+const TeacherProfileManage = lazy(() => import('./pages/client/Teacher/Advanced/TeacherProfileManage.tsx'));
+const PackagePlanDetail = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlanDetail.tsx'));
 const SearchResults = lazy(() => import('./pages/client/SearchResults/SearchResults.tsx'));
 const NotFound = lazy(() => import('./pages/client/NotFound/NotFound.tsx'));
 
@@ -189,23 +200,27 @@ function AppContent() {
                     <Route path="courses/:id/students" element={<StudentManagement />} />
                     <Route path="courses/:id/reviews" element={<CourseReviews />} />
                     <Route path="analytics" element={<Analytics />} />
-                    <Route path="analytics/courses" element={<Analytics />} />
-                    <Route path="analytics/students" element={<Analytics />} />
+                    <Route path="analytics/courses" element={<CourseAnalytics />} />
+                    <Route path="analytics/course/:id" element={<CourseAnalyticsDetail />} />
+                    <Route path="analytics/students" element={<StudentAnalytics />} />
                     <Route path="messages" element={<CommunicationCenter />} />
                     <Route path="lessons/:lessonId/assignments" element={<AssignmentsManager />} />
                     <Route path="assignments/:id/submissions" element={<SubmissionsGrading />} />
                     <Route path="earnings" element={<Earnings />} />
-                    <Route path="earnings/transactions" element={<Earnings />} />
-                    <Route path="earnings/analytics" element={<Earnings />} />
+                    <Route path="earnings/transactions" element={<EarningsTransactions />} />
+                    <Route path="earnings/analytics" element={<EarningsAnalytics />} />
                     <Route path="ai" element={<AITools />} />
-                    <Route path="ai/avatar" element={<AITools />} />
-                    <Route path="ai/thumbnail" element={<AITools />} />
-                    <Route path="ai/moderation" element={<AITools />} />
+                    <Route path="ai/avatar" element={<AvatarTool />} />
+                    <Route path="ai/thumbnail" element={<ThumbnailTool />} />
+                    <Route path="ai/moderation" element={<ModerationTool />} />
                     <Route path="lessons/assignments" element={<AssignmentsManager />} />
                     <Route path="assignments/submissions" element={<SubmissionsGrading />} />
                     <Route path="student-management" element={<StudentManagement />} />
                     <Route path="communication-center" element={<CommunicationCenter />} />
                     <Route path="course-reviews" element={<CourseReviews />} />
+                    <Route path="advanced/packages" element={<PackagePlans />} />
+                    <Route path="advanced/packages/:id" element={<PackagePlanDetail />} />
+                    <Route path="advanced/profile" element={<TeacherProfileManage />} />
                   </Route>
 
                   <Route path="/courses" element={<Courses />} />

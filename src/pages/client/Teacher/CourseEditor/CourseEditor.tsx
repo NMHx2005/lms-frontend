@@ -1,6 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import './CourseEditor.css';
+import {
+  Box,
+  Container,
+  Typography,
+  Breadcrumbs,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+  Stack,
+  CircularProgress,
+  Chip,
+  IconButton,
+  Alert,
+  Paper,
+  Switch,
+  FormControlLabel
+} from '@mui/material';
+import {
+  Save as SaveIcon,
+  Publish as PublishIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Image as ImageIcon,
+  Edit as EditIcon,
+  ArrowBack as ArrowBackIcon
+} from '@mui/icons-material';
 
 interface CourseData {
   _id: string;
@@ -34,7 +66,7 @@ const CourseEditor: React.FC = () => {
   const [formData, setFormData] = useState<Partial<CourseData>>({});
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
-  
+
   console.log(course, thumbnailFile);
   // Quản lý hiển thị các section
   const [sections, setSections] = useState<SectionConfig[]>([
@@ -96,6 +128,14 @@ const CourseEditor: React.FC = () => {
   }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSelectChange = (e: any) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -201,16 +241,16 @@ const CourseEditor: React.FC = () => {
   // };
 
   const addSection = (sectionId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
+    setSections(prev => prev.map(section =>
+      section.id === sectionId
         ? { ...section, visible: true }
         : section
     ));
   };
 
   const removeSection = (sectionId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
+    setSections(prev => prev.map(section =>
+      section.id === sectionId
         ? { ...section, visible: false }
         : section
     ));
@@ -227,7 +267,7 @@ const CourseEditor: React.FC = () => {
         type: 'custom',
         data: ['']
       };
-      
+
       setSections(prev => [...prev, newSectionConfig]);
       setNewSection({ title: '', icon: '📝', type: 'custom' });
       setShowAddSectionForm(false);
@@ -241,24 +281,24 @@ const CourseEditor: React.FC = () => {
 
   // Quản lý data của custom section
   const handleCustomSectionChange = (sectionId: string, index: number, value: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
+    setSections(prev => prev.map(section =>
+      section.id === sectionId
         ? { ...section, data: section.data.map((item, i) => i === index ? value : item) }
         : section
     ));
   };
 
   const addCustomSectionItem = (sectionId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
+    setSections(prev => prev.map(section =>
+      section.id === sectionId
         ? { ...section, data: [...section.data, ''] }
         : section
     ));
   };
 
   const removeCustomSectionItem = (sectionId: string, index: number) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
+    setSections(prev => prev.map(section =>
+      section.id === sectionId
         ? { ...section, data: section.data.filter((_, i) => i !== index) }
         : section
     ));
@@ -266,462 +306,610 @@ const CourseEditor: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="teacher-dashboard">
-        <div className="teacher-dashboard__header">
-          <div className="teacher-dashboard__breadcrumbs">
-            <span>Teacher Dashboard</span>
-            <span>/</span>
-            <span>Course Studio</span>
-            <span>/</span>
-            <span>Chỉnh sửa khóa học</span>
-          </div>
-          <h1 className="teacher-dashboard__title">Chỉnh sửa khóa học</h1>
-        </div>
-        <div className="teacher-dashboard__content">
-          <div className="dashboard__loading">
-            <div className="dashboard__loading-spinner"></div>
-            <p>Đang tải dữ liệu...</p>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Box sx={{ mb: 4 }}>
+          <Breadcrumbs sx={{ mb: 2 }}>
+            <Typography color="text.primary">Teacher Dashboard</Typography>
+            <Typography color="text.primary">Course Studio</Typography>
+            <Typography color="text.secondary">
+              {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
+            </Typography>
+          </Breadcrumbs>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+            {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6" color="text.secondary">
+            Đang tải dữ liệu...
+          </Typography>
+        </Box>
+      </Container>
     );
   }
 
   return (
-    <div className="teacher-dashboard">
-      <div className="teacher-dashboard__header">
-        <div className="teacher-dashboard__breadcrumbs">
-          <span>Teacher Dashboard</span>
-          <span>/</span>
-          <span>Course Studio</span>
-          <span>/</span>
-          <span>{!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}</span>
-        </div>
-        <h1 className="teacher-dashboard__title">
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Breadcrumbs sx={{ mb: 2 }}>
+          <Typography color="text.primary">Teacher Dashboard</Typography>
+          <Typography color="text.primary">Course Studio</Typography>
+          <Typography color="text.secondary">
+            {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
+          </Typography>
+        </Breadcrumbs>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
           {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
-        </h1>
-      </div>
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          {!id || id === 'new'
+            ? 'Tạo khóa học mới và chia sẻ kiến thức của bạn với học viên'
+            : 'Chỉnh sửa thông tin khóa học và cập nhật nội dung'
+          }
+        </Typography>
+      </Box>
 
-      <div className="teacher-dashboard__content">
-        <form className="course-editor__form" onSubmit={(e) => e.preventDefault()}>
-          {/* Basic Information */}
-          <div className="form-section">
-            <h3 className="form-section__title">📝 Thông tin cơ bản</h3>
-            
-            <div className="form-group">
-              <label htmlFor="title">Tên khóa học *</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title || ''}
-                onChange={handleInputChange}
-                placeholder="Nhập tên khóa học"
-                required
-              />
-            </div>
+      <Box component="form" onSubmit={(e) => e.preventDefault()}>
+        {/* Basic Information */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <EditIcon color="primary" />
+              Thông tin cơ bản
+            </Typography>
 
-            <div className="form-group">
-              <label htmlFor="description">Mô tả khóa học *</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description || ''}
-                onChange={handleInputChange}
-                placeholder="Mô tả chi tiết về khóa học"
-                rows={4}
-                required
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="domain">Lĩnh vực *</label>
-                <select
-                  id="domain"
-                  name="domain"
-                  value={formData.domain || ''}
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Tên khóa học"
+                  name="title"
+                  value={formData.title || ''}
                   onChange={handleInputChange}
+                  placeholder="Nhập tên khóa học"
                   required
-                >
-                  <option value="">Chọn lĩnh vực</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="Mobile Development">Mobile Development</option>
-                  <option value="Data Science">Data Science</option>
-                  <option value="Design">Design</option>
-                  <option value="Business">Business</option>
-                  <option value="Marketing">Marketing</option>
-                </select>
-              </div>
+                  variant="outlined"
+                />
+              </Grid>
 
-              <div className="form-group">
-                <label htmlFor="level">Cấp độ *</label>
-                <select
-                  id="level"
-                  name="level"
-                  value={formData.level || ''}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Mô tả khóa học"
+                  name="description"
+                  value={formData.description || ''}
                   onChange={handleInputChange}
+                  placeholder="Mô tả chi tiết về khóa học"
+                  multiline
+                  rows={4}
                   required
-                >
-                  <option value="">Chọn cấp độ</option>
-                  <option value="beginner">Cơ bản</option>
-                  <option value="intermediate">Trung cấp</option>
-                  <option value="advanced">Nâng cao</option>
-                </select>
-              </div>
+                  variant="outlined"
+                />
+              </Grid>
 
-              <div className="form-group">
-                <label htmlFor="price">Giá (VND) *</label>
-                <input
-                  type="number"
-                  id="price"
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth required>
+                  <InputLabel>Lĩnh vực</InputLabel>
+                  <Select
+                    name="domain"
+                    value={formData.domain || ''}
+                    onChange={handleSelectChange}
+                    label="Lĩnh vực"
+                    MenuProps={{ disableScrollLock: true }}
+                  >
+                    <MenuItem value="Web Development">Web Development</MenuItem>
+                    <MenuItem value="Mobile Development">Mobile Development</MenuItem>
+                    <MenuItem value="Data Science">Data Science</MenuItem>
+                    <MenuItem value="Design">Design</MenuItem>
+                    <MenuItem value="Business">Business</MenuItem>
+                    <MenuItem value="Marketing">Marketing</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth required>
+                  <InputLabel>Cấp độ</InputLabel>
+                  <Select
+                    name="level"
+                    value={formData.level || ''}
+                    onChange={handleSelectChange}
+                    label="Cấp độ"
+                    MenuProps={{ disableScrollLock: true }}
+                  >
+                    <MenuItem value="beginner">Cơ bản</MenuItem>
+                    <MenuItem value="intermediate">Trung cấp</MenuItem>
+                    <MenuItem value="advanced">Nâng cao</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Giá (VND)"
                   name="price"
+                  type="number"
                   value={formData.price || ''}
                   onChange={handleInputChange}
                   placeholder="0"
-                  min="0"
+                  inputProps={{ min: 0 }}
                   required
+                  variant="outlined"
                 />
-              </div>
-            </div>
-          </div>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-          {/* Thumbnail */}
-          <div className="form-section">
-            <h3 className="form-section__title">🖼️ Thumbnail</h3>
-            
-            <div className="thumbnail-upload">
-              <div className="thumbnail-preview">
-                <img src={thumbnailPreview} alt="Thumbnail preview" />
-              </div>
-              <div className="thumbnail-actions">
-                <input
-                  type="file"
-                  id="thumbnail"
-                  accept="image/*"
-                  onChange={handleThumbnailChange}
-                  className="thumbnail-input"
-                />
-                <label htmlFor="thumbnail" className="thumbnail-btn">
-                  📁 Chọn ảnh
-                </label>
-                <p className="thumbnail-hint">
-                  Kích thước khuyến nghị: 1280x720px, định dạng: JPG, PNG
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Thumbnail */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ImageIcon color="primary" />
+              Thumbnail
+            </Typography>
 
-          {/* Section Management */}
-          <div className="form-section">
-            <h3 className="form-section__title">⚙️ Quản lý các section</h3>
-            <p className="section-description">
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    border: '2px dashed',
+                    borderColor: 'grey.300',
+                    borderRadius: 2,
+                    minHeight: 200,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {thumbnailPreview ? (
+                    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+                      <img
+                        src={thumbnailPreview}
+                        alt="Thumbnail preview"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    <Box sx={{ textAlign: 'center' }}>
+                      <ImageIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        Chưa có ảnh thumbnail
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} md={8}>
+                <Stack spacing={2}>
+                  <input
+                    type="file"
+                    id="thumbnail"
+                    accept="image/*"
+                    onChange={handleThumbnailChange}
+                    style={{ display: 'none' }}
+                  />
+                  <Button
+                    component="label"
+                    htmlFor="thumbnail"
+                    variant="outlined"
+                    startIcon={<ImageIcon />}
+                    sx={{ alignSelf: 'flex-start' }}
+                  >
+                    Chọn ảnh thumbnail
+                  </Button>
+
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Kích thước khuyến nghị:</strong> 1280x720px<br />
+                      <strong>Định dạng:</strong> JPG, PNG<br />
+                      <strong>Kích thước tối đa:</strong> 5MB
+                    </Typography>
+                  </Alert>
+                </Stack>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Section Management */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <EditIcon color="primary" />
+              Quản lý các section
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Bật/tắt các section để tùy chỉnh giao diện khóa học
-            </p>
-            
-            <div className="section-controls">
-              {sections.map((section) => (
-                <div key={section.id} className="section-control-item">
-                  <div className="section-control-info">
-                    <span className="section-icon">{section.icon}</span>
-                    <span className="section-title">{section.title}</span>
-                    {section.type === 'custom' && (
-                      <span className="section-type-badge">Tùy chỉnh</span>
-                    )}
-                  </div>
-                  <div className="section-control-actions">
-                    {section.visible ? (
-                      <button
-                        type="button"
-                        onClick={() => removeSection(section.id)}
-                        className="section-control-btn section-control-btn--hide"
-                        title={`Ẩn section ${section.title}`}
-                      >
-                        👁️ Ẩn
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => addSection(section.id)}
-                        className="section-control-btn section-control-btn--show"
-                        title={`Hiện section ${section.title}`}
-                      >
-                        👁️‍🗨️ Hiện
-                      </button>
-                    )}
-                    {section.type === 'custom' && (
-                      <button
-                        type="button"
-                        onClick={() => deleteSection(section.id)}
-                        className="section-control-btn section-control-btn--delete"
-                        title={`Xóa section ${section.title}`}
-                      >
-                        🗑️ Xóa
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            </Typography>
 
-            {/* Add New Section Form */}
-            <div className="add-section-section">
-              <button
-                type="button"
+            <Stack spacing={2}>
+              {sections.map((section) => (
+                <Paper key={section.id} sx={{ p: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                  <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Typography variant="h6" sx={{ fontSize: '1.2rem' }}>
+                        {section.icon}
+                      </Typography>
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          {section.title}
+                        </Typography>
+                        {section.type === 'custom' && (
+                          <Chip label="Tùy chỉnh" size="small" color="secondary" />
+                        )}
+                      </Box>
+                    </Stack>
+
+                    <Stack direction="row" spacing={1}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={section.visible}
+                            onChange={() => section.visible ? removeSection(section.id) : addSection(section.id)}
+                            color="primary"
+                          />
+                        }
+                        label={section.visible ? "Hiển thị" : "Ẩn"}
+                        labelPlacement="start"
+                      />
+                      {section.type === 'custom' && (
+                        <IconButton
+                          onClick={() => deleteSection(section.id)}
+                          color="error"
+                          size="small"
+                          title={`Xóa section ${section.title}`}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+
+            {/* Add New Section */}
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
                 onClick={() => setShowAddSectionForm(!showAddSectionForm)}
-                className="add-section-toggle-btn"
+                sx={{ mb: 2 }}
               >
-                {showAddSectionForm ? '❌ Hủy' : '➕ Thêm section mới'}
-              </button>
-              
+                {showAddSectionForm ? 'Hủy' : 'Thêm section mới'}
+              </Button>
+
               {showAddSectionForm && (
-                <div className="add-section-form">
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="newSectionIcon">Icon</label>
-                      <select
-                        id="newSectionIcon"
-                        value={newSection.icon}
-                        onChange={(e) => setNewSection(prev => ({ ...prev, icon: e.target.value }))}
-                      >
-                        <option value="📝">📝 Văn bản</option>
-                        <option value="📚">📚 Tài liệu</option>
-                        <option value="🎬">🎬 Video</option>
-                        <option value="🔗">🔗 Liên kết</option>
-                        <option value="📊">📊 Thống kê</option>
-                        <option value="💡">💡 Gợi ý</option>
-                        <option value="⚠️">⚠️ Lưu ý</option>
-                        <option value="✅">✅ Checklist</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="newSectionTitle">Tên section *</label>
-                      <input
-                        type="text"
-                        id="newSectionTitle"
+                <Paper sx={{ p: 3, border: '1px solid', borderColor: 'primary.main' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                    Tạo section mới
+                  </Typography>
+
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Icon</InputLabel>
+                        <Select
+                          value={newSection.icon}
+                          onChange={(e) => setNewSection(prev => ({ ...prev, icon: e.target.value }))}
+                          label="Icon"
+                          MenuProps={{ disableScrollLock: true }}
+                        >
+                          <MenuItem value="📝">📝 Văn bản</MenuItem>
+                          <MenuItem value="📚">📚 Tài liệu</MenuItem>
+                          <MenuItem value="🎬">🎬 Video</MenuItem>
+                          <MenuItem value="🔗">🔗 Liên kết</MenuItem>
+                          <MenuItem value="📊">📊 Thống kê</MenuItem>
+                          <MenuItem value="💡">💡 Gợi ý</MenuItem>
+                          <MenuItem value="⚠️">⚠️ Lưu ý</MenuItem>
+                          <MenuItem value="✅">✅ Checklist</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Tên section"
                         value={newSection.title}
                         onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
                         placeholder="Nhập tên section mới"
                         required
                       />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
+                    </Grid>
+                  </Grid>
+
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
                     onClick={addNewSection}
-                    className="add-section-submit-btn"
                     disabled={!newSection.title.trim()}
                   >
-                    ➕ Tạo section mới
-                  </button>
-                </div>
+                    Tạo section mới
+                  </Button>
+                </Paper>
               )}
-            </div>
-          </div>
+            </Box>
+          </CardContent>
+        </Card>
 
-          {/* Tags */}
-          {sections.find(s => s.id === 'tags')?.visible && (
-            <div className="form-section">
-              <div className="form-section__header">
-                <h3 className="form-section__title">🏷️ Tags</h3>
-                <button
-                  type="button"
+        {/* Tags */}
+        {sections.find(s => s.id === 'tags')?.visible && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  🏷️ Tags
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
                   onClick={() => setFormData(prev => ({ ...prev, tags: [] }))}
-                  className="section-remove-btn"
-                  title="Xóa toàn bộ section Tags"
+                  size="small"
                 >
-                  🗑️ Xóa section
-                </button>
-              </div>
-              
-              <div className="tags-container">
+                  Xóa tất cả
+                </Button>
+              </Stack>
+
+              <Stack spacing={2}>
                 {(formData.tags || []).map((tag, index) => (
-                  <div key={index} className="tag-input-group">
-                    <input
-                      type="text"
+                  <Stack key={index} direction="row" spacing={1} alignItems="center">
+                    <TextField
+                      fullWidth
                       value={tag}
                       onChange={(e) => handleTagChange(index, e.target.value)}
                       placeholder="Nhập tag"
-                      className="tag-input"
+                      variant="outlined"
+                      size="small"
                     />
-                    <button
-                      type="button"
+                    <IconButton
                       onClick={() => removeTag(index)}
-                      className="tag-remove-btn"
+                      color="error"
+                      size="small"
                     >
-                      ✕
-                    </button>
-                  </div>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
                 ))}
-                <button type="button" onClick={addTag} className="add-tag-btn">
-                  ➕ Thêm tag
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Requirements */}
-          {sections.find(s => s.id === 'requirements')?.visible && (
-            <div className="form-section">
-              <div className="form-section__header">
-                <h3 className="form-section__title">📋 Yêu cầu đầu vào</h3>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, requirements: [] }))}
-                  className="section-remove-btn"
-                  title="Xóa toàn bộ section Yêu cầu đầu vào"
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={addTag}
+                  sx={{ alignSelf: 'flex-start' }}
                 >
-                  🗑️ Xóa section
-                </button>
-              </div>
-              
-              <div className="requirements-container">
+                  Thêm tag
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Requirements */}
+        {sections.find(s => s.id === 'requirements')?.visible && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  📋 Yêu cầu đầu vào
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setFormData(prev => ({ ...prev, requirements: [] }))}
+                  size="small"
+                >
+                  Xóa tất cả
+                </Button>
+              </Stack>
+
+              <Stack spacing={2}>
                 {(formData.requirements || []).map((req, index) => (
-                  <div key={index} className="requirement-input-group">
-                    <textarea
+                  <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
+                    <TextField
+                      fullWidth
                       value={req}
                       onChange={(e) => handleRequirementChange(index, e.target.value)}
                       placeholder="Nhập yêu cầu"
+                      multiline
                       rows={2}
-                      className="requirement-input"
+                      variant="outlined"
+                      size="small"
                     />
-                    <button
-                      type="button"
+                    <IconButton
                       onClick={() => removeRequirement(index)}
-                      className="requirement-remove-btn"
+                      color="error"
+                      size="small"
+                      sx={{ mt: 0.5 }}
                     >
-                      ✕
-                    </button>
-                  </div>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
                 ))}
-                <button type="button" onClick={addRequirement} className="add-requirement-btn">
-                  ➕ Thêm yêu cầu
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Learning Objectives */}
-          {sections.find(s => s.id === 'objectives')?.visible && (
-            <div className="form-section">
-              <div className="form-section__header">
-                <h3 className="form-section__title">🎯 Mục tiêu học tập</h3>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, objectives: [] }))}
-                  className="section-remove-btn"
-                  title="Xóa toàn bộ section Mục tiêu học tập"
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={addRequirement}
+                  sx={{ alignSelf: 'flex-start' }}
                 >
-                  🗑️ Xóa section
-                </button>
-              </div>
-              
-              <div className="objectives-container">
+                  Thêm yêu cầu
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Learning Objectives */}
+        {sections.find(s => s.id === 'objectives')?.visible && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  🎯 Mục tiêu học tập
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setFormData(prev => ({ ...prev, objectives: [] }))}
+                  size="small"
+                >
+                  Xóa tất cả
+                </Button>
+              </Stack>
+
+              <Stack spacing={2}>
                 {(formData.objectives || []).map((obj, index) => (
-                  <div key={index} className="objective-input-group">
-                    <textarea
+                  <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
+                    <TextField
+                      fullWidth
                       value={obj}
                       onChange={(e) => handleObjectiveChange(index, e.target.value)}
                       placeholder="Nhập mục tiêu học tập"
+                      multiline
                       rows={2}
-                      className="objective-input"
+                      variant="outlined"
+                      size="small"
                     />
-                    <button
-                      type="button"
+                    <IconButton
                       onClick={() => removeObjective(index)}
-                      className="objective-remove-btn"
+                      color="error"
+                      size="small"
+                      sx={{ mt: 0.5 }}
                     >
-                      ✕
-                    </button>
-                  </div>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
                 ))}
-                <button type="button" onClick={addObjective} className="add-objective-btn">
-                  ➕ Thêm mục tiêu
-                </button>
-              </div>
-            </div>
-          )}
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={addObjective}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  Thêm mục tiêu
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Custom Sections */}
-          {sections
-            .filter(section => section.type === 'custom' && section.visible)
-            .map((section) => (
-              <div key={section.id} className="form-section">
-                <div className="form-section__header">
-                  <h3 className="form-section__title">{section.icon} {section.title}</h3>
-                  <button
-                    type="button"
-                    onClick={() => setSections(prev => prev.map(s => 
+        {/* Custom Sections */}
+        {sections
+          .filter(section => section.type === 'custom' && section.visible)
+          .map((section) => (
+            <Card key={section.id} sx={{ mb: 3 }}>
+              <CardContent>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {section.icon} {section.title}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => setSections(prev => prev.map(s =>
                       s.id === section.id ? { ...s, data: [] } : s
                     ))}
-                    className="section-remove-btn"
-                    title={`Xóa toàn bộ ${section.title}`}
+                    size="small"
                   >
-                    🗑️ Xóa section
-                  </button>
-                </div>
-                
-                <div className="custom-section-container">
+                    Xóa tất cả
+                  </Button>
+                </Stack>
+
+                <Stack spacing={2}>
                   {section.data.map((item, index) => (
-                    <div key={index} className="custom-section-input-group">
-                      <textarea
+                    <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
+                      <TextField
+                        fullWidth
                         value={item}
                         onChange={(e) => handleCustomSectionChange(section.id, index, e.target.value)}
                         placeholder={`Nhập ${section.title.toLowerCase()}`}
+                        multiline
                         rows={2}
-                        className="custom-section-input"
+                        variant="outlined"
+                        size="small"
                       />
-                      <button
-                        type="button"
+                      <IconButton
                         onClick={() => removeCustomSectionItem(section.id, index)}
-                        className="custom-section-remove-btn"
+                        color="error"
+                        size="small"
+                        sx={{ mt: 0.5 }}
                       >
-                        ✕
-                      </button>
-                    </div>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Stack>
                   ))}
-                  <button 
-                    type="button" 
-                    onClick={() => addCustomSectionItem(section.id)} 
-                    className="add-custom-section-btn"
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => addCustomSectionItem(section.id)}
+                    sx={{ alignSelf: 'flex-start' }}
                   >
-                    ➕ Thêm {section.title.toLowerCase()}
-                  </button>
-                </div>
-              </div>
-            ))}
+                    Thêm {section.title.toLowerCase()}
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          ))}
 
-          {/* Actions */}
-          <div className="form-actions">
-            <button
-              type="button"
+        {/* Actions */}
+        <Card>
+          <CardActions sx={{ justifyContent: 'space-between', p: 3 }}>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
               onClick={() => navigate('/teacher/courses')}
-              className="teacher-dashboard__btn teacher-dashboard__btn--outline"
+              size="large"
             >
-              ↩️ Quay lại
-            </button>
-            <div className="form-actions__right">
-              <button
-                type="button"
+              Quay lại
+            </Button>
+
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
                 onClick={handleSave}
                 disabled={saving}
-                className="teacher-dashboard__btn teacher-dashboard__btn--secondary"
+                size="large"
               >
-                {saving ? '💾 Đang lưu...' : (!id || id === 'new' ? '💾 Tạo khóa học' : '💾 Lưu bản nháp')}
-              </button>
-              <button
-                type="button"
+                {saving ? 'Đang lưu...' : (!id || id === 'new' ? 'Tạo khóa học' : 'Lưu bản nháp')}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={saving ? <CircularProgress size={20} /> : <PublishIcon />}
                 onClick={handlePublish}
                 disabled={saving}
-                className="teacher-dashboard__btn teacher-dashboard__btn--primary"
+                size="large"
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                  },
+                }}
               >
-                {saving ? '🚀 Đang xuất bản...' : '🚀 Xuất bản khóa học'}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+                {saving ? 'Đang xuất bản...' : 'Xuất bản khóa học'}
+              </Button>
+            </Stack>
+          </CardActions>
+        </Card>
+      </Box>
+    </Container>
   );
 };
 

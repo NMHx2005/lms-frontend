@@ -1,393 +1,478 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import './TeacherLayout.css';
+import React, { useState, useCallback } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  IconButton,
+  Avatar,
+  Divider,
+  Collapse,
+  Toolbar,
+  CssBaseline,
+  useTheme,
+  useMediaQuery,
+  AppBar
+} from '@mui/material';
+import {
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  School as SchoolIcon,
+  Analytics as AnalyticsIcon,
+  Message as MessageIcon,
+  AccountBalanceWallet as EarningsIcon,
+  SmartToy as AIIcon,
+  Assignment as AssignmentIcon,
+  CheckCircle as CheckCircleIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  RateReview as ReviewIcon,
+  Assessment as AssessmentIcon,
+  MonetizationOn as MonetizationOnIcon,
+  Psychology as PsychologyIcon,
+  Create as CreateIcon,
+  Security as SecurityIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
+
+const drawerWidth = 280;
+
+interface SidebarItem {
+  id: string;
+  label: string;
+  icon: React.ReactElement;
+  path: string;
+  description: string;
+  subItems?: {
+    label: string;
+    path: string;
+    icon: React.ReactElement;
+  }[];
+}
 
 const TeacherLayout: React.FC = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedTabs, setExpandedTabs] = useState<string[]>([]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const handleDrawerToggle = useCallback(() => {
+    setMobileOpen(!mobileOpen);
+  }, [mobileOpen]);
 
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
+  const closeSidebar = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
 
-  const toggleTab = (tabPath: string) => {
-    setExpandedTabs(prev => 
-      prev.includes(tabPath) 
+  const toggleTab = useCallback((tabPath: string) => {
+    setExpandedTabs(prev =>
+      prev.includes(tabPath)
         ? prev.filter(path => path !== tabPath)
         : [...prev, tabPath]
     );
-  };
+  }, []);
 
-  // Main navigation items for Teacher Dashboard
-  const navItems = [
+  const sidebarItems: SidebarItem[] = [
     {
-      path: '/teacher/courses',
-      icon: '📚',
+      id: 'courses',
       label: 'Course Studio',
-      description: 'Quản lý khóa học của bạn'
+      icon: <SchoolIcon />,
+      path: '/teacher/courses',
+      description: 'Quản lý khóa học của bạn',
+      subItems: [
+        { label: 'Danh sách khóa học', path: '/teacher/courses', icon: <DashboardIcon /> },
+        { label: 'Tạo khóa học mới', path: '/teacher/courses/new', icon: <CreateIcon /> },
+        { label: 'Quản lý học viên', path: '/teacher/student-management', icon: <PeopleIcon /> },
+        { label: 'Quản lý đánh giá', path: '/teacher/course-reviews', icon: <ReviewIcon /> }
+      ]
     },
     {
-      path: '/teacher/analytics',
-      icon: '📊',
+      id: 'analytics',
       label: 'Analytics',
-      description: 'Phân tích hiệu suất và thu nhập'
+      icon: <AnalyticsIcon />,
+      path: '/teacher/analytics',
+      description: 'Phân tích hiệu suất và thu nhập',
+      subItems: [
+        { label: 'Tổng quan', path: '/teacher/analytics', icon: <AssessmentIcon /> },
+        { label: 'Phân tích khóa học', path: '/teacher/analytics/courses', icon: <AnalyticsIcon /> },
+        { label: 'Phân tích học viên', path: '/teacher/analytics/students', icon: <PeopleIcon /> }
+      ]
     },
     {
-      path: '/teacher/messages',
-      icon: '💬',
+      id: 'messages',
       label: 'Communication Center',
+      icon: <MessageIcon />,
+      path: '/teacher/messages',
       description: 'Giao tiếp với học viên'
     },
     {
-      path: '/teacher/earnings',
-      icon: '💰',
+      id: 'earnings',
       label: 'Doanh thu & Hóa đơn',
-      description: 'Theo dõi thu nhập và thanh toán'
+      icon: <EarningsIcon />,
+      path: '/teacher/earnings',
+      description: 'Theo dõi thu nhập và thanh toán',
+      subItems: [
+        { label: 'Tổng quan doanh thu', path: '/teacher/earnings', icon: <MonetizationOnIcon /> },
+        { label: 'Giao dịch', path: '/teacher/earnings/transactions', icon: <EarningsIcon /> },
+        { label: 'Phân tích', path: '/teacher/earnings/analytics', icon: <AnalyticsIcon /> }
+      ]
     },
     {
-      path: '/teacher/ai',
-      icon: '🤖',
+      id: 'ai',
       label: 'AI Tools',
-      description: 'Công cụ AI hỗ trợ giảng dạy'
+      icon: <AIIcon />,
+      path: '/teacher/ai',
+      description: 'Công cụ AI hỗ trợ giảng dạy',
+      subItems: [
+        { label: 'Tổng quan AI Tools', path: '/teacher/ai', icon: <PsychologyIcon /> },
+        { label: 'Tạo Avatar', path: '/teacher/ai/avatar', icon: <PersonIcon /> },
+        { label: 'Tạo Thumbnail', path: '/teacher/ai/thumbnail', icon: <CreateIcon /> },
+        { label: 'Content Moderation', path: '/teacher/ai/moderation', icon: <SecurityIcon /> }
+      ]
     }
   ];
 
-  // Sub-navigation items for detailed course management
-  // These provide quick access to specific course-related functions
-  // const subNavItems = [
-  //   {
-  //     path: '/teacher/courses',
-  //     icon: '📚',
-  //     label: 'Course Studio',
-  //     description: 'Quản lý khóa học của bạn'
-  //   },
-  //   {
-  //     path: '/teacher/courses/new',
-  //     icon: '➕',
-  //     label: 'Tạo khóa học mới',
-  //     description: 'Tạo khóa học mới'
-  //   },
-  //   {
-  //     path: '/teacher/analytics',
-  //     icon: '📊',
-  //     label: 'Analytics',
-  //     description: 'Phân tích hiệu suất và thu nhập'
-  //   },
-  //   {
-  //     path: '/teacher/earnings',
-  //     icon: '💰',
-  //     label: 'Doanh thu & Hóa đơn',
-  //     description: 'Theo dõi thu nhập và thanh toán'
-  //   },
-  //   {
-  //     path: '/teacher/ai',
-  //     icon: '🤖',
-  //     label: 'AI Tools',
-  //     description: 'Công cụ AI hỗ trợ giảng dạy'
-  //   }
-  // ];
+  const additionalItems = [
+    {
+      label: 'Quản lý bài tập',
+      path: '/teacher/lessons/assignments',
+      icon: <AssignmentIcon />,
+      description: 'Tạo và quản lý assignments'
+    },
+    {
+      label: 'Chấm điểm',
+      path: '/teacher/assignments/submissions',
+      icon: <CheckCircleIcon />,
+      description: 'Chấm điểm bài nộp'
+    },
+    {
+      label: 'Gói khóa học',
+      path: '/teacher/advanced/packages',
+      icon: <MonetizationOnIcon />,
+      description: 'Đăng ký gói để đăng khóa học'
+    },
+    {
+      label: 'Thông tin giáo viên',
+      path: '/teacher/advanced/profile',
+      icon: <PersonIcon />,
+      description: 'Quản lý hồ sơ giảng viên'
+    }
+  ];
 
-  
-  return (
-    <div className="teacher-layout">
-      {/* Mobile Header */}
-      <div className="teacher-mobile-header">
-        <div className="mobile-header__brand">
-          <h2>Teacher Dashboard</h2>
-        </div>
-        <button 
-          className="teacher-mobile-header__menu-toggle"
-          onClick={toggleSidebar}
-          aria-label="Toggle menu"
-        >
-          <span className="hamburger-line"></span>
-          <span className="hamburger-line"></span>
-          <span className="hamburger-line"></span>
-        </button>
-      </div>
+  const renderSidebarItem = (item: SidebarItem) => {
+    const isExpanded = expandedTabs.includes(item.path);
+    const hasSubItems = item.subItems && item.subItems.length > 0;
 
-      {/* Sidebar */}
-      <aside className={`teacher-sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar__header">
-          <div className="sidebar__brand">
-            <h2>Teacher Dashboard</h2>
-          </div>
-          <button 
-            className="sidebar__close-btn"
-            onClick={closeSidebar}
-            aria-label="Close sidebar"
+    const rootProps = hasSubItems
+      ? {}
+      : { component: NavLink as any, to: item.path, onClick: closeSidebar };
+
+    return (
+      <Box key={item.id} sx={{ width: '100%' }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => hasSubItems && toggleTab(item.path)}
+            {...rootProps}
+            sx={{
+              minHeight: 56,
+              px: 2,
+              py: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              ...(location.pathname === item.path && {
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                },
+              }),
+            }}
           >
-            ✕
-          </button>
-        </div>
+            <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText
+              primary={item.label}
+              secondary={item.description}
+              primaryTypographyProps={{
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                color: 'white'
+              }}
+              secondaryTypographyProps={{
+                fontSize: '0.75rem',
+                color: 'rgba(255, 255, 255, 0.7)'
+              }}
+            />
+            {hasSubItems && (
+              <IconButton size="small" sx={{ color: 'white' }}>
+                {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            )}
+          </ListItemButton>
+        </ListItem>
 
-        <nav className="sidebar__nav">
-          <ul className="sidebar__nav-list">
-            {navItems.map((item) => (
-              <li key={item.path} className="sidebar__nav-item">
-                <div className="sidebar__nav-header" onClick={() => toggleTab(item.path)}>
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) => 
-                      `sidebar__nav-link ${isActive ? 'active' : ''}`
-                    }
+        {hasSubItems && (
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {item.subItems!.map((subItem) => (
+                <ListItem key={subItem.path} disablePadding>
+                  <ListItemButton
+                    component={NavLink}
+                    to={subItem.path}
+                    onClick={closeSidebar}
+                    sx={{
+                      pl: 6,
+                      py: 0.5,
+                      minHeight: 40,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      },
+                      ...(location.pathname === subItem.path && {
+                        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.16)',
+                        },
+                      }),
+                    }}
                   >
-                    <span className="sidebar__nav-icon">{item.icon}</span>
-                    <div className="sidebar__nav-content">
-                      <span className="sidebar__nav-label">{item.label}</span>
-                      <span className="sidebar__nav-description">{item.description}</span>
-                    </div>
-                  </NavLink>
-                </div>
-                
-                {/* Sub-navigation for Course Studio */}
-                {item.path === '/teacher/courses' && expandedTabs.includes(item.path) && (
-                  <ul className="sidebar__sub-nav">
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/courses"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">📋</span>
-                        <span className="sidebar__sub-nav-label">Danh sách khóa học</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/courses/new"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">➕</span>
-                        <span className="sidebar__sub-nav-label">Tạo khóa học mới</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/student-management"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">👥</span>
-                        <span className="sidebar__sub-nav-label">Quản lý học viên</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/course-reviews"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">⭐</span>
-                        <span className="sidebar__sub-nav-label">Quản lý đánh giá</span>
-                      </NavLink>
-                    </li>
-                  </ul>
-                )}
+                    <ListItemIcon sx={{ minWidth: 32, color: 'rgba(255, 255, 255, 0.8)' }}>
+                      {subItem.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={subItem.label}
+                      primaryTypographyProps={{
+                        fontSize: '0.8rem',
+                        color: 'rgba(255, 255, 255, 0.9)'
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Collapse>
+        )}
+      </Box>
+    );
+  };
 
-                {/* Sub-navigation for Analytics */}
-                {item.path === '/teacher/analytics' && expandedTabs.includes(item.path) && (
-                  <ul className="sidebar__sub-nav">
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/analytics"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">📈</span>
-                        <span className="sidebar__sub-nav-label">Tổng quan</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/analytics/courses"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">📊</span>
-                        <span className="sidebar__sub-nav-label">Phân tích khóa học</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/analytics/students"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">👥</span>
-                        <span className="sidebar__sub-nav-label">Phân tích học viên</span>
-                      </NavLink>
-                    </li>
-                  </ul>
-                )}
+  const drawer = (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <Toolbar sx={{
+        minHeight: 64,
+        px: 2,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white'
+      }}>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
+          Teacher Dashboard
+        </Typography>
+        {isMobile && (
+          <IconButton
+            color="inherit"
+            onClick={handleDrawerToggle}
+            edge="end"
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
+      </Toolbar>
 
-                {/* Sub-navigation for Earnings & Bills */}
-                {item.path === '/teacher/earnings' && expandedTabs.includes(item.path) && (
-                  <ul className="sidebar__sub-nav">
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/earnings"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">📊</span>
-                        <span className="sidebar__sub-nav-label">Tổng quan doanh thu</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/earnings/transactions"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">💳</span>
-                        <span className="sidebar__sub-nav-label">Giao dịch</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/earnings/analytics"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">📈</span>
-                        <span className="sidebar__sub-nav-label">Phân tích</span>
-                      </NavLink>
-                    </li>
-                  </ul>
-                )}
+      {/* Navigation */}
+      <Box sx={{
+        flexGrow: 1,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <Box sx={{
+          flexGrow: 1,
+          overflow: 'auto',
+          '&::-webkit-scrollbar': {
+            display: 'none'
+          },
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
+          <List sx={{ px: 1, py: 2 }}>
+            {sidebarItems.map(renderSidebarItem)}
+          </List>
 
-                {/* Sub-navigation for AI Tools */}
-                {item.path === '/teacher/ai' && expandedTabs.includes(item.path) && (
-                  <ul className="sidebar__sub-nav">
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/ai"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">🤖</span>
-                        <span className="sidebar__sub-nav-label">Tổng quan AI Tools</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/ai/avatar"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">👤</span>
-                        <span className="sidebar__sub-nav-label">Tạo Avatar</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/ai/thumbnail"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">🖼️</span>
-                        <span className="sidebar__sub-nav-label">Tạo Thumbnail</span>
-                      </NavLink>
-                    </li>
-                    <li className="sidebar__sub-nav-item">
-                      <NavLink
-                        to="/teacher/ai/moderation"
-                        className={({ isActive }) => 
-                          `sidebar__sub-nav-link ${isActive ? 'active' : ''}`
-                        }
-                      >
-                        <span className="sidebar__sub-nav-icon">🛡️</span>
-                        <span className="sidebar__sub-nav-label">Content Moderation</span>
-                      </NavLink>
-                    </li>
-                  </ul>
-                )}
-              </li>
+          <Divider sx={{ mx: 2, my: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }} />
+
+          <Typography
+            variant="caption"
+            sx={{
+              px: 2,
+              py: 1,
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5
+            }}
+          >
+            Quản lý nâng cao
+          </Typography>
+
+          <List sx={{ px: 1 }}>
+            {additionalItems.map((item) => (
+              <ListItem key={item.path} disablePadding>
+                <ListItemButton
+                  component={NavLink}
+                  to={item.path}
+                  onClick={closeSidebar}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    minHeight: 48,
+                    borderRadius: 1,
+                    mb: 0.5,
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    ...(location.pathname === item.path && {
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                    }),
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 40, color: 'rgba(255, 255, 255, 0.8)' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    secondary={item.description}
+                    primaryTypographyProps={{
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      color: 'white'
+                    }}
+                    secondaryTypographyProps={{
+                      fontSize: '0.7rem',
+                      color: 'rgba(255, 255, 255, 0.6)'
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
             ))}
+          </List>
+        </Box>
+      </Box>
 
-            {/* Additional Quick Access Links */}
-            <li className="sidebar__nav-item sidebar__nav-item--separator">
-              <div className="sidebar__separator">
-                <span>Quản lý nâng cao</span>
-              </div>
-            </li>
+      {/* Footer */}
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar
+            src="/images/default-avatar.png"
+            alt="Teacher Avatar"
+            sx={{ width: 40, height: 40 }}
+          />
+          <Box>
+            <Typography variant="subtitle2" sx={{ color: 'white', fontWeight: 600 }}>
+              Hieu Doan
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              Instructor
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
 
-            <li className="sidebar__nav-item">
-              <NavLink
-                to="/teacher/lessons/assignments"
-                className={({ isActive }) => 
-                  `sidebar__nav-link sidebar__nav-link--secondary ${isActive ? 'active' : ''}`
-                }
-                onClick={closeSidebar}
-              >
-                <span className="sidebar__nav-icon">📝</span>
-                <div className="sidebar__nav-content">
-                  <span className="sidebar__nav-label">Quản lý bài tập</span>
-                  <span className="sidebar__nav-description">Tạo và quản lý assignments</span>
-                </div>
-              </NavLink>
-            </li>
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <CssBaseline />
 
-            <li className="sidebar__nav-item">
-              <NavLink
-                to="/teacher/assignments/submissions"
-                className={({ isActive }) => 
-                  `sidebar__nav-link sidebar__nav-link--secondary ${isActive ? 'active' : ''}`
-                }
-                onClick={closeSidebar}
-              >
-                <span className="sidebar__nav-icon">✅</span>
-                <div className="sidebar__nav-content">
-                  <span className="sidebar__nav-label">Chấm điểm</span>
-                  <span className="sidebar__nav-description">Chấm điểm bài nộp</span>
-                </div>
-              </NavLink>
-            </li>
-          </ul>
-        </nav>
+      {/* Mobile AppBar */}
+      <AppBar
+        position="fixed"
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          zIndex: theme.zIndex.drawer + 1
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 700 }}>
+            Teacher Dashboard
+          </Typography>
+        </Toolbar>
+      </AppBar>
 
-        <div className="sidebar__footer">
-          <div className="sidebar__user-info">
-            <div className="sidebar__user-avatar">
-              <img src="/images/default-avatar.png" alt="Teacher Avatar" />
-            </div>
-            <div className="sidebar__user-details">
-              <h4>Hieu Doan</h4>
-              <p>Instructor</p>
-            </div>
-          </div>
-        </div>
-      </aside>
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            background: 'linear-gradient(180deg, #1e293b 0%, #334155 100%)',
+            color: 'white'
+          }
+        }}
+      >
+        {drawer}
+      </Drawer>
 
-      {/* Overlay for mobile */}
-      {isSidebarOpen && (
-        <div className="sidebar-overlay" onClick={closeSidebar}></div>
-      )}
+      {/* Desktop Drawer */}
+      <Drawer
+        variant="permanent"
+        open
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            background: 'linear-gradient(180deg, #1e293b 0%, #334155 100%)',
+            color: 'white',
+            borderRight: 'none'
+          }
+        }}
+      >
+        {drawer}
+      </Drawer>
 
       {/* Main Content */}
-      <main className="teacher-main">
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          marginLeft: { md: `${drawerWidth}px` },
+          backgroundColor: 'background.default',
+          minHeight: '100vh',
+          mt: { xs: 7, md: 0 }
+        }}
+      >
         <Outlet />
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
