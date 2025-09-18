@@ -61,4 +61,14 @@ export const adminPackagesManagementService = {
     const response = await api.put(`/admin/packages-management/subscriptions/${subscriptionId}`, data);
     return response.data;
   },
+
+  // Get teachers subscribed to a specific package
+  async getPackageSubscribers(packageId: string, params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const response = await api.get(`/admin/packages-management/packages/${packageId}/subscribers`, { params });
+    return response.data;
+  },
 };

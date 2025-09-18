@@ -47,6 +47,7 @@ const SupportCenter = lazy(() => import('./pages/admin/SupportCenter/SupportCent
 const Announcements = lazy(() => import('./pages/admin/Announcements'));
 const PerformanceMonitoring = lazy(() => import('./pages/admin/PerformanceMonitoring'));
 const BackupRestore = lazy(() => import('./pages/admin/BackupRestore'));
+const PackageManagement = lazy(() => import('./pages/admin/PackageManagement/PackageManagement'));
 const Courses = lazy(() => import('./pages/client/Courses/Coures.tsx'));
 const ForgotPassword = lazy(() => import('./pages/client/ForgotPassword/ForgotPassword.tsx'));
 const Checkout = lazy(() => import('./pages/client/Checkout/Checkout.tsx'));
@@ -263,6 +264,7 @@ function AppContent() {
                     <Route path="users" element={<UserManagement />} />
                     <Route path="courses/review" element={<CourseModeration />} />
                     <Route path="courses" element={<CourseDirectory />} />
+                    <Route path="packages" element={<PackageManagement />} />
                     <Route path="refunds" element={<RefundCenter />} />
                     <Route path="bills" element={<BillsPayments />} />
                     <Route path="ai" element={<AIModeration />} />

@@ -40,7 +40,8 @@ import {
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
-  Notifications as NotificationsIcon
+  Notifications as NotificationsIcon,
+  Inventory as PackageIcon
 } from '@mui/icons-material';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -66,6 +67,7 @@ const AdminLayout: React.FC = () => {
     { id: 'users', label: 'Quản lý User', icon: <PeopleIcon />, path: '/admin/users' },
     { id: 'courses', label: 'Quản lý khóa học', icon: <SchoolIcon />, path: '/admin/courses', badge: 12 },
     { id: 'courses-review', label: 'Duyệt khóa học', icon: <ReviewIcon />, path: '/admin/courses/review', badge: 5 },
+    { id: 'packages', label: 'Quản lý gói khóa học', icon: <PackageIcon />, path: '/admin/packages' },
     { id: 'refunds', label: 'Trung tâm hoàn tiền', icon: <RefundIcon />, path: '/admin/refunds', badge: 2 },
     { id: 'bills', label: 'Hóa đơn & Thanh toán', icon: <BillIcon />, path: '/admin/bills', badge: 8 },
     { id: 'ai', label: 'AI Moderation', icon: <AIIcon />, path: '/admin/ai' },
