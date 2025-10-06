@@ -6,7 +6,6 @@ import {
   CardContent,
   Typography,
   Stack,
-  Grid,
   Chip,
   Button,
   CircularProgress,
@@ -18,49 +17,193 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Switch,
-  Avatar
+  Avatar,
+  Alert,
+  Snackbar,
+  Checkbox,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TablePagination
 } from '@mui/material';
-
-interface Role { _id: string; name: string; description: string; permissions: string[]; userCount: number; createdAt: string; isSystem: boolean; }
-interface Permission { _id: string; name: string; description: string; category: string; isActive: boolean; }
-interface UserRole { _id: string; userId: string; userName: string; userEmail: string; currentRole: string; assignedBy: string; assignedAt: string; }
+import {
+  Refresh as RefreshIcon,
+  Save as SaveIcon
+} from '@mui/icons-material';
+import PermissionsService, {
+  User,
+  AuthUser,
+  BulkRoleUpdate,
+  BulkAuthRoleUpdate
+} from '../../../services/admin/permissionsService';
 
 const PermissionsManagement: React.FC = () => {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [authUsers, setAuthUsers] = useState<AuthUser[]>([]);
+  const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'users'>('roles');
-  const [showCreateRole, setShowCreateRole] = useState(false);
+  const [activeTab, setActiveTab] = useState<'users' | 'auth-users'>('users');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedAuthUsers, setSelectedAuthUsers] = useState<string[]>([]);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' | 'warning' }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
+  const [bulkUpdateDialog, setBulkUpdateDialog] = useState<{ open: boolean; type: 'users' | 'auth-users' }>({
+    open: false,
+    type: 'users'
+  });
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
+
+  // Load data from API
+  const loadData = async (page = pagination.page, limit = pagination.limit) => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading permissions data...', { page, limit });
+
+      const [usersResponse, authUsersResponse, rolesResponse] = await Promise.all([
+        PermissionsService.getUsers({ page, limit }),
+        PermissionsService.getAuthUsers({ page, limit }),
+        PermissionsService.getRoles()
+      ]);
+
+      console.log('👥 Users:', usersResponse);
+      console.log('🔐 Auth Users:', authUsersResponse);
+      console.log('🎭 Roles:', rolesResponse);
+
+      if (usersResponse.success) {
+        setUsers(usersResponse.data.users || []);
+        const responseData = usersResponse.data as any; // Cast to any to access all properties
+        setPagination(prev => ({
+          ...prev,
+          page: responseData.page || page,
+          limit: responseData.limit || limit,
+          total: responseData.total || 0,
+          totalPages: responseData.totalPages || 0
+        }));
+      }
+      if (authUsersResponse.success) {
+        setAuthUsers(authUsersResponse.data.users || []);
+      }
+      if (rolesResponse.success) {
+        setRoles(rolesResponse.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading permissions data:', error);
+      showSnackbar('Lỗi khi tải dữ liệu quyền hạn', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setTimeout(() => {
-      const mockRoles: Role[] = [
-        { _id: 'role-1', name: 'Super Admin', description: 'Toàn quyền truy cập hệ thống', permissions: ['all'], userCount: 1, createdAt: '2024-01-01', isSystem: true },
-        { _id: 'role-2', name: 'Content Moderator', description: 'Quản lý nội dung và duyệt khóa học', permissions: ['courses:read', 'courses:moderate', 'content:moderate'], userCount: 3, createdAt: '2024-01-15', isSystem: false },
-        { _id: 'role-3', name: 'User Manager', description: 'Quản lý người dùng và quyền truy cập', permissions: ['users:read', 'users:write', 'roles:read'], userCount: 2, createdAt: '2024-02-01', isSystem: false }
-      ];
-      const mockPermissions: Permission[] = [
-        { _id: 'perm-1', name: 'users:read', description: 'Xem danh sách người dùng', category: 'User Management', isActive: true },
-        { _id: 'perm-2', name: 'users:write', description: 'Tạo/sửa/xóa người dùng', category: 'User Management', isActive: true },
-        { _id: 'perm-3', name: 'courses:read', description: 'Xem danh sách khóa học', category: 'Course Management', isActive: true },
-        { _id: 'perm-4', name: 'courses:moderate', description: 'Duyệt khóa học', category: 'Course Management', isActive: true },
-        { _id: 'perm-5', name: 'content:moderate', description: 'Duyệt nội dung', category: 'Content Management', isActive: true },
-        { _id: 'perm-6', name: 'reports:read', description: 'Xem báo cáo', category: 'Analytics', isActive: true },
-        { _id: 'perm-7', name: 'settings:write', description: 'Thay đổi cài đặt hệ thống', category: 'System', isActive: true }
-      ];
-      const mockUserRoles: UserRole[] = [
-        { _id: 'ur-1', userId: 'user-1', userName: 'Admin User', userEmail: 'admin@lms.com', currentRole: 'Super Admin', assignedBy: 'System', assignedAt: '2024-01-01' },
-        { _id: 'ur-2', userId: 'user-2', userName: 'Moderator User', userEmail: 'mod@lms.com', currentRole: 'Content Moderator', assignedBy: 'Admin User', assignedAt: '2024-01-15' }
-      ];
-      setRoles(mockRoles); setPermissions(mockPermissions); setUserRoles(mockUserRoles); setLoading(false);
-    }, 1000);
+    loadData();
   }, []);
 
-  const handleCreateRole = () => setShowCreateRole(true);
-  const handleEditRole = () => { /* placeholder - open edit modal later */ };
-  const handleDeleteRole = (roleId: string) => { if (window.confirm('Bạn có chắc muốn xóa role này?')) setRoles(roles.filter(r => r._id !== roleId)); };
+  // Helper functions
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleAuthUserSelect = (userId: string) => {
+    setSelectedAuthUsers(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAllUsers = () => {
+    if (!users || users.length === 0) return;
+
+    if (selectedUsers.length === users.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(users.map(user => user._id));
+    }
+  };
+
+  const handleSelectAllAuthUsers = () => {
+    if (!authUsers || authUsers.length === 0) return;
+
+    if (selectedAuthUsers.length === authUsers.length) {
+      setSelectedAuthUsers([]);
+    } else {
+      setSelectedAuthUsers(authUsers.map(user => user._id));
+    }
+  };
+
+  const handleBulkRoleUpdate = async () => {
+    if (selectedRoles.length === 0) {
+      showSnackbar('Vui lòng chọn ít nhất một role', 'warning');
+      return;
+    }
+
+    try {
+      if (bulkUpdateDialog.type === 'users') {
+        const data: BulkRoleUpdate = {
+          userIds: selectedUsers,
+          roles: selectedRoles,
+          reason: 'Bulk role update by admin'
+        };
+        await PermissionsService.bulkUpdateRoles(data);
+        showSnackbar(`Đã cập nhật roles cho ${selectedUsers.length} người dùng`, 'success');
+      } else {
+        const data: BulkAuthRoleUpdate = {
+          userIds: selectedAuthUsers,
+          roles: selectedRoles,
+          reason: 'Bulk role update by admin'
+        };
+        await PermissionsService.bulkUpdateAuthRoles(data);
+        showSnackbar(`Đã cập nhật roles cho ${selectedAuthUsers.length} auth users`, 'success');
+      }
+
+      setBulkUpdateDialog({ open: false, type: 'users' });
+      setSelectedRoles([]);
+      setSelectedUsers([]);
+      setSelectedAuthUsers([]);
+      loadData();
+    } catch (error) {
+      console.error('Error updating roles:', error);
+      showSnackbar('Lỗi khi cập nhật roles', 'error');
+    }
+  };
+
+  // Pagination handlers
+  const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage + 1 }));
+    loadData(newPage + 1, pagination.limit);
+  };
+
+  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const newLimit = parseInt(event.target.value, 10);
+    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    loadData(1, newLimit);
+  };
 
   if (loading) {
     return (
@@ -83,7 +226,23 @@ const PermissionsManagement: React.FC = () => {
               <Typography variant="h5" fontWeight={800}>Quản lý quyền & vai trò</Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>Phân quyền chi tiết cho admin và role-based access control</Typography>
             </Box>
-            <Button variant="contained" onClick={handleCreateRole}>+ Tạo Role mới</Button>
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => loadData()}>
+                Làm mới
+              </Button>
+              {(selectedUsers.length > 0 || selectedAuthUsers.length > 0) && (
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={() => setBulkUpdateDialog({
+                    open: true,
+                    type: selectedUsers.length > 0 ? 'users' : 'auth-users'
+                  })}
+                >
+                  Cập nhật hàng loạt ({selectedUsers.length + selectedAuthUsers.length})
+                </Button>
+              )}
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -91,122 +250,278 @@ const PermissionsManagement: React.FC = () => {
       {/* Tabs */}
       <Paper variant="outlined">
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="scrollable" scrollButtons allowScrollButtonsMobile>
-          <Tab value="roles" label={`Vai trò (${roles.length})`} />
-          <Tab value="permissions" label={`Quyền (${permissions.length})`} />
-          <Tab value="users" label={`Phân quyền người dùng (${userRoles.length})`} />
+          <Tab value="users" label={`Người dùng (${pagination.total})`} />
+          <Tab value="auth-users" label={`Auth Users (${authUsers?.length || 0})`} />
         </Tabs>
       </Paper>
 
-      {/* Roles */}
-      {activeTab === 'roles' && (
-        <Grid container spacing={2}>
-          {roles.map((role) => (
-            <Grid key={role._id} item xs={12} md={6} lg={4}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6" fontWeight={700}>{role.name}</Typography>
-                    {role.isSystem && <Chip size="small" color="info" label="Hệ thống" />}
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary" mt={0.5}>{role.description}</Typography>
-                  <Stack direction="row" spacing={2} mt={1}>
-                    <Chip size="small" label={`${role.userCount} người dùng`} />
-                    <Chip size="small" label={`${role.permissions.length} quyền`} />
-                  </Stack>
-                  <Typography variant="body2" fontWeight={700} mt={1}>Quyền:</Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" mt={0.5}>
-                    {role.permissions.map((perm) => (
-                      <Chip key={perm} size="small" variant="outlined" label={perm === 'all' ? 'Tất cả quyền' : perm} />
-                    ))}
-                  </Stack>
-                  {!role.isSystem && (
-                    <Stack direction="row" spacing={1} mt={1.5}>
-                      <Button size="small" variant="outlined" onClick={() => handleEditRole()}>Sửa</Button>
-                      <Button size="small" color="error" variant="outlined" onClick={() => handleDeleteRole(role._id)}>Xóa</Button>
-                    </Stack>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-
-      {/* Permissions Table */}
-      {activeTab === 'permissions' && (
-        <Card>
-          <CardContent>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Quyền</TableCell>
-                  <TableCell>Mô tả</TableCell>
-                  <TableCell>Danh mục</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell>Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {permissions.map((permission) => (
-                  <TableRow key={permission._id} hover>
-                    <TableCell><Chip size="small" variant="outlined" label={permission.name} /></TableCell>
-                    <TableCell>{permission.description}</TableCell>
-                    <TableCell><Chip size="small" label={permission.category} /></TableCell>
-                    <TableCell><Chip size="small" color={permission.isActive ? 'success' : 'default'} label={permission.isActive ? 'Hoạt động' : 'Không hoạt động'} /></TableCell>
-                    <TableCell><Switch checked={permission.isActive} /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Users Table */}
+      {/* Users Tab */}
       {activeTab === 'users' && (
         <Card>
           <CardContent>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Người dùng</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Vai trò hiện tại</TableCell>
-                  <TableCell>Được phân quyền bởi</TableCell>
-                  <TableCell>Ngày phân quyền</TableCell>
-                  <TableCell>Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {userRoles.map((userRole) => (
-                  <TableRow key={userRole._id} hover>
-                    <TableCell>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Avatar sx={{ width: 28, height: 28 }}>👤</Avatar>
-                        <Typography>{userRole.userName}</Typography>
-                      </Stack>
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="h6">Quản lý người dùng</Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="caption" color="text.secondary">
+                  Đã chọn: {selectedUsers.length} / {pagination.total} (hiển thị {users.length})
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleSelectAllUsers}
+                >
+                  {selectedUsers.length === users.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                </Button>
+              </Stack>
+            </Stack>
+
+            {users.length > 0 ? (
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedUsers.length === users.length && users.length > 0}
+                        indeterminate={selectedUsers.length > 0 && selectedUsers.length < users.length}
+                        onChange={handleSelectAllUsers}
+                      />
                     </TableCell>
-                    <TableCell>{userRole.userEmail}</TableCell>
-                    <TableCell><Chip size="small" label={userRole.currentRole} /></TableCell>
-                    <TableCell>{userRole.assignedBy}</TableCell>
-                    <TableCell>{new Date(userRole.assignedAt).toLocaleDateString('vi-VN')}</TableCell>
-                    <TableCell><Button size="small" variant="outlined">Thay đổi vai trò</Button></TableCell>
+                    <TableCell>Người dùng</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Trạng thái</TableCell>
+                    <TableCell>Ngày tạo</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user._id} selected={selectedUsers.includes(user._id)}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedUsers.includes(user._id)}
+                          onChange={() => handleUserSelect(user._id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Avatar
+                            src={user.avatar}
+                            sx={{ width: 32, height: 32 }}
+                          >
+                            {user.name.charAt(0)}
+                          </Avatar>
+                          <Typography variant="body2">{user.name}</Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {user.roles?.map((role, index) => (
+                            <Chip key={index} label={role} color="primary" size="small" />
+                          )) || <Typography variant="caption" color="text.secondary">No roles</Typography>}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={user.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
+                          color={user.isActive ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="body2" color="text.secondary">
+                  Không có dữ liệu người dùng
+                </Typography>
+              </Box>
+            )}
+
+            {/* Pagination */}
+            {users.length > 0 && (
+              <TablePagination
+                component="div"
+                count={pagination.total}
+                page={pagination.page - 1}
+                onPageChange={handlePageChange}
+                rowsPerPage={pagination.limit}
+                onRowsPerPageChange={handleRowsPerPageChange}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                labelRowsPerPage="Số hàng mỗi trang:"
+                labelDisplayedRows={({ from, to, count }) =>
+                  `${from}-${to} của ${count !== -1 ? count : `nhiều hơn ${to}`}`
+                }
+              />
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Create/Edit Role Modal placeholder */}
-      {showCreateRole && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="subtitle1" fontWeight={700}>Tạo Role mới</Typography>
-          <Typography variant="body2" color="text.secondary">Modal tạo role sẽ được implement ở đây...</Typography>
-          <Button sx={{ mt: 1 }} onClick={() => setShowCreateRole(false)}>Đóng</Button>
-        </Paper>
+      {/* Auth Users Tab */}
+      {activeTab === 'auth-users' && (
+        <Card>
+          <CardContent>
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="h6">Auth Users</Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="caption" color="text.secondary">
+                  Đã chọn: {selectedAuthUsers.length} / {pagination.total} (hiển thị {authUsers?.length || 0})
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleSelectAllAuthUsers}
+                  disabled={!authUsers || authUsers.length === 0}
+                >
+                  {selectedAuthUsers.length === (authUsers?.length || 0) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                </Button>
+              </Stack>
+            </Stack>
+
+            {authUsers && authUsers.length > 0 ? (
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedAuthUsers.length === (authUsers?.length || 0) && (authUsers?.length || 0) > 0}
+                        indeterminate={selectedAuthUsers.length > 0 && selectedAuthUsers.length < (authUsers?.length || 0)}
+                        onChange={handleSelectAllAuthUsers}
+                        disabled={!authUsers || authUsers.length === 0}
+                      />
+                    </TableCell>
+                    <TableCell>Username</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Roles</TableCell>
+                    <TableCell>Permissions</TableCell>
+                    <TableCell>Trạng thái</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {authUsers.map((user) => (
+                    <TableRow key={user._id} selected={selectedAuthUsers.includes(user._id)}>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedAuthUsers.includes(user._id)}
+                          onChange={() => handleAuthUserSelect(user._id)}
+                        />
+                      </TableCell>
+                      <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {user.roles?.map((role, index) => (
+                            <Chip key={index} label={role} color="primary" size="small" />
+                          )) || <Typography variant="caption" color="text.secondary">No roles</Typography>}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="caption" color="text.secondary">
+                          {user.permissions?.length || 0} permissions
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={user.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
+                          color={user.isActive ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="body2" color="text.secondary">
+                  Không có dữ liệu auth users
+                </Typography>
+              </Box>
+            )}
+
+            {/* Pagination for Auth Users */}
+            {authUsers && authUsers.length > 0 && (
+              <TablePagination
+                component="div"
+                count={pagination.total}
+                page={pagination.page - 1}
+                onPageChange={handlePageChange}
+                rowsPerPage={pagination.limit}
+                onRowsPerPageChange={handleRowsPerPageChange}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                labelRowsPerPage="Số hàng mỗi trang:"
+                labelDisplayedRows={({ from, to, count }) =>
+                  `${from}-${to} của ${count !== -1 ? count : `nhiều hơn ${to}`}`
+                }
+              />
+            )}
+          </CardContent>
+        </Card>
       )}
+
+      {/* Bulk Update Dialog */}
+      <Dialog open={bulkUpdateDialog.open} onClose={() => setBulkUpdateDialog({ open: false, type: 'users' })} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Cập nhật roles hàng loạt
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Bạn đang cập nhật roles cho {bulkUpdateDialog.type === 'users' ? selectedUsers.length : selectedAuthUsers.length} người dùng
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel>Chọn roles mới</InputLabel>
+              <Select
+                multiple
+                value={selectedRoles}
+                onChange={(e) => setSelectedRoles(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                label="Chọn roles mới"
+                renderValue={(selected) => (
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                    {selected.map((role) => (
+                      <Chip key={role} label={role} size="small" />
+                    ))}
+                  </Stack>
+                )}
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role} value={role}>
+                    {role}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkUpdateDialog({ open: false, type: 'users' })}>
+            Hủy
+          </Button>
+          <Button variant="contained" onClick={handleBulkRoleUpdate} disabled={selectedRoles.length === 0}>
+            Cập nhật
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -22,37 +22,17 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import SettingsIcon from '@mui/icons-material/Settings';
+import RefundService, { RefundRequest, RefundFilters as RefundFiltersType, ProcessRefundData, RefundStats } from '../../../services/admin/refundService';
 
-interface RefundRequest {
-  _id: string;
-  orderId: string;
-  courseId: string;
-  courseTitle: string;
-  studentId: string;
-  studentName: string;
-  studentEmail: string;
-  instructorId: string;
-  instructorName: string;
-  amount: number;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  requestDate: string;
-  processedDate?: string;
-  processedBy?: string;
-  notes?: string;
-  evidence?: string[];
-  refundMethod: 'original_payment' | 'credit' | 'bank_transfer';
-  originalPaymentMethod: string;
-  originalTransactionId: string;
-}
-
-interface RefundFilters {
+interface RefundFiltersState {
   search: string;
   status: string;
   refundMethod: string;
@@ -63,7 +43,16 @@ const RefundCenter: React.FC = () => {
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
   const [filteredRefunds, setFilteredRefunds] = useState<RefundRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<RefundFilters>({
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [_refundStats, setRefundStats] = useState<RefundStats | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 0,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
+  const [filters, setFilters] = useState<RefundFiltersState>({
     search: '',
     status: 'all',
     refundMethod: 'all',
@@ -74,151 +63,62 @@ const RefundCenter: React.FC = () => {
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [processNotes, setProcessNotes] = useState('');
   const [processAction, setProcessAction] = useState<'approve' | 'reject'>('approve');
+  const [_actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => {
-      const mockRefunds: RefundRequest[] = [
-        {
-          _id: '1',
-          orderId: 'ORD-2024-001',
-          courseId: 'course-1',
-          courseTitle: 'React Advanced Patterns & Best Practices',
-          studentId: 'student-1',
-          studentName: 'Nguyễn Văn A',
-          studentEmail: 'nguyenvana@email.com',
-          instructorId: 'instructor-1',
-          instructorName: 'Trần Thị B',
-          amount: 299000,
-          reason: 'Khóa học không phù hợp với nhu cầu học tập',
-          status: 'pending',
-          requestDate: '2024-01-20T10:30:00Z',
-          refundMethod: 'original_payment',
-          originalPaymentMethod: 'Credit Card',
-          originalTransactionId: 'TXN-2024-001'
-        },
-        {
-          _id: '2',
-          orderId: 'ORD-2024-002',
-          courseId: 'course-2',
-          courseTitle: 'Python Data Science Fundamentals',
-          studentId: 'student-2',
-          studentName: 'Lê Văn C',
-          studentEmail: 'levanc@email.com',
-          instructorId: 'instructor-2',
-          instructorName: 'Phạm Thị D',
-          amount: 399000,
-          reason: 'Chất lượng nội dung không như mong đợi',
-          status: 'approved',
-          requestDate: '2024-01-19T14:20:00Z',
-          processedDate: '2024-01-20T09:15:00Z',
-          processedBy: 'admin-1',
-          notes: 'Đã xác minh và chấp thuận yêu cầu hoàn tiền',
-          refundMethod: 'credit',
-          originalPaymentMethod: 'Bank Transfer',
-          originalTransactionId: 'TXN-2024-002'
-        },
-        {
-          _id: '3',
-          orderId: 'ORD-2024-003',
-          courseId: 'course-3',
-          courseTitle: 'Web Design Principles & UI/UX',
-          studentId: 'student-3',
-          studentName: 'Hoàng Văn E',
-          studentEmail: 'hoangvane@email.com',
-          instructorId: 'instructor-3',
-          instructorName: 'Vũ Thị F',
-          amount: 199000,
-          reason: 'Kỹ thuật giảng dạy không hiệu quả',
-          status: 'rejected',
-          requestDate: '2024-01-18T16:45:00Z',
-          processedDate: '2024-01-19T11:30:00Z',
-          processedBy: 'admin-1',
-          notes: 'Khóa học đã hoàn thành 70%, không đủ điều kiện hoàn tiền',
-          refundMethod: 'original_payment',
-          originalPaymentMethod: 'Credit Card',
-          originalTransactionId: 'TXN-2024-003'
-        },
-        {
-          _id: '4',
-          orderId: 'ORD-2024-004',
-          courseId: 'course-4',
-          courseTitle: 'Mobile App Development with React Native',
-          studentId: 'student-4',
-          studentName: 'Đỗ Thị G',
-          studentEmail: 'dothig@email.com',
-          instructorId: 'instructor-4',
-          instructorName: 'Ngô Văn H',
-          amount: 499000,
-          reason: 'Gặp vấn đề kỹ thuật không thể truy cập khóa học',
-          status: 'completed',
-          requestDate: '2024-01-17T09:15:00Z',
-          processedDate: '2024-01-18T14:20:00Z',
-          processedBy: 'admin-2',
-          notes: 'Đã xác nhận vấn đề kỹ thuật và hoàn tiền thành công',
-          refundMethod: 'bank_transfer',
-          originalPaymentMethod: 'Credit Card',
-          originalTransactionId: 'TXN-2024-004'
-        },
-        {
-          _id: '5',
-          orderId: 'ORD-2024-005',
-          courseId: 'course-5',
-          courseTitle: 'Blockchain & Cryptocurrency Basics',
-          studentId: 'student-5',
-          studentName: 'Bùi Văn I',
-          studentEmail: 'buivani@email.com',
-          instructorId: 'instructor-5',
-          instructorName: 'Lý Thị K',
-          amount: 599000,
-          reason: 'Thay đổi kế hoạch học tập',
-          status: 'pending',
-          requestDate: '2024-01-16T11:30:00Z',
-          refundMethod: 'credit',
-          originalPaymentMethod: 'Bank Transfer',
-          originalTransactionId: 'TXN-2024-005'
-        }
-      ];
-      setRefunds(mockRefunds);
-      setFilteredRefunds(mockRefunds);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  // Load refunds data
+  const loadRefunds = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  useEffect(() => {
-    const filtered = refunds.filter(refund => {
-      const matchesSearch = refund.courseTitle.toLowerCase().includes(filters.search.toLowerCase()) ||
-        refund.studentName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        refund.orderId.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesStatus = filters.status === 'all' || refund.status === filters.status;
-      const matchesRefundMethod = filters.refundMethod === 'all' || refund.refundMethod === filters.refundMethod;
+      const apiFilters: RefundFiltersType = {
+        search: filters.search,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        refundMethod: filters.refundMethod !== 'all' ? filters.refundMethod : undefined,
+        dateRange: filters.dateRange !== 'all' ? filters.dateRange : undefined,
+        page: pagination.page + 1,
+        limit: pagination.limit,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
 
-      let matchesDateRange = true;
-      if (filters.dateRange !== 'all') {
-        const requestDate = new Date(refund.requestDate);
-        const now = new Date();
-        const diffTime = Math.abs(now.getTime() - requestDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const [refundsResponse, statsResponse] = await Promise.all([
+        RefundService.getRefunds(apiFilters),
+        RefundService.getRefundStats()
+      ]);
 
-        switch (filters.dateRange) {
-          case 'today':
-            matchesDateRange = diffDays === 0;
-            break;
-          case 'week':
-            matchesDateRange = diffDays <= 7;
-            break;
-          case 'month':
-            matchesDateRange = diffDays <= 30;
-            break;
-        }
+      if (refundsResponse.success) {
+        setRefunds(refundsResponse.data.data || []);
+        setPagination(prev => ({
+          ...prev,
+          total: refundsResponse.data.pagination?.total || 0,
+          totalPages: refundsResponse.data.pagination?.pages || 0
+        }));
       }
 
-      return matchesSearch && matchesStatus && matchesRefundMethod && matchesDateRange;
-    });
-    setFilteredRefunds(filtered);
-  }, [refunds, filters]);
+      if (statsResponse.success) {
+        setRefundStats(statsResponse.data);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Không thể tải dữ liệu refunds');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleFilterChange = (newFilters: Partial<RefundFilters>) => {
+  useEffect(() => {
+    loadRefunds();
+  }, [filters, pagination.page, pagination.limit]);
+
+
+  // Use API data directly, no client-side filtering needed
+  useEffect(() => {
+    setFilteredRefunds(refunds);
+  }, [refunds]);
+
+  const handleFilterChange = (newFilters: Partial<RefundFiltersState>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+    setPagination(prev => ({ ...prev, page: 0 })); // Reset to first page when filters change
   };
 
   const handleRefundSelection = (refundId: string) => {
@@ -229,23 +129,34 @@ const RefundCenter: React.FC = () => {
     );
   };
 
-  const handleBulkAction = (action: 'approve' | 'reject') => {
+  const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedRefunds.length === 0) return;
 
     const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
     if (confirm(`Bạn có chắc chắn muốn ${actionText} ${selectedRefunds.length} yêu cầu hoàn tiền đã chọn?`)) {
-      setRefunds(prev => prev.map(refund => {
-        if (selectedRefunds.includes(refund._id)) {
-          return {
-            ...refund,
-            status: action === 'approve' ? 'approved' : 'rejected' as const,
-            processedDate: new Date().toISOString(),
-            processedBy: 'admin-1'
-          };
+      try {
+        setActionLoading(true);
+        setError(null);
+
+        const processData: ProcessRefundData = {
+          action,
+          notes: `Bulk ${action} - ${selectedRefunds.length} refunds`
+        };
+
+        const response = await RefundService.bulkProcessRefunds(selectedRefunds, processData);
+
+        if (response.success) {
+          setSuccessMessage(`${actionText.charAt(0).toUpperCase() + actionText.slice(1)} thành công ${selectedRefunds.length} yêu cầu hoàn tiền`);
+          setSelectedRefunds([]);
+          loadRefunds(); // Reload data
+        } else {
+          setError(response.error || `Không thể ${actionText} yêu cầu hoàn tiền`);
         }
-        return refund;
-      }));
-      setSelectedRefunds([]);
+      } catch (err: any) {
+        setError(err.message || `Không thể ${actionText} yêu cầu hoàn tiền`);
+      } finally {
+        setActionLoading(false);
+      }
     }
   };
 
@@ -256,25 +167,35 @@ const RefundCenter: React.FC = () => {
     setShowProcessModal(true);
   };
 
-  const handleSubmitProcess = () => {
+  const handleSubmitProcess = async () => {
     if (!selectedRefund) return;
 
-    setRefunds(prev => prev.map(refund => {
-      if (refund._id === selectedRefund._id) {
-        return {
-          ...refund,
-          status: processAction === 'approve' ? 'approved' : 'rejected' as const,
-          processedDate: new Date().toISOString(),
-          processedBy: 'admin-1',
-          notes: processNotes
-        };
-      }
-      return refund;
-    }));
+    try {
+      setActionLoading(true);
+      setError(null);
 
-    setShowProcessModal(false);
-    setSelectedRefund(null);
-    setProcessNotes('');
+      const processData: ProcessRefundData = {
+        action: processAction,
+        notes: processNotes
+      };
+
+      const response = await RefundService.processRefund(selectedRefund._id, processData);
+
+      if (response.success) {
+        const actionText = processAction === 'approve' ? 'Duyệt' : 'Từ chối';
+        setSuccessMessage(`${actionText} thành công yêu cầu hoàn tiền`);
+        setShowProcessModal(false);
+        setSelectedRefund(null);
+        setProcessNotes('');
+        loadRefunds(); // Reload data
+      } else {
+        setError(response.error || `Không thể ${processAction} yêu cầu hoàn tiền`);
+      }
+    } catch (err: any) {
+      setError(err.message || `Không thể ${processAction} yêu cầu hoàn tiền`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const getStatusLabel = (status: string) => {
@@ -296,7 +217,52 @@ const RefundCenter: React.FC = () => {
     return labels[method as keyof typeof labels] || method;
   };
 
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  const _handleRefresh = () => {
+    loadRefunds();
+  };
+
+  const _handleExportCSV = async () => {
+    try {
+      setActionLoading(true);
+      setError(null);
+
+      const apiFilters: RefundFiltersType = {
+        search: filters.search,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        refundMethod: filters.refundMethod !== 'all' ? filters.refundMethod : undefined,
+        dateRange: filters.dateRange !== 'all' ? filters.dateRange : undefined
+      };
+
+      try {
+        const blob = await RefundService.exportRefunds(apiFilters);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `refunds_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        setSuccessMessage('Xuất CSV thành công');
+      } catch (serverError) {
+        // Fallback to client-side export
+        RefundService.exportRefundsToCSV(refunds);
+        setSuccessMessage('Xuất CSV thành công (client-side)');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Không thể xuất CSV');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  };
+
   const formatDateTime = (dateString: string) => new Date(dateString).toLocaleString('vi-VN');
 
   if (loading) {
@@ -331,10 +297,10 @@ const RefundCenter: React.FC = () => {
 
       {/* Stats */}
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>⏳</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds.filter(r => r.status === 'pending').length}</Typography><Typography variant="body2" color="text.secondary">Chờ xử lý</Typography></Box></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>✅</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds.filter(r => r.status === 'approved').length}</Typography><Typography variant="body2" color="text.secondary">Đã duyệt</Typography></Box></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>❌</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds.filter(r => r.status === 'rejected').length}</Typography><Typography variant="body2" color="text.secondary">Đã từ chối</Typography></Box></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>💰</Avatar><Box><Typography variant="h6" fontWeight={700}>{formatCurrency(refunds.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0))}</Typography><Typography variant="body2" color="text.secondary">Tổng hoàn tiền</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>⏳</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds?.filter(r => r.status === 'pending').length || 0}</Typography><Typography variant="body2" color="text.secondary">Chờ xử lý</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>✅</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds?.filter(r => r.status === 'approved').length || 0}</Typography><Typography variant="body2" color="text.secondary">Đã duyệt</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>❌</Avatar><Box><Typography variant="h6" fontWeight={700}>{refunds?.filter(r => r.status === 'rejected').length || 0}</Typography><Typography variant="body2" color="text.secondary">Đã từ chối</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>💰</Avatar><Box><Typography variant="h6" fontWeight={700}>{formatCurrency(refunds?.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0) || 0)}</Typography><Typography variant="body2" color="text.secondary">Tổng hoàn tiền</Typography></Box></Stack></CardContent></Card></Grid>
       </Grid>
 
       {/* Filters */}
@@ -499,6 +465,30 @@ const RefundCenter: React.FC = () => {
           </>
         )}
       </Dialog>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setError(null)} severity="error">
+          {error}
+        </Alert>
+      </Snackbar>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccessMessage(null)} severity="success">
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

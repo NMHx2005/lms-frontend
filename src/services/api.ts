@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 const API_PREFIX = (import.meta as any).env?.VITE_API_PREFIX || '/api';
 const API_TIMEOUT = Number((import.meta as any).env?.VITE_API_TIMEOUT) || 15000;
 const API_WITH_CREDENTIALS = String((import.meta as any).env?.VITE_API_WITH_CREDENTIALS || 'false') === 'true';
@@ -17,34 +17,34 @@ function joinUrl(base: string, path: string): string {
 }
 
 function extractErrorMessage(err: any): string {
-  const data = err?.response?.data;
-  if (!data) return err?.message || 'Network error. Please try again.';
-  if (typeof data === 'string') return data;
+	const data = err?.response?.data;
+	if (!data) return err?.message || 'Network error. Please try again.';
+	if (typeof data === 'string') return data;
 
-  // Try nested error object first
-  const rootError = data.error || data;
+	// Try nested error object first
+	const rootError = data.error || data;
 
-  // Collect detailed messages when available (e.g., validation details)
-  const details = rootError?.details;
-  if (Array.isArray(details) && details.length) {
-    const msgs = details
-      .map((d: any) => {
-        const field = d?.field || d?.path || '';
-        const msg = d?.message || d?.msg || '';
-        return field ? `${field}: ${msg}` : msg;
-      })
-      .filter(Boolean);
-    if (msgs.length) return msgs.join('\n');
-  }
+	// Collect detailed messages when available (e.g., validation details)
+	const details = rootError?.details;
+	if (Array.isArray(details) && details.length) {
+		const msgs = details
+			.map((d: any) => {
+				const field = d?.field || d?.path || '';
+				const msg = d?.message || d?.msg || '';
+				return field ? `${field}: ${msg}` : msg;
+			})
+			.filter(Boolean);
+		if (msgs.length) return msgs.join('\n');
+	}
 
-  if (rootError?.message) return rootError.message;
-  if (data.message) return data.message;
+	if (rootError?.message) return rootError.message;
+	if (data.message) return data.message;
 
-  // Common alternative shapes
-  if (data.error_message) return data.error_message;
-  if (Array.isArray(data.errors) && data.errors.length) return data.errors[0]?.message || 'Request failed.';
+	// Common alternative shapes
+	if (data.error_message) return data.error_message;
+	if (Array.isArray(data.errors) && data.errors.length) return data.errors[0]?.message || 'Request failed.';
 
-  return 'Request failed. Please try again.';
+	return 'Request failed. Please try again.';
 }
 
 const baseURL = joinUrl(API_BASE_URL, API_PREFIX);
@@ -63,6 +63,15 @@ const api = axios.create({
 
 api.interceptors.request.use(
 	(config) => {
+		console.log('🚀 API Request:', {
+			method: config.method?.toUpperCase(),
+			url: config.url,
+			baseURL: config.baseURL,
+			fullURL: `${config.baseURL}${config.url}`,
+			params: config.params,
+			data: config.data
+		});
+
 		if (SHOULD_USE_BEARER) {
 			const token = localStorage.getItem('accessToken');
 			if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -73,8 +82,21 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-	(response) => response,
+	(response) => {
+		console.log('✅ API Response:', {
+			status: response.status,
+			url: response.config.url,
+			data: response.data
+		});
+		return response;
+	},
 	async (error) => {
+		console.log('❌ API Error:', {
+			status: error.response?.status,
+			url: error.config?.url,
+			message: error.message,
+			data: error.response?.data
+		});
 		const originalRequest: any = error.config || {};
 
 		// Do NOT attempt refresh on auth endpoints themselves

@@ -1,1 +1,2 @@
-export { default } from './CourseModeration';
+import CourseModerationComponent from './CourseModeration';
+export default CourseModerationComponent;

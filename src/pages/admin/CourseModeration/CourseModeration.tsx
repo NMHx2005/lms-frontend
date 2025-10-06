@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// import './CourseModeration.css';
 import {
   Box,
   Card,
@@ -23,140 +22,99 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider
+  Divider,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-
-interface Course {
-  _id: string;
-  title: string;
-  instructor: {
-    name: string;
-    email: string;
-  };
-  category: string;
-  price: number;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: string;
-  description: string;
-  thumbnail: string;
-  duration: number;
-  level: 'beginner' | 'intermediate' | 'advanced';
-}
-
-interface CourseFilters {
-  search: string;
-  status: string;
-  category: string;
-  level: string;
-}
+import courseModerationService from '../../../services/admin/courseModerationService';
+import type {
+  CourseModeration,
+  CourseModerationFilters,
+  CourseModerationStats
+} from '../../../services/admin/courseModerationService';
 
 const CourseModeration: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseModeration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<CourseFilters>({
+  const [tableLoading, setTableLoading] = useState(false);
+  const [stats, setStats] = useState<CourseModerationStats | null>(null);
+  const [filters, setFilters] = useState<CourseModerationFilters>({
     search: '',
     status: 'all',
     category: 'all',
-    level: 'all'
+    level: 'all',
+    page: 1,
+    limit: 20
   });
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<CourseModeration | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewComment, setReviewComment] = useState('');
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({ open: false, message: '', severity: 'info' });
 
-  useEffect(() => {
-    setTimeout(() => {
-      const mockCourses: Course[] = [
-        {
-          _id: '1',
-          title: 'React Advanced Patterns',
-          instructor: { name: 'Nguyễn Văn A', email: 'nguyenvana@email.com' },
-          category: 'Programming',
-          price: 299000,
-          status: 'pending',
-          submittedAt: '2024-01-20T10:30:00Z',
-          description: 'Khóa học nâng cao về React với các pattern và best practices hiện đại.',
-          thumbnail: 'https://via.placeholder.com/300x200',
-          duration: 15,
-          level: 'advanced'
-        },
-        {
-          _id: '2',
-          title: 'Python Data Science',
-          instructor: { name: 'Trần Thị B', email: 'tranthib@email.com' },
-          category: 'Data Science',
-          price: 399000,
-          status: 'pending',
-          submittedAt: '2024-01-19T14:20:00Z',
-          description: 'Học Python để phân tích dữ liệu và machine learning cơ bản.',
-          thumbnail: 'https://via.placeholder.com/300x200',
-          duration: 20,
-          level: 'intermediate'
-        },
-        {
-          _id: '3',
-          title: 'Web Design Fundamentals',
-          instructor: { name: 'Lê Văn C', email: 'levanc@email.com' },
-          category: 'Design',
-          price: 199000,
-          status: 'approved',
-          submittedAt: '2024-01-18T09:15:00Z',
-          description: 'Nguyên lý thiết kế web cơ bản cho người mới bắt đầu.',
-          thumbnail: 'https://via.placeholder.com/300x200',
-          duration: 12,
-          level: 'beginner'
-        },
-        {
-          _id: '4',
-          title: 'Mobile App Development',
-          instructor: { name: 'Phạm Thị D', email: 'phamthid@email.com' },
-          category: 'Mobile',
-          price: 499000,
-          status: 'rejected',
-          submittedAt: '2024-01-17T16:45:00Z',
-          description: 'Phát triển ứng dụng mobile với React Native.',
-          thumbnail: 'https://via.placeholder.com/300x200',
-          duration: 25,
-          level: 'intermediate'
-        },
-        {
-          _id: '5',
-          title: 'Blockchain Basics',
-          instructor: { name: 'Hoàng Văn E', email: 'hoangvane@email.com' },
-          category: 'Technology',
-          price: 599000,
-          status: 'pending',
-          submittedAt: '2024-01-16T11:30:00Z',
-          description: 'Giới thiệu về blockchain và cryptocurrency.',
-          thumbnail: 'https://via.placeholder.com/300x200',
-          duration: 18,
-          level: 'beginner'
-        }
-      ];
-      setCourses(mockCourses);
-      setFilteredCourses(mockCourses);
+  // Load courses and stats
+  const loadCourses = async (showNotification = true) => {
+    try {
+      if (showNotification) {
+        setLoading(true);
+      } else {
+        setTableLoading(true);
+      }
+
+      const apiFilters: CourseModerationFilters = {
+        search: filters.search || undefined,
+        status: filters.status === 'all' ? undefined : filters.status,
+        domain: filters.category === 'all' ? undefined : filters.category,
+        level: filters.level === 'all' ? undefined : filters.level,
+        page: filters.page,
+        limit: filters.limit,
+        sortBy: 'createdAt', // Use createdAt instead of submittedAt
+        sortOrder: 'desc'
+      };
+
+      console.log('🚀 Loading courses for moderation with filters:', apiFilters);
+
+      const [coursesResponse, statsResponse] = await Promise.all([
+        courseModerationService.getCoursesForModeration(apiFilters),
+        courseModerationService.getModerationStats()
+      ]);
+
+      console.log('✅ Courses loaded:', coursesResponse);
+      console.log('✅ Stats loaded:', statsResponse);
+
+      // Handle different response structures
+      const coursesData = coursesResponse?.data?.courses || coursesResponse?.courses || coursesResponse || [];
+      const statsData = statsResponse?.data || statsResponse || {};
+
+      setCourses(Array.isArray(coursesData) ? coursesData : []);
+      setStats(statsData);
+
+    } catch (error) {
+      console.error('Error loading courses:', error);
+      showSnackbar('Lỗi khi tải danh sách khóa học', 'error');
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+      setTableLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const filtered = courses.filter(course => {
-      const matchesSearch = course.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        course.instructor.name.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesStatus = filters.status === 'all' || course.status === filters.status;
-      const matchesCategory = filters.category === 'all' || course.category === filters.category;
-      const matchesLevel = filters.level === 'all' || course.level === filters.level;
-      return matchesSearch && matchesStatus && matchesCategory && matchesLevel;
-    });
-    setFilteredCourses(filtered);
-  }, [courses, filters]);
+    loadCourses(false); // Load data without notification on filter changes
+  }, [filters]);
 
-  const handleFilterChange = (newFilters: Partial<CourseFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleFilterChange = (newFilters: Partial<CourseModerationFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters, page: 1 })); // Reset to first page when filtering
   };
 
   const handleCourseSelection = (courseId: string) => {
@@ -167,49 +125,101 @@ const CourseModeration: React.FC = () => {
     );
   };
 
-  const handleBulkAction = (action: 'approve' | 'reject') => {
+  const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedCourses.length === 0) return;
 
     const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
     if (confirm(`Bạn có chắc chắn muốn ${actionText} ${selectedCourses.length} khóa học đã chọn?`)) {
-      setCourses(prev => prev.map(course => {
-        if (selectedCourses.includes(course._id)) {
-          return { ...course, status: action === 'approve' ? 'approved' : 'rejected' as const };
-        }
-        return course;
-      }));
-      setSelectedCourses([]);
+      try {
+        await courseModerationService.bulkApproveCourses(
+          selectedCourses,
+          action,
+          `Bulk ${actionText} by admin`
+        );
+
+        showSnackbar(`Đã ${actionText} ${selectedCourses.length} khóa học thành công`, 'success');
+        setSelectedCourses([]);
+        loadCourses(false); // Reload data without notification
+      } catch (error) {
+        console.error('Error bulk approving courses:', error);
+        showSnackbar(`Lỗi khi ${actionText} khóa học`, 'error');
+      }
     }
   };
 
-  const handleReviewCourse = (course: Course) => {
+  const handleReviewCourse = (course: CourseModeration) => {
     setSelectedCourse(course);
     setShowReviewModal(true);
     setReviewComment('');
   };
 
-  const handleSubmitReview = (action: 'approve' | 'reject') => {
+  const handleSubmitReview = async (action: 'approve' | 'reject') => {
     if (!selectedCourse) return;
 
-    const statusMap = { approve: 'approved' as const, reject: 'rejected' as const };
+    try {
+      await courseModerationService.approveCourse({
+        courseId: selectedCourse._id,
+        action,
+        comment: reviewComment
+      });
 
-    setCourses(prev => prev.map(course => {
-      if (course._id === selectedCourse._id) {
-        return { ...course, status: statusMap[action] };
-      }
-      return course;
-    }));
+      const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
+      showSnackbar(`Đã ${actionText} khóa học "${selectedCourse.title}" thành công`, 'success');
 
-    setShowReviewModal(false);
-    setSelectedCourse(null);
-    setReviewComment('');
+      setShowReviewModal(false);
+      setSelectedCourse(null);
+      setReviewComment('');
+      loadCourses(false); // Reload data without notification
+    } catch (error) {
+      console.error('Error approving course:', error);
+      showSnackbar('Lỗi khi xử lý khóa học', 'error');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const exportFilters: CourseModerationFilters = {
+        search: filters.search || undefined,
+        status: filters.status === 'all' ? undefined : filters.status,
+        domain: filters.category === 'all' ? undefined : filters.category,
+        level: filters.level === 'all' ? undefined : filters.level,
+        page: 1,
+        limit: 10000,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
+
+      const response = await courseModerationService.exportCourses(exportFilters);
+
+      // Create download link
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `course-moderation-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showSnackbar('Xuất file Excel thành công', 'success');
+    } catch (error) {
+      console.error('Error exporting courses:', error);
+      showSnackbar('Lỗi khi xuất file Excel', 'error');
+    }
   };
 
   const getStatusLabel = (status: string) => {
     const labels = {
-      pending: 'Chờ duyệt',
+      draft: 'Nháp',
+      submitted: 'Chờ duyệt',
       approved: 'Đã duyệt',
-      rejected: 'Đã từ chối'
+      published: 'Đã xuất bản',
+      rejected: 'Đã từ chối',
+      needs_revision: 'Cần chỉnh sửa',
+      delisted: 'Đã gỡ bỏ'
     };
     return labels[status as keyof typeof labels] || status;
   };
@@ -221,6 +231,17 @@ const CourseModeration: React.FC = () => {
       advanced: 'Nâng cao'
     };
     return labels[level as keyof typeof labels] || level;
+  };
+
+  const getInstructorName = (course: CourseModeration) => {
+    if (course.instructorName) return course.instructorName;
+    if (typeof course.instructorId === 'object') {
+      return course.instructorId.fullName || course.instructorId.name || 'N/A';
+    }
+    if (course.instructor) {
+      return course.instructor.name || 'N/A';
+    }
+    return 'N/A';
   };
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -248,8 +269,25 @@ const CourseModeration: React.FC = () => {
               <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý và duyệt các khóa học mới</Typography>
             </Box>
             <Stack direction="row" spacing={1}>
-              <Button variant="contained" color="inherit" startIcon={<AutorenewIcon />} sx={{ color: '#111827' }} onClick={() => window.location.reload()}>Làm mới</Button>
-              <Button variant="contained" color="inherit" startIcon={<FileDownloadIcon />} sx={{ color: '#111827' }}>Xuất Excel</Button>
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={<AutorenewIcon />}
+                sx={{ color: '#111827' }}
+                onClick={() => loadCourses(false)}
+                disabled={loading}
+              >
+                {loading ? 'Đang tải...' : 'Làm mới'}
+              </Button>
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={<FileDownloadIcon />}
+                sx={{ color: '#111827' }}
+                onClick={handleExportExcel}
+              >
+                Xuất Excel
+              </Button>
             </Stack>
           </Stack>
         </CardContent>
@@ -257,10 +295,66 @@ const CourseModeration: React.FC = () => {
 
       {/* Stats */}
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>⏳</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.filter(c => c.status === 'pending').length}</Typography><Typography variant="body2" color="text.secondary">Chờ duyệt</Typography></Box></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>✅</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.filter(c => c.status === 'approved').length}</Typography><Typography variant="body2" color="text.secondary">Đã duyệt</Typography></Box></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>❌</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.filter(c => c.status === 'rejected').length}</Typography><Typography variant="body2" color="text.secondary">Đã từ chối</Typography></Box></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Avatar>📚</Avatar><Box><Typography variant="h6" fontWeight={700}>{courses.length}</Typography><Typography variant="body2" color="text.secondary">Tổng cộng</Typography></Box></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar>⏳</Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    {stats?.pendingApproval || courses.filter(c => c.status === 'submitted').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">Chờ duyệt</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar>✅</Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    {stats?.approvedCourses || courses.filter(c => c.status === 'approved').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">Đã duyệt</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar>❌</Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    {stats?.rejectedCourses || courses.filter(c => c.status === 'rejected').length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">Đã từ chối</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar>📚</Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    {stats?.totalCourses || courses.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">Tổng cộng</Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {/* Filters */}
@@ -274,9 +368,13 @@ const CourseModeration: React.FC = () => {
               <InputLabel>Trạng thái</InputLabel>
               <Select label="Trạng thái" value={filters.status} onChange={(e) => handleFilterChange({ status: e.target.value })} MenuProps={{ disableScrollLock: true }}>
                 <MenuItem value="all">Tất cả trạng thái</MenuItem>
-                <MenuItem value="pending">Chờ duyệt</MenuItem>
+                <MenuItem value="draft">Nháp</MenuItem>
+                <MenuItem value="submitted">Chờ duyệt</MenuItem>
                 <MenuItem value="approved">Đã duyệt</MenuItem>
+                <MenuItem value="published">Đã xuất bản</MenuItem>
                 <MenuItem value="rejected">Đã từ chối</MenuItem>
+                <MenuItem value="needs_revision">Cần chỉnh sửa</MenuItem>
+                <MenuItem value="delisted">Đã gỡ bỏ</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -323,14 +421,24 @@ const CourseModeration: React.FC = () => {
 
       {/* Courses List */}
       <Grid container spacing={2}>
-        {filteredCourses.map((course) => (
+        {courses.map((course) => (
           <Grid key={course._id} item xs={12}>
             <Card>
               <CardContent>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <Stack alignItems="center" spacing={1}>
                     <Checkbox checked={selectedCourses.includes(course._id)} onChange={() => handleCourseSelection(course._id)} />
-                    <Chip label={getStatusLabel(course.status)} color={course.status === 'pending' ? 'warning' : course.status === 'approved' ? 'success' : 'error'} size="small" />
+                    <Chip
+                      label={getStatusLabel(course.status)}
+                      color={
+                        course.status === 'submitted' ? 'warning' :
+                          course.status === 'approved' || course.status === 'published' ? 'success' :
+                            course.status === 'rejected' ? 'error' :
+                              course.status === 'needs_revision' ? 'warning' :
+                                course.status === 'delisted' ? 'default' : 'info'
+                      }
+                      size="small"
+                    />
                   </Stack>
                   <Box sx={{ width: 240, flexShrink: 0 }}>
                     <Box component="img" src={course.thumbnail} alt={course.title} sx={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 1 }} />
@@ -339,19 +447,43 @@ const CourseModeration: React.FC = () => {
                     <Typography variant="h6" fontWeight={800}>{course.title}</Typography>
                     <Typography variant="body2" color="text.secondary" mt={0.5}>{course.description}</Typography>
                     <Grid container spacing={2} mt={1}>
-                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Giảng viên</Typography><Typography fontWeight={700}>{course.instructor.name}</Typography></Grid>
-                      <Grid item xs={12} sm={6} md={3}><Typography variant="body2" color="text.secondary">Danh mục</Typography><Typography fontWeight={700}>{course.category}</Typography></Grid>
-                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Cấp độ</Typography><Typography fontWeight={700}>{getLevelLabel(course.level)}</Typography></Grid>
-                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Thời lượng</Typography><Typography fontWeight={700}>{course.duration} giờ</Typography></Grid>
-                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Giá</Typography><Typography fontWeight={700}>{formatCurrency(course.price)}</Typography></Grid>
-                      <Grid item xs={6} md={2}><Typography variant="body2" color="text.secondary">Ngày nộp</Typography><Typography fontWeight={700}>{formatDate(course.submittedAt)}</Typography></Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="body2" color="text.secondary">Giảng viên</Typography>
+                        <Typography fontWeight={700}>{getInstructorName(course)}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="body2" color="text.secondary">Danh mục</Typography>
+                        <Typography fontWeight={700}>{course.category}</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={2}>
+                        <Typography variant="body2" color="text.secondary">Cấp độ</Typography>
+                        <Typography fontWeight={700}>{getLevelLabel(course.level)}</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={2}>
+                        <Typography variant="body2" color="text.secondary">Thời lượng</Typography>
+                        <Typography fontWeight={700}>{course.totalDuration || 0} giờ</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={2}>
+                        <Typography variant="body2" color="text.secondary">Giá</Typography>
+                        <Typography fontWeight={700}>{formatCurrency(course.price)}</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={2}>
+                        <Typography variant="body2" color="text.secondary">Ngày tạo</Typography>
+                        <Typography fontWeight={700}>{course.createdAt ? formatDate(course.createdAt) : 'N/A'}</Typography>
+                      </Grid>
                     </Grid>
                     <Stack direction="row" spacing={1.5} mt={2}>
-                      {course.status === 'pending' && (
+                      {course.status === 'submitted' && (
                         <>
                           <Button variant="contained" color="success" onClick={() => handleReviewCourse(course)}>Duyệt</Button>
                           <Button variant="outlined" color="error" onClick={() => handleReviewCourse(course)}>Từ chối</Button>
                         </>
+                      )}
+                      {(course.status === 'approved' || course.status === 'published') && (
+                        <Button variant="outlined" color="warning" onClick={() => handleReviewCourse(course)}>Đánh giá lại</Button>
+                      )}
+                      {course.status === 'needs_revision' && (
+                        <Button variant="contained" color="info" onClick={() => handleReviewCourse(course)}>Xem lại</Button>
                       )}
                       <Button variant="text">Xem chi tiết</Button>
                       <Button variant="text">Chỉnh sửa</Button>
@@ -365,15 +497,38 @@ const CourseModeration: React.FC = () => {
       </Grid>
 
       {/* Empty State */}
-      {filteredCourses.length === 0 && (
+      {courses.length === 0 && !loading && (
         <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom>Không có khóa học nào</Typography>
           <Typography variant="body2" color="text.secondary">
             {filters.search || filters.status !== 'all' || filters.category !== 'all' || filters.level !== 'all'
               ? 'Không tìm thấy khóa học nào phù hợp với bộ lọc hiện tại'
-              : 'Chưa có khóa học nào trong hệ thống'}
+              : 'Chưa có khóa học nào chờ duyệt trong hệ thống'}
           </Typography>
         </Paper>
+      )}
+
+      {/* Loading overlay for table */}
+      {tableLoading && (
+        <Box sx={{ position: 'relative', minHeight: 200 }}>
+          <Box sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            zIndex: 1
+          }}>
+            <Stack spacing={2} alignItems="center">
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary">Đang cập nhật...</Typography>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {/* Review Modal */}
@@ -384,9 +539,18 @@ const CourseModeration: React.FC = () => {
             <DialogContent dividers>
               <Stack spacing={2}>
                 <Grid container spacing={2}>
-                  <Grid item xs={6}><Typography variant="body2" color="text.secondary">Giảng viên</Typography><Typography fontWeight={700}>{selectedCourse.instructor.name}</Typography></Grid>
-                  <Grid item xs={6}><Typography variant="body2" color="text.secondary">Danh mục</Typography><Typography fontWeight={700}>{selectedCourse.category}</Typography></Grid>
-                  <Grid item xs={6}><Typography variant="body2" color="text.secondary">Giá</Typography><Typography fontWeight={700}>{formatCurrency(selectedCourse.price)}</Typography></Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Giảng viên</Typography>
+                    <Typography fontWeight={700}>{getInstructorName(selectedCourse)}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Danh mục</Typography>
+                    <Typography fontWeight={700}>{selectedCourse.category}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Giá</Typography>
+                    <Typography fontWeight={700}>{formatCurrency(selectedCourse.price)}</Typography>
+                  </Grid>
                 </Grid>
                 <Divider />
                 <TextField
@@ -407,6 +571,22 @@ const CourseModeration: React.FC = () => {
           </>
         )}
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -16,155 +16,364 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Paper
+  Paper,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import { BillsPaymentsService, Bill, BillFilters, BillRevenueAnalytics, PaymentActivity, SystemLog } from '../../../services/admin';
 
-interface Bill {
-  _id: string;
-  billNumber: string;
-  studentId: string;
-  studentName: string;
-  studentEmail: string;
-  courseId: string;
-  courseTitle: string;
-  amount: number;
-  tax: number;
-  total: number;
-  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  paymentMethod: string;
-  paymentDate?: string;
-  dueDate: string;
-  createdAt: string;
-  invoiceUrl?: string;
-  receiptUrl?: string;
-}
-
-interface BillFilters {
+interface BillsPaymentsState {
   search: string;
   status: string;
   paymentMethod: string;
   dateRange: string;
 }
 
+interface PaginationState {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 const BillsPayments: React.FC = () => {
   const [bills, setBills] = useState<Bill[]>([]);
-  const [filteredBills, setFilteredBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<BillFilters>({
+  const [refreshing, setRefreshing] = useState(false);
+  const [filters, setFilters] = useState<BillsPaymentsState>({
     search: '',
     status: 'all',
     paymentMethod: 'all',
     dateRange: 'all'
   });
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 0,
+    limit: 20,
+    total: 0,
+    pages: 0
+  });
+  const [revenueAnalytics, setRevenueAnalytics] = useState<BillRevenueAnalytics | null>(null);
+  const [_paymentActivities, setPaymentActivities] = useState<PaymentActivity[]>([]);
+  const [_systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
-  useEffect(() => {
-    setTimeout(() => {
-      const mockBills: Bill[] = [
-        {
-          _id: '1',
-          billNumber: 'INV-2024-001',
-          studentId: 'student-1',
-          studentName: 'Nguyễn Văn A',
-          studentEmail: 'nguyenvana@email.com',
-          courseId: 'course-1',
-          courseTitle: 'React Advanced Patterns',
-          amount: 299000,
-          tax: 29900,
-          total: 328900,
-          status: 'paid',
-          paymentMethod: 'Credit Card',
-          paymentDate: '2024-01-20T10:30:00Z',
-          dueDate: '2024-01-25T00:00:00Z',
-          createdAt: '2024-01-18T00:00:00Z'
-        },
-        {
-          _id: '2',
-          billNumber: 'INV-2024-002',
-          studentId: 'student-2',
-          studentName: 'Trần Thị B',
-          studentEmail: 'tranthib@email.com',
-          courseId: 'course-2',
-          courseTitle: 'Python Data Science',
-          amount: 399000,
-          tax: 39900,
-          total: 438900,
-          status: 'pending',
-          paymentMethod: 'Bank Transfer',
-          dueDate: '2024-01-30T00:00:00Z',
-          createdAt: '2024-01-19T00:00:00Z'
-        },
-        {
-          _id: '3',
-          billNumber: 'INV-2024-003',
-          studentId: 'student-3',
-          studentName: 'Lê Văn C',
-          studentEmail: 'levanc@email.com',
-          courseId: 'course-3',
-          courseTitle: 'Web Design Principles',
-          amount: 199000,
-          tax: 19900,
-          total: 218900,
-          status: 'overdue',
-          paymentMethod: 'Credit Card',
-          dueDate: '2024-01-15T00:00:00Z',
-          createdAt: '2024-01-10T00:00:00Z'
-        }
-      ];
-      setBills(mockBills);
-      setFilteredBills(mockBills);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  // Bill details dialog state
+  const [billDetailsOpen, setBillDetailsOpen] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
 
-  useEffect(() => {
-    const filtered = bills.filter(bill => {
-      const matchesSearch = bill.billNumber.toLowerCase().includes(filters.search.toLowerCase()) ||
-        bill.studentName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        bill.courseTitle.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesStatus = filters.status === 'all' || bill.status === filters.status;
-      const matchesPaymentMethod = filters.paymentMethod === 'all' || bill.paymentMethod === filters.paymentMethod;
+  // Load all data
+  const loadBillsData = async () => {
+    try {
+      setLoading(true);
 
-      let matchesDateRange = true;
-      if (filters.dateRange !== 'all') {
-        const dueDate = new Date(bill.dueDate);
-        const now = new Date();
-        const diffTime = Math.abs(now.getTime() - dueDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      // Load bills data
+      const apiFilters: BillFilters = {
+        search: filters.search || undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        paymentMethod: filters.paymentMethod !== 'all' ? filters.paymentMethod : undefined,
+        dateRange: filters.dateRange !== 'all' ? filters.dateRange : undefined,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        page: pagination.page + 1,
+        limit: pagination.limit
+      };
 
-        switch (filters.dateRange) {
-          case 'today':
-            matchesDateRange = diffDays === 0;
-            break;
-          case 'week':
-            matchesDateRange = diffDays <= 7;
-            break;
-          case 'month':
-            matchesDateRange = diffDays <= 30;
-            break;
-        }
+      const [billsResponse, revenueResponse, activitiesResponse, logsResponse] = await Promise.all([
+        BillsPaymentsService.getBills(apiFilters),
+        BillsPaymentsService.getRevenueAnalytics('monthly'),
+        BillsPaymentsService.getPaymentActivities({ page: 1, limit: 10 }),
+        BillsPaymentsService.getSystemLogs({ page: 1, limit: 10 })
+      ]);
+
+      if (billsResponse.success) {
+        setBills(billsResponse.data.data || []);
+        setPagination(prev => ({
+          ...prev,
+          total: billsResponse.data.pagination?.total || 0,
+          pages: billsResponse.data.pagination?.pages || 0
+        }));
       }
 
-      return matchesSearch && matchesStatus && matchesPaymentMethod && matchesDateRange;
-    });
-    setFilteredBills(filtered);
-  }, [bills, filters]);
+      if (revenueResponse.success) {
+        setRevenueAnalytics(revenueResponse.data);
+      }
 
-  const handleFilterChange = (newFilters: Partial<BillFilters>) => {
+      if (activitiesResponse.success) {
+        setPaymentActivities(activitiesResponse.data.data || []);
+      }
+
+      if (logsResponse.success) {
+        setSystemLogs(logsResponse.data.data || []);
+      }
+
+    } catch (error: any) {
+      console.error('Error loading bills data:', error);
+      showSnackbar('Lỗi khi tải dữ liệu hóa đơn', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBillsData();
+  }, [filters, pagination.page, pagination.limit]);
+
+  // Helper functions
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  const handleFilterChange = (newFilters: Partial<BillsPaymentsState>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+    setPagination(prev => ({ ...prev, page: 0 })); // Reset to first page when filters change
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadBillsData();
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const apiFilters: BillFilters = {
+        search: filters.search || undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        paymentMethod: filters.paymentMethod !== 'all' ? filters.paymentMethod : undefined,
+        dateRange: filters.dateRange !== 'all' ? filters.dateRange : undefined,
+      };
+
+      const blob = await BillsPaymentsService.exportBillsToExcel(apiFilters);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `bills_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showSnackbar('Xuất file Excel thành công', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showSnackbar('Lỗi khi xuất file Excel', 'error');
+    }
   };
 
   const getStatusLabel = (status: string) => {
     const labels = {
       pending: 'Chờ thanh toán',
-      paid: 'Đã thanh toán',
-      overdue: 'Quá hạn',
+      completed: 'Đã thanh toán',
+      failed: 'Thất bại',
+      refunded: 'Đã hoàn tiền',
       cancelled: 'Đã hủy'
     };
     return labels[status as keyof typeof labels] || status;
+  };
+
+  const getPaymentMethodLabel = (method: string) => {
+    const labels = {
+      vnpay: 'VNPay',
+      stripe: 'Stripe',
+      paypal: 'PayPal',
+      bank_transfer: 'Chuyển khoản',
+      cash: 'Tiền mặt'
+    };
+    return labels[method as keyof typeof labels] || method;
+  };
+
+  const getPurposeLabel = (purpose: string) => {
+    const labels = {
+      course_purchase: 'Mua khóa học',
+      subscription: 'Đăng ký gói',
+      refund: 'Hoàn tiền',
+      other: 'Khác'
+    };
+    return labels[purpose as keyof typeof labels] || purpose;
+  };
+
+  // Bill actions handlers
+  const handleViewBillDetails = (bill: Bill) => {
+    setSelectedBill(bill);
+    setBillDetailsOpen(true);
+  };
+
+  const handleSendReminder = async (bill: Bill) => {
+    try {
+      // TODO: Implement send reminder API call
+      showSnackbar(`Đã gửi nhắc nhở thanh toán cho ${bill.studentId && typeof bill.studentId === 'object' ? bill.studentId.name : 'học viên'}`, 'success');
+    } catch (error) {
+      showSnackbar('Lỗi khi gửi nhắc nhở', 'error');
+    }
+  };
+
+  const handleDeleteBill = async (bill: Bill) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa hóa đơn này?`)) {
+      try {
+        await BillsPaymentsService.deleteBill(bill._id);
+        showSnackbar('Đã xóa hóa đơn thành công', 'success');
+        loadBillsData(); // Refresh data
+      } catch (error) {
+        showSnackbar('Lỗi khi xóa hóa đơn', 'error');
+      }
+    }
+  };
+
+  const handleExportReceipt = async (bill: Bill) => {
+    try {
+      // Generate PDF receipt
+      await generatePDFReceipt(bill);
+      showSnackbar('Đã xuất biên lai PDF thành công', 'success');
+    } catch (error) {
+      showSnackbar('Lỗi khi xuất biên lai', 'error');
+    }
+  };
+
+  const generatePDFReceipt = async (bill: Bill) => {
+    // Create PDF content
+    const receiptContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Biên Lai Thanh Toán</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: bold; color: #1976d2; }
+            .title { font-size: 20px; margin-top: 10px; }
+            .content { max-width: 600px; margin: 0 auto; }
+            .section { margin-bottom: 20px; }
+            .section-title { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #333; }
+            .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+            .info-label { font-weight: bold; }
+            .info-value { }
+            .amount { font-size: 18px; font-weight: bold; color: #1976d2; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
+            .divider { border-top: 1px solid #ddd; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="content">
+            <div class="header">
+              <div class="logo">LMS Platform</div>
+              <div class="title">BIÊN LAI THANH TOÁN</div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Thông tin hóa đơn</div>
+              <div class="info-row">
+                <span class="info-label">Mã hóa đơn:</span>
+                <span class="info-value">${bill._id}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Transaction ID:</span>
+                <span class="info-value">${bill.transactionId || 'Chưa có'}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Ngày tạo:</span>
+                <span class="info-value">${formatDate(bill.createdAt)}</span>
+              </div>
+              ${bill.paidAt ? `
+              <div class="info-row">
+                <span class="info-label">Ngày thanh toán:</span>
+                <span class="info-value">${formatDate(bill.paidAt)}</span>
+              </div>
+              ` : ''}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Thông tin khách hàng</div>
+              <div class="info-row">
+                <span class="info-label">Tên:</span>
+                <span class="info-value">${bill.studentId && typeof bill.studentId === 'object' ? bill.studentId.name : 'N/A'}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">${bill.studentId && typeof bill.studentId === 'object' ? bill.studentId.email : 'N/A'}</span>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Thông tin dịch vụ</div>
+              <div class="info-row">
+                <span class="info-label">Khóa học:</span>
+                <span class="info-value">${bill.courseId && typeof bill.courseId === 'object' ? bill.courseId.title : 'Không có khóa học'}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Mục đích:</span>
+                <span class="info-value">${getPurposeLabel(bill.purpose)}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Mô tả:</span>
+                <span class="info-value">${bill.description}</span>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div class="section-title">Thông tin thanh toán</div>
+              <div class="info-row">
+                <span class="info-label">Số tiền:</span>
+                <span class="info-value amount">${formatCurrency(bill.amount)} ${bill.currency}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Phương thức:</span>
+                <span class="info-value">${getPaymentMethodLabel(bill.paymentMethod)}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Trạng thái:</span>
+                <span class="info-value">${getStatusLabel(bill.status)}</span>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+              <p>Liên hệ hỗ trợ: support@lmsplatform.com</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Create blob and download
+    const blob = new Blob([receiptContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bien_lai_${bill._id}_${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -192,8 +401,25 @@ const BillsPayments: React.FC = () => {
               <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý hóa đơn và theo dõi thanh toán</Typography>
             </Box>
             <Stack direction="row" spacing={1}>
-              <Button variant="contained" color="inherit" startIcon={<AutorenewIcon />} sx={{ color: '#111827' }} onClick={() => window.location.reload()}>Làm mới</Button>
-              <Button variant="contained" color="inherit" startIcon={<FileDownloadIcon />} sx={{ color: '#111827' }}>Xuất Excel</Button>
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={refreshing ? <CircularProgress size={20} /> : <AutorenewIcon />}
+                sx={{ color: '#111827' }}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                Làm mới
+              </Button>
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={<FileDownloadIcon />}
+                sx={{ color: '#111827' }}
+                onClick={handleExportExcel}
+              >
+                Xuất Excel
+              </Button>
               <Button variant="contained" color="secondary" startIcon={<AddIcon />}>Tạo hóa đơn</Button>
             </Stack>
           </Stack>
@@ -202,17 +428,59 @@ const BillsPayments: React.FC = () => {
 
       {/* Stats */}
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Chip label="Tổng hóa đơn" /><Typography variant="h6" fontWeight={700}>{filteredBills.length}</Typography></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Chip color="success" label="Đã thanh toán" /><Typography variant="h6" fontWeight={700}>{bills.filter(b => b.status === 'paid').length}</Typography></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Chip color="warning" label="Chờ thanh toán" /><Typography variant="h6" fontWeight={700}>{bills.filter(b => b.status === 'pending').length}</Typography></Stack></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Stack direction="row" spacing={2} alignItems="center"><Chip color="info" label="Tổng thu" /><Typography variant="h6" fontWeight={700}>{formatCurrency(bills.filter(b => b.status === 'paid').reduce((sum, b) => sum + b.total, 0))}</Typography></Stack></CardContent></Card></Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Chip label="Tổng hóa đơn" />
+                <Typography variant="h6" fontWeight={700}>{pagination.total}</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Chip color="success" label="Đã thanh toán" />
+                <Typography variant="h6" fontWeight={700}>
+                  {bills?.filter(b => b.status === 'completed').length || 0}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Chip color="warning" label="Chờ thanh toán" />
+                <Typography variant="h6" fontWeight={700}>
+                  {bills?.filter(b => b.status === 'pending').length || 0}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Chip color="info" label="Tổng thu" />
+                <Typography variant="h6" fontWeight={700}>
+                  {formatCurrency(revenueAnalytics?.totalRevenue || 0)}
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {/* Filters */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
-            <TextField fullWidth placeholder="Tìm kiếm theo số hóa đơn, học viên hoặc khóa học..." value={filters.search} onChange={(e) => handleFilterChange({ search: e.target.value })} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }} />
+            <TextField fullWidth placeholder="Tìm kiếm theo học viên, khóa học hoặc mô tả..." value={filters.search} onChange={(e) => handleFilterChange({ search: e.target.value })} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }} />
           </Grid>
           <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth>
@@ -221,7 +489,8 @@ const BillsPayments: React.FC = () => {
                 <MenuItem value="all">Tất cả trạng thái</MenuItem>
                 <MenuItem value="pending">Chờ thanh toán</MenuItem>
                 <MenuItem value="paid">Đã thanh toán</MenuItem>
-                <MenuItem value="overdue">Quá hạn</MenuItem>
+                <MenuItem value="failed">Thất bại</MenuItem>
+                <MenuItem value="refunded">Đã hoàn tiền</MenuItem>
                 <MenuItem value="cancelled">Đã hủy</MenuItem>
               </Select>
             </FormControl>
@@ -231,9 +500,11 @@ const BillsPayments: React.FC = () => {
               <InputLabel>Phương thức</InputLabel>
               <Select label="Phương thức" value={filters.paymentMethod} onChange={(e) => handleFilterChange({ paymentMethod: e.target.value })} MenuProps={{ disableScrollLock: true }}>
                 <MenuItem value="all">Tất cả phương thức</MenuItem>
-                <MenuItem value="Credit Card">Credit Card</MenuItem>
-                <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
-                <MenuItem value="Cash">Cash</MenuItem>
+                <MenuItem value="vnpay">VNPay</MenuItem>
+                <MenuItem value="stripe">Stripe</MenuItem>
+                <MenuItem value="paypal">PayPal</MenuItem>
+                <MenuItem value="bank_transfer">Chuyển khoản</MenuItem>
+                <MenuItem value="cash">Tiền mặt</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -253,48 +524,107 @@ const BillsPayments: React.FC = () => {
 
       {/* Bills list */}
       <Grid container spacing={2}>
-        {filteredBills.map((bill) => (
+        {bills.map((bill) => (
           <Grid key={bill._id} item xs={12}>
             <Card>
               <CardContent>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', md: 'center' }}>
-                  <Box sx={{ minWidth: 120 }}>
-                    <Typography variant="subtitle2" color="text.secondary">Số hóa đơn</Typography>
-                    <Typography fontWeight={800}>{bill.billNumber}</Typography>
+                <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems={{ xs: 'flex-start', lg: 'flex-start' }}>
+                  {/* Transaction Info */}
+                  <Box sx={{ minWidth: 200 }}>
+                    <Typography variant="subtitle2" color="text.secondary">Transaction ID</Typography>
+                    <Typography fontWeight={800} fontSize="0.9rem">{bill.transactionId || 'Chưa có'}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" mt={1}>Bill ID</Typography>
+                    <Typography fontWeight={600} fontSize="0.8rem" color="text.secondary">{bill._id}</Typography>
                   </Box>
+
+                  {/* Student & Course Info */}
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={800}>{bill.courseTitle}</Typography>
-                    <Grid container spacing={2} mt={0.5}>
-                      <Grid item xs={12} sm={4}><Typography variant="body2" color="text.secondary">Học viên</Typography><Typography fontWeight={700}>{bill.studentName}</Typography></Grid>
-                      <Grid item xs={12} sm={4}><Typography variant="body2" color="text.secondary">Email</Typography><Typography fontWeight={700}>{bill.studentEmail}</Typography></Grid>
-                      <Grid item xs={12} sm={4}><Typography variant="body2" color="text.secondary">Phương thức</Typography><Typography fontWeight={700}>{bill.paymentMethod}</Typography></Grid>
+                    <Typography variant="h6" fontWeight={800} mb={1}>
+                      {bill.courseId && typeof bill.courseId === 'object' ? bill.courseId.title : bill.courseTitle || 'Không có khóa học'}
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Học viên</Typography>
+                        <Typography fontWeight={700}>
+                          {bill.studentId && typeof bill.studentId === 'object' ? bill.studentId.name : bill.studentName || 'N/A'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">Email</Typography>
+                        <Typography fontWeight={600} fontSize="0.9rem">
+                          {bill.studentId && typeof bill.studentId === 'object' ? bill.studentId.email : bill.studentEmail || 'N/A'}
+                        </Typography>
+                      </Grid>
                     </Grid>
+                    <Typography variant="body2" color="text.secondary" mt={1}>Mô tả</Typography>
+                    <Typography fontWeight={600} fontSize="0.9rem">{bill.description}</Typography>
                   </Box>
-                  <Box sx={{ minWidth: 240 }}>
-                    <Grid container>
-                      <Grid item xs={6}><Typography variant="body2" color="text.secondary">Giá gốc</Typography><Typography fontWeight={700}>{formatCurrency(bill.amount)}</Typography></Grid>
-                      <Grid item xs={6}><Typography variant="body2" color="text.secondary">Thuế</Typography><Typography fontWeight={700}>{formatCurrency(bill.tax)}</Typography></Grid>
-                      <Grid item xs={12} mt={0.5}><Typography variant="body2" color="text.secondary">Tổng cộng</Typography><Typography fontWeight={800}>{formatCurrency(bill.total)}</Typography></Grid>
-                    </Grid>
+
+                  {/* Payment Details */}
+                  <Box sx={{ minWidth: 180 }}>
+                    <Typography variant="subtitle2" color="text.secondary">Số tiền</Typography>
+                    <Typography fontWeight={800} fontSize="1.1rem" color="primary.main">
+                      {formatCurrency(bill.amount)} {bill.currency}
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary" mt={1}>Phương thức</Typography>
+                    <Typography fontWeight={700}>{getPaymentMethodLabel(bill.paymentMethod)}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" mt={1}>Mục đích</Typography>
+                    <Typography fontWeight={600}>{getPurposeLabel(bill.purpose)}</Typography>
                   </Box>
-                  <Box sx={{ minWidth: 220 }}>
-                    <Grid container>
-                      <Grid item xs={12}><Typography variant="body2" color="text.secondary">Ngày tạo</Typography><Typography fontWeight={700}>{formatDate(bill.createdAt)}</Typography></Grid>
-                      <Grid item xs={12}><Typography variant="body2" color="text.secondary">Hạn thanh toán</Typography><Typography fontWeight={700}>{formatDate(bill.dueDate)}</Typography></Grid>
-                      {bill.paymentDate && (
-                        <Grid item xs={12}><Typography variant="body2" color="text.secondary">Ngày thanh toán</Typography><Typography fontWeight={700}>{formatDate(bill.paymentDate)}</Typography></Grid>
-                      )}
-                    </Grid>
-                  </Box>
-                  <Box>
-                    <Chip size="small" color={bill.status === 'paid' ? 'success' : bill.status === 'pending' ? 'warning' : bill.status === 'overdue' ? 'error' : 'default'} label={getStatusLabel(bill.status)} />
+
+                  {/* Date & Status */}
+                  <Box sx={{ minWidth: 180 }}>
+                    <Typography variant="subtitle2" color="text.secondary">Ngày tạo</Typography>
+                    <Typography fontWeight={700}>{formatDate(bill.createdAt)}</Typography>
+                    {bill.paidAt && (
+                      <>
+                        <Typography variant="subtitle2" color="text.secondary" mt={1}>Ngày thanh toán</Typography>
+                        <Typography fontWeight={700} color="success.main">{formatDate(bill.paidAt)}</Typography>
+                      </>
+                    )}
+                    {bill.refundedAt && (
+                      <>
+                        <Typography variant="subtitle2" color="text.secondary" mt={1}>Ngày hoàn tiền</Typography>
+                        <Typography fontWeight={700} color="info.main">{formatDate(bill.refundedAt)}</Typography>
+                      </>
+                    )}
+                    <Box mt={1}>
+                      <Chip
+                        size="small"
+                        color={
+                          bill.status === 'completed' ? 'success' :
+                            bill.status === 'pending' ? 'warning' :
+                              bill.status === 'failed' ? 'error' :
+                                bill.status === 'refunded' ? 'info' : 'default'
+                        }
+                        label={getStatusLabel(bill.status)}
+                      />
+                    </Box>
                   </Box>
                 </Stack>
                 <Stack direction="row" spacing={1.5} mt={2}>
-                  <Button variant="text">Xem chi tiết</Button>
-                  <Button variant="text">Chỉnh sửa</Button>
-                  {bill.status === 'pending' && (<Button variant="outlined">Nhắc nhở</Button>)}
-                  {bill.status === 'paid' && (<Button variant="contained">Xuất biên lai</Button>)}
+                  <Button variant="text" onClick={() => handleViewBillDetails(bill)}>
+                    Xem chi tiết
+                  </Button>
+                  {bill.status === 'pending' && (
+                    <Button variant="outlined" onClick={() => handleSendReminder(bill)}>
+                      Nhắc nhở
+                    </Button>
+                  )}
+                  {bill.status === 'completed' && (
+                    <Button variant="contained" onClick={() => handleExportReceipt(bill)}>
+                      Xuất biên lai
+                    </Button>
+                  )}
+                  {bill.status === 'pending' && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => handleDeleteBill(bill)}
+                    >
+                      Xóa
+                    </Button>
+                  )}
                 </Stack>
               </CardContent>
             </Card>
@@ -303,7 +633,7 @@ const BillsPayments: React.FC = () => {
       </Grid>
 
       {/* Empty State */}
-      {filteredBills.length === 0 && (
+      {bills.length === 0 && !loading && (
         <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom>Không có hóa đơn nào</Typography>
           <Typography variant="body2" color="text.secondary">
@@ -314,17 +644,199 @@ const BillsPayments: React.FC = () => {
         </Paper>
       )}
 
-      {/* Pagination (static like original) */}
-      {filteredBills.length > 0 && (
+      {/* Pagination */}
+      {bills.length > 0 && (
         <Paper sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2">Hiển thị {filteredBills.length} trong tổng số {bills.length} hóa đơn</Typography>
+          <Typography variant="body2">
+            Hiển thị {bills.length} trong tổng số {pagination.total} hóa đơn
+          </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button disabled>← Trước</Button>
-            <Typography variant="body2">Trang 1</Typography>
-            <Button disabled>Sau →</Button>
+            <Button
+              disabled={pagination.page === 0}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+            >
+              ← Trước
+            </Button>
+            <Typography variant="body2">Trang {pagination.page + 1} / {pagination.pages}</Typography>
+            <Button
+              disabled={pagination.page >= pagination.pages - 1}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+            >
+              Sau →
+            </Button>
           </Stack>
         </Paper>
       )}
+
+      {/* Bill Details Dialog */}
+      <Dialog
+        open={billDetailsOpen}
+        onClose={() => setBillDetailsOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">Chi tiết hóa đơn</Typography>
+            <IconButton onClick={() => setBillDetailsOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {selectedBill && (
+            <Grid container spacing={3}>
+              {/* Bill Info */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Thông tin hóa đơn</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Mã hóa đơn</Typography>
+                      <Typography fontWeight={600}>{selectedBill._id}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Transaction ID</Typography>
+                      <Typography fontWeight={600}>{selectedBill.transactionId || 'Chưa có'}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Ngày tạo</Typography>
+                      <Typography fontWeight={600}>{formatDate(selectedBill.createdAt)}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Trạng thái</Typography>
+                      <Chip
+                        size="small"
+                        color={
+                          selectedBill.status === 'completed' ? 'success' :
+                            selectedBill.status === 'pending' ? 'warning' :
+                              selectedBill.status === 'failed' ? 'error' :
+                                selectedBill.status === 'refunded' ? 'info' : 'default'
+                        }
+                        label={getStatusLabel(selectedBill.status)}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Customer Info */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Thông tin khách hàng</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Tên</Typography>
+                      <Typography fontWeight={600}>
+                        {selectedBill.studentId && typeof selectedBill.studentId === 'object' ? selectedBill.studentId.name : 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Email</Typography>
+                      <Typography fontWeight={600}>
+                        {selectedBill.studentId && typeof selectedBill.studentId === 'object' ? selectedBill.studentId.email : 'N/A'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Service Info */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Thông tin dịch vụ</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="body2" color="text.secondary">Khóa học</Typography>
+                      <Typography fontWeight={600}>
+                        {selectedBill.courseId && typeof selectedBill.courseId === 'object' ? selectedBill.courseId.title : 'Không có khóa học'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Mục đích</Typography>
+                      <Typography fontWeight={600}>{getPurposeLabel(selectedBill.purpose)}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Mô tả</Typography>
+                      <Typography fontWeight={600}>{selectedBill.description}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Payment Info */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Thông tin thanh toán</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Số tiền</Typography>
+                      <Typography fontWeight={600} color="primary" fontSize="1.2rem">
+                        {formatCurrency(selectedBill.amount)} {selectedBill.currency}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Phương thức</Typography>
+                      <Typography fontWeight={600}>{getPaymentMethodLabel(selectedBill.paymentMethod)}</Typography>
+                    </Grid>
+                    {selectedBill.paidAt && (
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">Ngày thanh toán</Typography>
+                        <Typography fontWeight={600} color="success.main">{formatDate(selectedBill.paidAt)}</Typography>
+                      </Grid>
+                    )}
+                    {selectedBill.refundedAt && (
+                      <Grid item xs={6}>
+                        <Typography variant="body2" color="text.secondary">Ngày hoàn tiền</Typography>
+                        <Typography fontWeight={600} color="info.main">{formatDate(selectedBill.refundedAt)}</Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Metadata */}
+              {selectedBill.metadata && (
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 2 }}>
+                    <Typography variant="h6" gutterBottom>Thông tin bổ sung</Typography>
+                    <pre style={{
+                      backgroundColor: '#f5f5f5',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      overflow: 'auto',
+                      maxHeight: '200px'
+                    }}>
+                      {JSON.stringify(selectedBill.metadata, null, 2)}
+                    </pre>
+                  </Paper>
+                </Grid>
+              )}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBillDetailsOpen(false)}>Đóng</Button>
+          {selectedBill?.status === 'completed' && (
+            <Button variant="contained" onClick={() => handleExportReceipt(selectedBill)}>
+              Xuất biên lai
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
