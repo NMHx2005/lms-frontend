@@ -210,7 +210,7 @@ export const clientCoursesService = {
       amount: data.amount,
       courseTitle: data.courseTitle,
       userInfo: data.userInfo,
-      returnUrl: `${import.meta.env.VITE_API_BASE_URL || 'https://lms-backend-cf11.onrender.com'}/api/client/payments/vnpay/return`,
+      returnUrl: `${import.meta.env.VITE_API_URL || 'https://lms-backend-cf11.onrender.com'}/api/client/payments/vnpay/return`,
       cancelUrl: `${window.location.origin}/courses/${courseId}`
     });
     return response.data;
@@ -230,7 +230,7 @@ export const clientCoursesService = {
       amount: data.amount,
       courseTitle: data.courseTitle,
       userInfo: data.userInfo,
-      returnUrl: `${import.meta.env.VITE_API_BASE_URL || 'https://lms-backend-cf11.onrender.com'}/api/client/payments/vnpay/return`,
+      returnUrl: `${import.meta.env.VITE_API_URL || 'https://lms-backend-cf11.onrender.com'}/api/client/payments/vnpay/return`,
       cancelUrl: `${window.location.origin}/courses/${courseId}`
     });
     return response.data;

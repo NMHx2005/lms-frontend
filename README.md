@@ -34,11 +34,11 @@ npm install
 ### Environment
 Create `.env` in `lms-frontend/`:
 ```
-VITE_API_BASE_URL=http://localhost:4000
+VITE_API_URL=http://localhost:4000
 VITE_SOCKET_URL=http://localhost:4000
 ```
 - Only variables prefixed with `VITE_` are exposed at build time.
-- For production, set `VITE_API_BASE_URL` to your API domain.
+- For production, set `VITE_API_URL` to your API domain.
 
 ### Development
 ```bash
@@ -53,7 +53,7 @@ npm run preview
 ```
 
 ## API Integration
-- Axios client configured in `src/services/api.ts` using `VITE_API_BASE_URL`.
+- Axios client configured in `src/services/api.ts` using `VITE_API_URL`.
 - Auth helpers in `src/services/authService.ts`.
 - Keep response envelope consistent with backend (`{ success, data|error }`).
 
@@ -74,7 +74,7 @@ npm run preview
 ## Troubleshooting
 - Browser CORS error: ensure backend `CORS_ORIGIN` includes `http://localhost:5173`.
 - 404 on refresh with client routing: configure hosting to fallback to `index.html`.
-- Wrong API base URL: check `.env` and `VITE_API_BASE_URL` at build time.
+- Wrong API base URL: check `.env` and `VITE_API_URL` at build time.
 
 ## Roadmap
 - UI library (MUI/Tailwind), i18n, dark mode

@@ -71,7 +71,7 @@ try {
 Tạo file `.env.local` trong thư mục root:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3000
 VITE_JWT_SECRET=your-jwt-secret-here
 VITE_APP_NAME=LMS Frontend
 VITE_APP_VERSION=1.0.0
