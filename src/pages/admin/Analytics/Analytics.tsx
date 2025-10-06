@@ -29,7 +29,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { AnalyticsService, DashboardAnalytics, UserAnalytics, EnrollmentAnalytics, ActivityLog, ActivitySummary } from '../../../services/admin';
+import { AnalyticsService, DashboardAnalytics, UserAnalytics, EnrollmentAnalytics, ActivityLog, AnalyticsActivitySummary as ActivitySummary } from '../../../services/admin';
 import type { RevenueAnalytics, CourseAnalytics } from '../../../services/admin/analyticsService';
 
 // Chart colors
@@ -404,14 +404,14 @@ const Analytics: React.FC = () => {
                   <Box>
                     <Typography variant="body2" color="text.secondary">Tổng hoạt động</Typography>
                     <Typography variant="h6" fontWeight={700}>
-                      {formatNumber(activitySummary.byAction.reduce((sum, item) => sum + item.count, 0))}
+                      {formatNumber(activitySummary.byAction.reduce((sum: number, item: any) => sum + item.count, 0))}
                     </Typography>
                   </Box>
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
                       <Typography variant="body2" color="text.secondary">Theo hành động</Typography>
                       <Stack spacing={0.5} mt={1}>
-                        {activitySummary.byAction.map((item, index) => (
+                        {activitySummary.byAction.map((item: any, index: number) => (
                           <Stack key={index} direction="row" justifyContent="space-between">
                             <Typography variant="caption">
                               {item._id.action === 'course_enroll' ? 'Đăng ký khóa học' : item._id.action}

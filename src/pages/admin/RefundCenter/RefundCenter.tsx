@@ -217,44 +217,6 @@ const RefundCenter: React.FC = () => {
     return labels[method as keyof typeof labels] || method;
   };
 
-  const _handleRefresh = () => {
-    loadRefunds();
-  };
-
-  const _handleExportCSV = async () => {
-    try {
-      setActionLoading(true);
-      setError(null);
-
-      const apiFilters: RefundFiltersType = {
-        search: filters.search,
-        status: filters.status !== 'all' ? filters.status : undefined,
-        refundMethod: filters.refundMethod !== 'all' ? filters.refundMethod : undefined,
-        dateRange: filters.dateRange !== 'all' ? filters.dateRange : undefined
-      };
-
-      try {
-        const blob = await RefundService.exportRefunds(apiFilters);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `refunds_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        setSuccessMessage('Xuất CSV thành công');
-      } catch (serverError) {
-        // Fallback to client-side export
-        RefundService.exportRefundsToCSV(refunds);
-        setSuccessMessage('Xuất CSV thành công (client-side)');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Không thể xuất CSV');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
