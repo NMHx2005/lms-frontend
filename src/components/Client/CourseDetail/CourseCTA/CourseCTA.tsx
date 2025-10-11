@@ -120,7 +120,7 @@ const CourseCTA: React.FC<CourseCTAProps> = ({ course }) => {
       setEnrollmentStatus('idle');
       setErrorMessage('');
 
-      // Create VNPay payment
+      // Create VNPay payment - using mock payment for testing (no user input needed)
       const paymentResponse = await clientCoursesService.createVNPayPayment(course.id, {
         amount: course.price,
         courseTitle: course.title
@@ -139,7 +139,7 @@ const CourseCTA: React.FC<CourseCTAProps> = ({ course }) => {
             navigate(`/dashboard/courses/${course.id}`);
           }, 2000);
         } else if (paymentResponse.data?.paymentUrl) {
-          // Redirect to VNPay payment gateway
+          // Redirect to VNPay payment gateway (or mock result page)
           window.location.href = paymentResponse.data.paymentUrl;
         } else {
           setEnrollmentStatus('error');
@@ -147,11 +147,11 @@ const CourseCTA: React.FC<CourseCTAProps> = ({ course }) => {
         }
       } else {
         setEnrollmentStatus('error');
-        setErrorMessage('Không thể tạo thanh toán VNPay. Vui lòng thử lại.');
+        setErrorMessage(paymentResponse.error || 'Không thể tạo thanh toán VNPay. Vui lòng thử lại.');
       }
     } catch (error: any) {
       setEnrollmentStatus('error');
-      setErrorMessage('Có lỗi xảy ra khi tạo thanh toán VNPay');
+      setErrorMessage(error.response?.data?.error || 'Có lỗi xảy ra khi tạo thanh toán VNPay');
       console.error('VNPay payment error:', error);
     } finally {
       setIsProcessingVNPay(false);

@@ -67,6 +67,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import LanguageIcon from '@mui/icons-material/Language';
 import courseService, { Course, CourseFilters, CourseStats, BulkStatusUpdate } from '../../../services/admin/courseService';
+import categoryService, { Category } from '../../../services/admin/categoryService';
 
 interface LocalCourseFilters {
   search: string;
@@ -104,6 +105,8 @@ const CourseDirectory: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [stats, setStats] = useState<CourseStats | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [filters, setFilters] = useState<LocalCourseFilters>({
     search: '',
     status: 'all',
@@ -277,6 +280,31 @@ const CourseDirectory: React.FC = () => {
     }
   };
 
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await categoryService.getCategories();
+        if (response.success) {
+          setCategories(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        // Set default categories if API fails
+        setCategories([
+          { _id: '1', name: 'IT', description: 'IT courses', courseCount: 0, isActive: true, createdAt: '', updatedAt: '' },
+          { _id: '2', name: 'Business', description: 'Business courses', courseCount: 0, isActive: true, createdAt: '', updatedAt: '' },
+          { _id: '3', name: 'Design', description: 'Design courses', courseCount: 0, isActive: true, createdAt: '', updatedAt: '' },
+          { _id: '4', name: 'Science', description: 'Science courses', courseCount: 0, isActive: true, createdAt: '', updatedAt: '' }
+        ]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    loadCategories();
+  }, []);
+
   useEffect(() => {
     loadCourses(false); // Load data without notification on filter/sort changes
   }, [filters, pagination.page, sortBy, sortOrder]);
@@ -284,65 +312,6 @@ const CourseDirectory: React.FC = () => {
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     setSnackbar({ open: true, message, severity });
   };
-
-  // CRUD Functions (commented out for admin permissions)
-  // const handleCreateCourse = () => {
-  //   setEditingCourse(null);
-  //   setCourseFormData({
-  //     title: '',
-  //     description: '',
-  //     shortDescription: '',
-  //     domain: 'IT',
-  //     level: 'beginner',
-  //     price: 0,
-  //     originalPrice: 0,
-  //     tags: [],
-  //     prerequisites: [],
-  //     benefits: [],
-  //     language: 'vi',
-  //     certificate: false
-  //   });
-  //   setShowCourseForm(true);
-  // };
-
-  // const handleEditCourse = (course: Course) => {
-  //   setEditingCourse(course);
-  //   setCourseFormData({
-  //     title: course.title,
-  //     description: course.description || '',
-  //     shortDescription: course.shortDescription || '',
-  //     domain: course.domain,
-  //     level: course.level,
-  //     price: course.price,
-  //     originalPrice: course.originalPrice || 0,
-  //     tags: course.tags || [],
-  //     prerequisites: course.prerequisites || [],
-  //     benefits: course.benefits || [],
-  //     language: course.language || 'vi',
-  //     certificate: course.certificate || false
-  //   });
-  //   setShowCourseForm(true);
-  // };
-
-  // const handleSaveCourse = async () => {
-  //   try {
-  //     if (editingCourse) {
-  //       // Update existing course
-  //       await courseService.updateCourse(editingCourse._id, courseFormData as Partial<Course>);
-  //       showSnackbar('Cập nhật khóa học thành công', 'success');
-  //     } else {
-  //       // Create new course
-  //       await courseService.createCourse(courseFormData as Partial<Course>);
-  //       showSnackbar('Tạo khóa học thành công', 'success');
-  //     }
-  //     setShowCourseForm(false);
-  //     loadCourses(false); // Reload data without notification
-  //   } catch (error) {
-  //     console.error('Error saving course:', error);
-  //     showSnackbar('Lỗi khi lưu khóa học', 'error');
-  //   }
-  // };
-
   const handleDeleteCourse = async (courseId: string) => {
     try {
       await courseService.deleteCourse(courseId);
@@ -1020,13 +989,25 @@ const CourseDirectory: React.FC = () => {
           <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth>
               <InputLabel>Lĩnh vực</InputLabel>
-              <Select label="Lĩnh vực" value={filters.category} onChange={(e) => handleFilterChange({ category: e.target.value })} MenuProps={{ disableScrollLock: true }}>
+              <Select
+                label="Lĩnh vực"
+                value={filters.category}
+                onChange={(e) => handleFilterChange({ category: e.target.value })}
+                disabled={loadingCategories}
+                MenuProps={{ disableScrollLock: true }}
+              >
                 <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="IT">IT</MenuItem>
-                <MenuItem value="Design">Design</MenuItem>
-                <MenuItem value="Science">Science</MenuItem>
-                <MenuItem value="Business">Business</MenuItem>
-                <MenuItem value="Marketing">Marketing</MenuItem>
+                {loadingCategories ? (
+                  <MenuItem disabled>Đang tải...</MenuItem>
+                ) : categories.length > 0 ? (
+                  categories.map((category) => (
+                    <MenuItem key={category._id} value={category.name}>
+                      {category.name} ({category.courseCount})
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>Không có lĩnh vực nào</MenuItem>
+                )}
               </Select>
             </FormControl>
           </Grid>

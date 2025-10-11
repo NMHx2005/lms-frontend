@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import userProfileService, { UserProfile } from '../../../services/client/user-profile.service';
 import {
   Box,
   Drawer,
@@ -26,9 +27,6 @@ import {
   Analytics as AnalyticsIcon,
   Message as MessageIcon,
   AccountBalanceWallet as EarningsIcon,
-  SmartToy as AIIcon,
-  Assignment as AssignmentIcon,
-  CheckCircle as CheckCircleIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Dashboard as DashboardIcon,
@@ -36,9 +34,7 @@ import {
   RateReview as ReviewIcon,
   Assessment as AssessmentIcon,
   MonetizationOn as MonetizationOnIcon,
-  Psychology as PsychologyIcon,
   Create as CreateIcon,
-  Security as SecurityIcon,
   Person as PersonIcon
 } from '@mui/icons-material';
 
@@ -60,9 +56,25 @@ interface SidebarItem {
 const TeacherLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedTabs, setExpandedTabs] = useState<string[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
+
+  // Load user profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await userProfileService.getProfile();
+        if (response.success) {
+          setUserProfile(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen(!mobileOpen);
@@ -121,38 +133,25 @@ const TeacherLayout: React.FC = () => {
       description: 'Theo dõi thu nhập và thanh toán',
       subItems: [
         { label: 'Tổng quan doanh thu', path: '/teacher/earnings', icon: <MonetizationOnIcon /> },
-        { label: 'Giao dịch', path: '/teacher/earnings/transactions', icon: <EarningsIcon /> },
         { label: 'Phân tích', path: '/teacher/earnings/analytics', icon: <AnalyticsIcon /> }
       ]
     },
-    {
-      id: 'ai',
-      label: 'AI Tools',
-      icon: <AIIcon />,
-      path: '/teacher/ai',
-      description: 'Công cụ AI hỗ trợ giảng dạy',
-      subItems: [
-        { label: 'Tổng quan AI Tools', path: '/teacher/ai', icon: <PsychologyIcon /> },
-        { label: 'Tạo Avatar', path: '/teacher/ai/avatar', icon: <PersonIcon /> },
-        { label: 'Tạo Thumbnail', path: '/teacher/ai/thumbnail', icon: <CreateIcon /> },
-        { label: 'Content Moderation', path: '/teacher/ai/moderation', icon: <SecurityIcon /> }
-      ]
-    }
+    // {
+    //   id: 'ai',
+    //   label: 'AI Tools',
+    //   icon: <AIIcon />,
+    //   path: '/teacher/ai',
+    //   description: 'Công cụ AI hỗ trợ giảng dạy',
+    //   subItems: [
+    //     { label: 'Tổng quan AI Tools', path: '/teacher/ai', icon: <PsychologyIcon /> },
+    //     { label: 'Tạo Avatar', path: '/teacher/ai/avatar', icon: <PersonIcon /> },
+    //     { label: 'Tạo Thumbnail', path: '/teacher/ai/thumbnail', icon: <CreateIcon /> },
+    //     { label: 'Content Moderation', path: '/teacher/ai/moderation', icon: <SecurityIcon /> }
+    //   ]
+    // }
   ];
 
   const additionalItems = [
-    {
-      label: 'Quản lý bài tập',
-      path: '/teacher/lessons/assignments',
-      icon: <AssignmentIcon />,
-      description: 'Tạo và quản lý assignments'
-    },
-    {
-      label: 'Chấm điểm',
-      path: '/teacher/assignments/submissions',
-      icon: <CheckCircleIcon />,
-      description: 'Chấm điểm bài nộp'
-    },
     {
       label: 'Gói khóa học',
       path: '/teacher/advanced/packages',
@@ -374,13 +373,13 @@ const TeacherLayout: React.FC = () => {
       <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar
-            src="/images/default-avatar.png"
-            alt="Teacher Avatar"
+            src={userProfile?.avatar || '/images/default-avatar.png'}
+            alt={userProfile?.name || 'Teacher Avatar'}
             sx={{ width: 40, height: 40 }}
           />
           <Box>
             <Typography variant="subtitle2" sx={{ color: 'white', fontWeight: 600 }}>
-              Hieu Doan
+              {userProfile?.name || 'Teacher'}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               Instructor

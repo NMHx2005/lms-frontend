@@ -60,22 +60,27 @@ export interface CourseModerationFilters {
 export interface CourseModerationStats {
     totalCourses: number;
     pendingApproval: number;
-    approvedCourses: number;
-    rejectedCourses: number;
-    coursesByDomain: Array<{
+    approvedCourses?: number;
+    publishedCourses?: number;  // Đã duyệt
+    rejectedCourses?: number;
+    draftCourses?: number;       // Nháp
+    coursesByDomain?: Array<{
         domain: string;
         count: number;
     }>;
-    coursesByLevel: Array<{
+    coursesByLevel?: Array<{
         level: string;
         count: number;
     }>;
+    averageRating?: number;
+    totalEnrollments?: number;
+    totalRevenue?: number;
 }
 
 export interface CourseApprovalRequest {
     courseId: string;
-    action: 'approve' | 'reject';
-    comment?: string;
+    approved: boolean;  // true = approve, false = reject
+    feedback?: string;  // Comment/feedback
 }
 
 class CourseModerationService {
@@ -116,9 +121,9 @@ class CourseModerationService {
     }
 
     // Bulk approve/reject courses
-    async bulkApproveCourses(courseIds: string[], action: 'approve' | 'reject', comment?: string) {
+    async bulkApproveCourses(courseIds: string[], approved: boolean, feedback?: string) {
         const promises = courseIds.map(courseId =>
-            this.approveCourse({ courseId, action, comment })
+            this.approveCourse({ courseId, approved, feedback })
         );
         return Promise.all(promises);
     }

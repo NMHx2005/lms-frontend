@@ -11,7 +11,7 @@ export const sharedUploadService = {
   async uploadSingleImage(imageFile: File) {
     const formData = new FormData();
     formData.append('image', imageFile);
-    
+
     const response = await api.post('/upload/single/image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -21,7 +21,7 @@ export const sharedUploadService = {
   async uploadSingleVideo(videoFile: File) {
     const formData = new FormData();
     formData.append('video', videoFile);
-    
+
     const response = await api.post('/upload/single/video', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -31,7 +31,7 @@ export const sharedUploadService = {
   async uploadSingleDocument(documentFile: File) {
     const formData = new FormData();
     formData.append('document', documentFile);
-    
+
     const response = await api.post('/upload/single/document', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -42,7 +42,7 @@ export const sharedUploadService = {
   async uploadMultipleImages(imageFiles: File[]) {
     const formData = new FormData();
     imageFiles.forEach(file => formData.append('images', file));
-    
+
     const response = await api.post('/upload/multiple/images', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -52,7 +52,7 @@ export const sharedUploadService = {
   async uploadMultipleDocuments(documentFiles: File[]) {
     const formData = new FormData();
     documentFiles.forEach(file => formData.append('documents', file));
-    
+
     const response = await api.post('/upload/multiple/documents', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -63,7 +63,7 @@ export const sharedUploadService = {
   async uploadProfilePicture(profilePictureFile: File) {
     const formData = new FormData();
     formData.append('profilePicture', profilePictureFile);
-    
+
     const response = await api.post('/upload/profile-picture', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -73,7 +73,7 @@ export const sharedUploadService = {
   async uploadCourseThumbnail(thumbnailFile: File) {
     const formData = new FormData();
     formData.append('thumbnail', thumbnailFile);
-    
+
     const response = await api.post('/upload/course-thumbnail', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -83,7 +83,7 @@ export const sharedUploadService = {
   async uploadCourseMaterials(materialFiles: File[]) {
     const formData = new FormData();
     materialFiles.forEach(file => formData.append('materials', file));
-    
+
     const response = await api.post('/upload/course-materials', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });

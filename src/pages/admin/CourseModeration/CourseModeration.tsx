@@ -52,6 +52,9 @@ const CourseModeration: React.FC = () => {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<CourseModeration | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [courseDetail, setCourseDetail] = useState<any>(null);
   const [reviewComment, setReviewComment] = useState('');
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -128,21 +131,23 @@ const CourseModeration: React.FC = () => {
   const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedCourses.length === 0) return;
 
-    const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
+    const approved = action === 'approve';
+    const actionText = approved ? 'duyệt' : 'từ chối';
+
     if (confirm(`Bạn có chắc chắn muốn ${actionText} ${selectedCourses.length} khóa học đã chọn?`)) {
       try {
         await courseModerationService.bulkApproveCourses(
           selectedCourses,
-          action,
+          approved,
           `Bulk ${actionText} by admin`
         );
 
         showSnackbar(`Đã ${actionText} ${selectedCourses.length} khóa học thành công`, 'success');
         setSelectedCourses([]);
         loadCourses(false); // Reload data without notification
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error bulk approving courses:', error);
-        showSnackbar(`Lỗi khi ${actionText} khóa học`, 'error');
+        showSnackbar(`Lỗi khi ${actionText} khóa học: ${error.response?.data?.error || error.message}`, 'error');
       }
     }
   };
@@ -153,26 +158,49 @@ const CourseModeration: React.FC = () => {
     setReviewComment('');
   };
 
+  const handleViewDetail = async (course: CourseModeration) => {
+    try {
+      setDetailLoading(true);
+      setShowDetailModal(true);
+      const response = await courseModerationService.getCourseById(course._id);
+      setCourseDetail(response.data);
+    } catch (error) {
+      console.error('Error loading course detail:', error);
+      showSnackbar('Không thể tải chi tiết khóa học', 'error');
+      setShowDetailModal(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setCourseDetail(null);
+  };
+
   const handleSubmitReview = async (action: 'approve' | 'reject') => {
     if (!selectedCourse) return;
 
     try {
+      const approved = action === 'approve';
+
       await courseModerationService.approveCourse({
         courseId: selectedCourse._id,
-        action,
-        comment: reviewComment
+        approved,
+        feedback: reviewComment
       });
 
-      const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
+      const actionText = approved ? 'duyệt' : 'từ chối';
       showSnackbar(`Đã ${actionText} khóa học "${selectedCourse.title}" thành công`, 'success');
 
       setShowReviewModal(false);
       setSelectedCourse(null);
       setReviewComment('');
       loadCourses(false); // Reload data without notification
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving course:', error);
-      showSnackbar('Lỗi khi xử lý khóa học', 'error');
+      const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
+      showSnackbar(`Lỗi khi ${actionText} khóa học: ${error.response?.data?.error || error.message}`, 'error');
     }
   };
 
@@ -211,17 +239,37 @@ const CourseModeration: React.FC = () => {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      draft: 'Nháp',
-      submitted: 'Chờ duyệt',
-      approved: 'Đã duyệt',
-      published: 'Đã xuất bản',
-      rejected: 'Đã từ chối',
-      needs_revision: 'Cần chỉnh sửa',
-      delisted: 'Đã gỡ bỏ'
-    };
-    return labels[status as keyof typeof labels] || status;
+  const getStatusLabel = (course: any) => {
+    // Use status field from API response
+    switch (course.status) {
+      case 'draft': return 'Nháp';
+      case 'submitted': return 'Chờ duyệt';
+      case 'approved': return 'Đã duyệt';
+      case 'published': return 'Đã xuất bản';
+      case 'rejected': return 'Bị từ chối';
+      case 'needs_revision': return 'Cần chỉnh sửa';
+      case 'delisted': return 'Đã gỡ bỏ';
+      default: return 'N/A';
+    }
+  };
+
+  const getStatusColor = (course: any) => {
+    // Use status field from API response
+    switch (course.status) {
+      case 'draft': return 'info';
+      case 'submitted': return 'warning';
+      case 'approved': return 'success';
+      case 'published': return 'success';
+      case 'rejected': return 'error';
+      case 'needs_revision': return 'warning';
+      case 'delisted': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getCourseStatus = (course: any) => {
+    // Use status field from API response, fallback to legacy logic if needed
+    return course.status || 'unknown';
   };
 
   const getLevelLabel = (level: string) => {
@@ -233,13 +281,25 @@ const CourseModeration: React.FC = () => {
     return labels[level as keyof typeof labels] || level;
   };
 
-  const getInstructorName = (course: CourseModeration) => {
+  const getDomainLabel = (domain: string) => {
+    const labels: Record<string, string> = {
+      IT: 'Công nghệ thông tin',
+      Design: 'Thiết kế',
+      Business: 'Kinh doanh',
+      Marketing: 'Marketing',
+      Science: 'Khoa học',
+      Law: 'Luật',
+      Health: 'Sức khỏe',
+      Language: 'Ngôn ngữ',
+      Art: 'Nghệ thuật'
+    };
+    return labels[domain] || domain;
+  };
+
+  const getInstructorName = (course: any) => {
     if (course.instructorName) return course.instructorName;
     if (typeof course.instructorId === 'object') {
       return course.instructorId.fullName || course.instructorId.name || 'N/A';
-    }
-    if (course.instructor) {
-      return course.instructor.name || 'N/A';
     }
     return 'N/A';
   };
@@ -302,7 +362,7 @@ const CourseModeration: React.FC = () => {
                 <Avatar>⏳</Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight={700}>
-                    {stats?.pendingApproval || courses.filter(c => c.status === 'submitted').length}
+                    {stats?.pendingApproval || courses.filter(c => getCourseStatus(c) === 'submitted').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">Chờ duyệt</Typography>
                 </Box>
@@ -317,7 +377,7 @@ const CourseModeration: React.FC = () => {
                 <Avatar>✅</Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight={700}>
-                    {stats?.approvedCourses || courses.filter(c => c.status === 'approved').length}
+                    {stats?.publishedCourses || courses.filter(c => getCourseStatus(c) === 'approved').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">Đã duyệt</Typography>
                 </Box>
@@ -332,9 +392,9 @@ const CourseModeration: React.FC = () => {
                 <Avatar>❌</Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight={700}>
-                    {stats?.rejectedCourses || courses.filter(c => c.status === 'rejected').length}
+                    {stats?.draftCourses || courses.filter(c => getCourseStatus(c) === 'draft').length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">Đã từ chối</Typography>
+                  <Typography variant="body2" color="text.secondary">Nháp</Typography>
                 </Box>
               </Stack>
             </CardContent>
@@ -429,14 +489,8 @@ const CourseModeration: React.FC = () => {
                   <Stack alignItems="center" spacing={1}>
                     <Checkbox checked={selectedCourses.includes(course._id)} onChange={() => handleCourseSelection(course._id)} />
                     <Chip
-                      label={getStatusLabel(course.status)}
-                      color={
-                        course.status === 'submitted' ? 'warning' :
-                          course.status === 'approved' || course.status === 'published' ? 'success' :
-                            course.status === 'rejected' ? 'error' :
-                              course.status === 'needs_revision' ? 'warning' :
-                                course.status === 'delisted' ? 'default' : 'info'
-                      }
+                      label={getStatusLabel(course)}
+                      color={getStatusColor(course) as any}
                       size="small"
                     />
                   </Stack>
@@ -452,8 +506,8 @@ const CourseModeration: React.FC = () => {
                         <Typography fontWeight={700}>{getInstructorName(course)}</Typography>
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
-                        <Typography variant="body2" color="text.secondary">Danh mục</Typography>
-                        <Typography fontWeight={700}>{course.category}</Typography>
+                        <Typography variant="body2" color="text.secondary">Lĩnh vực</Typography>
+                        <Typography fontWeight={700}>{getDomainLabel(course.domain)}</Typography>
                       </Grid>
                       <Grid item xs={6} md={2}>
                         <Typography variant="body2" color="text.secondary">Cấp độ</Typography>
@@ -473,20 +527,16 @@ const CourseModeration: React.FC = () => {
                       </Grid>
                     </Grid>
                     <Stack direction="row" spacing={1.5} mt={2}>
-                      {course.status === 'submitted' && (
+                      {getCourseStatus(course) === 'submitted' && (
                         <>
                           <Button variant="contained" color="success" onClick={() => handleReviewCourse(course)}>Duyệt</Button>
                           <Button variant="outlined" color="error" onClick={() => handleReviewCourse(course)}>Từ chối</Button>
                         </>
                       )}
-                      {(course.status === 'approved' || course.status === 'published') && (
+                      {getCourseStatus(course) === 'approved' && (
                         <Button variant="outlined" color="warning" onClick={() => handleReviewCourse(course)}>Đánh giá lại</Button>
                       )}
-                      {course.status === 'needs_revision' && (
-                        <Button variant="contained" color="info" onClick={() => handleReviewCourse(course)}>Xem lại</Button>
-                      )}
-                      <Button variant="text">Xem chi tiết</Button>
-                      <Button variant="text">Chỉnh sửa</Button>
+                      <Button variant="text" onClick={() => handleViewDetail(course)}>Xem chi tiết</Button>
                     </Stack>
                   </Box>
                 </Stack>
@@ -531,6 +581,139 @@ const CourseModeration: React.FC = () => {
         </Box>
       )}
 
+      {/* Course Detail Modal */}
+      <Dialog open={showDetailModal} onClose={handleCloseDetailModal} fullWidth maxWidth="md">
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" fontWeight={700}>Chi tiết khóa học</Typography>
+            {courseDetail && (
+              <Chip label={getStatusLabel(courseDetail)} color={getStatusColor(courseDetail) as any} size="small" />
+            )}
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          {detailLoading ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary" mt={2}>Đang tải...</Typography>
+            </Box>
+          ) : courseDetail ? (
+            <Stack spacing={3}>
+              {/* Thumbnail */}
+              {courseDetail.thumbnail && (
+                <Box sx={{ width: '100%', height: 250, borderRadius: 2, overflow: 'hidden' }}>
+                  <Box component="img" src={courseDetail.thumbnail} alt={courseDetail.title} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </Box>
+              )}
+
+              {/* Basic Info */}
+              <Box>
+                <Typography variant="h6" fontWeight={700} gutterBottom>{courseDetail.title}</Typography>
+                <Typography variant="body1" color="text.secondary" paragraph>{courseDetail.description}</Typography>
+              </Box>
+
+              <Divider />
+
+              {/* Course Details Grid */}
+              <Grid container spacing={2}>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Giảng viên</Typography>
+                  <Typography fontWeight={600}>{getInstructorName(courseDetail)}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Lĩnh vực</Typography>
+                  <Typography fontWeight={600}>{getDomainLabel(courseDetail.domain)}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Cấp độ</Typography>
+                  <Typography fontWeight={600}>{getLevelLabel(courseDetail.level)}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Giá khóa học</Typography>
+                  <Typography fontWeight={600}>{formatCurrency(courseDetail.price)}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Thời lượng</Typography>
+                  <Typography fontWeight={600}>{courseDetail.totalDuration || courseDetail.estimatedDuration || 0} giờ</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Số học viên</Typography>
+                  <Typography fontWeight={600}>{courseDetail.totalStudents || 0}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Ngôn ngữ</Typography>
+                  <Typography fontWeight={600}>{courseDetail.language === 'vi' ? 'Tiếng Việt' : courseDetail.language === 'en' ? 'English' : courseDetail.language}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Chứng chỉ</Typography>
+                  <Typography fontWeight={600}>{courseDetail.certificate ? 'Có' : 'Không'}</Typography>
+                </Grid>
+                <Grid item xs={6} md={4}>
+                  <Typography variant="body2" color="text.secondary">Ngày tạo</Typography>
+                  <Typography fontWeight={600}>{formatDate(courseDetail.createdAt)}</Typography>
+                </Grid>
+              </Grid>
+
+              {/* Tags */}
+              {courseDetail.tags && courseDetail.tags.length > 0 && (
+                <>
+                  <Divider />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>Tags</Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                      {courseDetail.tags.map((tag: string, index: number) => (
+                        <Chip key={index} label={tag} size="small" />
+                      ))}
+                    </Stack>
+                  </Box>
+                </>
+              )}
+
+              {/* Prerequisites */}
+              {courseDetail.prerequisites && courseDetail.prerequisites.length > 0 && (
+                <>
+                  <Divider />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>Yêu cầu</Typography>
+                    <Stack spacing={0.5}>
+                      {courseDetail.prerequisites.map((req: string, index: number) => (
+                        <Typography key={index} variant="body2">• {req}</Typography>
+                      ))}
+                    </Stack>
+                  </Box>
+                </>
+              )}
+
+              {/* Learning Objectives */}
+              {courseDetail.learningObjectives && courseDetail.learningObjectives.length > 0 && (
+                <>
+                  <Divider />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>Mục tiêu học tập</Typography>
+                    <Stack spacing={0.5}>
+                      {courseDetail.learningObjectives.map((obj: string, index: number) => (
+                        <Typography key={index} variant="body2">✓ {obj}</Typography>
+                      ))}
+                    </Stack>
+                  </Box>
+                </>
+              )}
+            </Stack>
+          ) : (
+            <Alert severity="error">Không thể tải thông tin khóa học</Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {courseDetail && getCourseStatus(courseDetail) === 'submitted' && (
+            <>
+              <Button color="success" variant="contained" onClick={() => { handleCloseDetailModal(); handleReviewCourse(courseDetail); }}>Duyệt khóa học</Button>
+              <Button color="error" variant="outlined" onClick={() => { handleCloseDetailModal(); handleReviewCourse(courseDetail); }}>Từ chối</Button>
+            </>
+          )}
+          <Button onClick={handleCloseDetailModal}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Review Modal */}
       <Dialog open={showReviewModal && !!selectedCourse} onClose={() => setShowReviewModal(false)} fullWidth maxWidth="sm">
         {selectedCourse && (
@@ -544,8 +727,8 @@ const CourseModeration: React.FC = () => {
                     <Typography fontWeight={700}>{getInstructorName(selectedCourse)}</Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Danh mục</Typography>
-                    <Typography fontWeight={700}>{selectedCourse.category}</Typography>
+                    <Typography variant="body2" color="text.secondary">Lĩnh vực</Typography>
+                    <Typography fontWeight={700}>{getDomainLabel((selectedCourse as any).domain)}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">Giá</Typography>

@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { getTeacherCourses } from '@/services/client/teacher-courses.service';
+import * as teacherReviewService from '@/services/client/teacher-reviews.service';
 import {
   Box,
   Container,
@@ -55,6 +58,7 @@ interface Review {
   status: 'pending' | 'approved' | 'rejected';
   teacherResponse?: string;
   responseDate?: string;
+  responseId?: string; // ID of teacher response for update/delete
 }
 
 interface CourseInfo {
@@ -63,9 +67,9 @@ interface CourseInfo {
   thumbnail: string;
   totalReviews: number;
   averageRating: number;
-  status: 'published' | 'draft' | 'pending';
+  status: 'published' | 'draft' | 'pending' | 'submitted' | 'approved' | 'rejected' | 'needs_revision' | 'delisted';
   field: string;
-  level: 'basic' | 'intermediate' | 'advanced';
+  level: 'beginner' | 'intermediate' | 'advanced';
   price: number;
   sections: number;
   lessons: number;
@@ -78,90 +82,128 @@ const CourseReviews: React.FC = () => {
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [ratingFilter, setRatingFilter] = useState<number>(0);
-  const [sortBy] = useState<'date' | 'rating' | 'progress'>('date');
+  const [sortBy] = useState<'createdAt' | 'rating' | 'helpfulCount'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [page] = useState(1);
+  const [totalReviews, setTotalReviews] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState<CourseInfo | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [responseText, setResponseText] = useState('');
 
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      const mockCourses: CourseInfo[] = [
-        { _id: '1', title: 'React Advanced Patterns', thumbnail: '/images/course1.jpg', totalReviews: 45, averageRating: 4.8, status: 'published', field: 'Web Development', level: 'advanced', price: 299000, sections: 8, lessons: 45, rating: 4.8 },
-        { _id: '2', title: 'Node.js Backend Development', thumbnail: '/images/course2.jpg', totalReviews: 32, averageRating: 4.6, status: 'published', field: 'Backend Development', level: 'intermediate', price: 249000, sections: 6, lessons: 32, rating: 4.6 },
-        { _id: '3', title: 'UI/UX Design Fundamentals', thumbnail: '/images/course3.jpg', totalReviews: 0, averageRating: 0, status: 'draft', field: 'Design', level: 'basic', price: 199000, sections: 4, lessons: 24, rating: 0 },
-        { _id: '4', title: 'Python Data Science', thumbnail: '/images/course4.jpg', totalReviews: 0, averageRating: 0, status: 'pending', field: 'Data Science', level: 'intermediate', price: 349000, sections: 7, lessons: 38, rating: 0 }
-      ];
-      setCourses(mockCourses);
-      if (!selectedCourse && mockCourses.length) {
-        setSelectedCourse(mockCourses[0]);
-        setCourseInfo(mockCourses[0]);
-      }
-      setLoading(false);
-    }, 800);
-  }, []);
-
-  useEffect(() => {
-    if (courseId && selectedCourse) {
+  // Load teacher's courses
+  const loadCourses = useCallback(async () => {
+    try {
       setLoading(true);
-      setTimeout(() => {
-        const names = [
-          'Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C', 'Phạm Thị D', 'Hoàng Văn E', 'Vũ Thị F', 'Đặng Minh G', 'Bùi Thu H',
-          'Phan Quốc I', 'Đỗ Kim K', 'Trịnh Gia L', 'Võ Thị M', 'Trương Công N', 'Lưu Hải P', 'Tạ Thu Q', 'Lý Minh R',
-          'Đinh Hồng S', 'Ngô Nhật T', 'Cao Thảo U', 'La Bảo V', 'Tôn Nữ W', 'Chu Khánh X', 'Kiều Anh Y', 'Quách Duy Z'
-        ];
-        const avatars = ['/images/avatar1.jpg', '/images/avatar2.jpg', '/images/avatar3.jpg', '/images/avatar4.jpg'];
-        const statuses: Array<Review['status']> = ['pending', 'approved', 'rejected'];
-        const comments = [
-          'Khóa học rất hữu ích và chi tiết!',
-          'Một số phần hơi nhanh, mong chậm hơn.',
-          'Giảng viên giảng dễ hiểu, ví dụ thực tế.',
-          'Nội dung phù hợp người mới bắt đầu.',
-          'Tôi đã áp dụng được vào công việc.',
-          'Thiếu một vài ví dụ nâng cao.',
-          'Bài tập giúp hiểu bài rất tốt.',
-          'Mong có thêm tài liệu tham khảo.',
-          'Khóa học tuyệt vời, cảm ơn giảng viên!',
-          'Một vài video chất lượng âm thanh chưa tốt.'
-        ];
+      const response = await getTeacherCourses({ page: 1, limit: 100 });
 
-        const count = 36;
-        const mockReviews: Review[] = Array.from({ length: count }).map((_, idx) => {
-          const name = names[idx % names.length];
-          const rating = 3 + (idx % 3) + (idx % 2 ? 0 : 1); // 3-5
-          const status = statuses[idx % statuses.length];
-          const progress = 40 + ((idx * 7) % 61); // 40-100
-          const daysAgo = 1 + (idx % 60);
-          const approved = status === 'approved';
-          const responseOffset = approved ? daysAgo - 1 : null;
+      if (response.success && response.data) {
+        const coursesData = response.data.map((course: any) => ({
+          _id: course._id,
+          title: course.title,
+          thumbnail: course.thumbnail,
+          totalReviews: 0, // Will be loaded separately
+          averageRating: course.rating || 0,
+          status: course.status,
+          field: course.domain,
+          level: course.level,
+          price: course.price,
+          sections: course.sectionsCount || 0,
+          lessons: course.lessonsCount || 0,
+          rating: course.rating || 0
+        }));
 
-          return {
-            _id: `${idx + 1}`,
-            studentId: `${idx + 1}`,
-            studentName: name,
-            studentAvatar: avatars[idx % avatars.length],
-            studentProgress: progress > 100 ? 100 : progress,
-            rating: Math.min(5, rating),
-            comment: comments[idx % comments.length],
-            createdAt: new Date(Date.now() - daysAgo * 24 * 3600 * 1000).toISOString(),
-            status,
-            teacherResponse: approved ? 'Cảm ơn bạn đã đóng góp ý kiến!' : undefined,
-            responseDate: approved && responseOffset && responseOffset > 0
-              ? new Date(Date.now() - responseOffset * 24 * 3600 * 1000).toISOString()
-              : undefined
-          };
-        });
+        setCourses(coursesData);
 
-        setReviews(mockReviews);
-        setLoading(false);
-      }, 500);
+        // Only auto-select if courseId is provided in URL params
+        if (courseId) {
+          const course = coursesData.find((c: CourseInfo) => c._id === courseId);
+          if (course) {
+            setSelectedCourse(course);
+            setCourseInfo(course);
+          }
+        }
+        // Otherwise, show course list (don't auto-select)
+      }
+    } catch (error: any) {
+      console.error('Error loading courses:', error);
+      toast.error('Lỗi khi tải danh sách khóa học');
+    } finally {
+      setLoading(false);
     }
-  }, [courseId, selectedCourse]);
+  }, [courseId]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  // Load reviews for selected course
+  const loadReviews = useCallback(async () => {
+    if (!selectedCourse) return;
+
+    try {
+      setLoading(true);
+
+      // Get reviews with filters
+      const reviewsResponse = await teacherReviewService.getCourseReviews(
+        selectedCourse._id,
+        {
+          page,
+          limit: 12,
+          rating: ratingFilter === 0 ? undefined : ratingFilter,
+          sortBy,
+          sortOrder,
+          search: searchTerm
+        }
+      );
+
+      if (reviewsResponse.success && reviewsResponse.data) {
+        const reviewsData = reviewsResponse.data.ratings?.map((r: any) => ({
+          _id: r._id,
+          studentId: r.studentId?._id || r.studentId,
+          studentName: r.studentId?.firstName && r.studentId?.lastName
+            ? `${r.studentId.firstName} ${r.studentId.lastName}`
+            : 'Học viên',
+          studentAvatar: r.studentId?.avatar || '/images/default-avatar.png',
+          studentProgress: 0, // TODO: Load from enrollment if needed
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.createdAt,
+          status: 'approved', // All fetched reviews are approved
+          teacherResponse: r.teacherResponse?.response,
+          responseDate: r.teacherResponse?.createdAt,
+          responseId: r.teacherResponse?._id // Store response ID for update/delete
+        })) || [];
+
+        setReviews(reviewsData);
+        setTotalReviews(reviewsResponse.data.total || reviewsData.length);
+      }
+
+      // Get stats
+      const statsResponse = await teacherReviewService.getCourseReviewStats(selectedCourse._id);
+      if (statsResponse.success && statsResponse.data) {
+        // Update courseInfo with stats
+        setCourseInfo(prev => prev ? {
+          ...prev,
+          totalReviews: statsResponse.data.totalReviews || 0,
+          averageRating: statsResponse.data.averageRating || 0
+        } : null);
+      }
+    } catch (error: any) {
+      console.error('Error loading reviews:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải đánh giá');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCourse, page, ratingFilter, sortBy, sortOrder, searchTerm]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
 
   const handleCourseSelect = (course: CourseInfo) => {
     setSelectedCourse(course);
@@ -174,30 +216,113 @@ const CourseReviews: React.FC = () => {
     setReviews([]);
   };
 
-  const handleResponseSubmit = () => {
-    if (selectedReview && responseText.trim()) {
-      const updatedReviews = reviews.map(review =>
-        review._id === selectedReview._id
-          ? {
-            ...review,
-            teacherResponse: responseText,
-            responseDate: new Date().toISOString(),
-            status: 'approved' as const
-          }
-          : review
-      );
-      setReviews(updatedReviews);
+  const handleResponseSubmit = async () => {
+    if (!selectedReview || !responseText.trim()) return;
+
+    try {
+      setSaving(true);
+
+      // If updating existing response
+      if (selectedReview.responseId) {
+        const response = await teacherReviewService.updateTeacherResponse(
+          selectedReview.responseId,
+          responseText
+        );
+
+        if (response.success) {
+          toast.success('Đã cập nhật phản hồi thành công');
+        }
+      } else {
+        // Creating new response
+        const response = await teacherReviewService.createTeacherResponse(
+          selectedReview._id,
+          responseText
+        );
+
+        if (response.success) {
+          toast.success('Đã gửi phản hồi thành công');
+        }
+      }
+
+      // Reload reviews to get updated data
+      await loadReviews();
+
       setShowResponseModal(false);
       setSelectedReview(null);
       setResponseText('');
+    } catch (error: any) {
+      console.error('Error submitting response:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi gửi phản hồi');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const getStatusColor = useCallback((status: string): 'success' | 'warning' | 'info' | 'default' => {
+  const handleDeleteResponse = async (review: Review) => {
+    if (!review.responseId) return;
+
+    if (!window.confirm('Bạn có chắc chắn muốn xóa phản hồi này?')) return;
+
+    try {
+      setSaving(true);
+      const response = await teacherReviewService.deleteTeacherResponse(review.responseId);
+
+      if (response.success) {
+        toast.success('Đã xóa phản hồi');
+        await loadReviews();
+      }
+    } catch (error: any) {
+      console.error('Error deleting response:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi xóa phản hồi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditResponse = (review: Review) => {
+    setSelectedReview(review);
+    setResponseText(review.teacherResponse || '');
+    setShowResponseModal(true);
+  };
+
+  // Mark as helpful (future feature)
+  // const handleMarkAsHelpful = async (reviewId: string) => {
+  //   try {
+  //     const response = await teacherReviewService.markReviewAsHelpful(reviewId);
+
+  //     if (response.success) {
+  //       toast.success('Đã đánh dấu hữu ích');
+  //       await loadReviews();
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Error marking as helpful:', error);
+  //     toast.error(error.response?.data?.message || 'Lỗi khi đánh dấu hữu ích');
+  //   }
+  // };
+
+  // Report review (future feature)
+  // const handleReportReview = async (reviewId: string, reason: string) => {
+  //   try {
+  //     const response = await teacherReviewService.reportReview(reviewId, reason);
+
+  //     if (response.success) {
+  //       toast.success('Đã báo cáo đánh giá');
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Error reporting review:', error);
+  //     toast.error(error.response?.data?.message || 'Lỗi khi báo cáo');
+  //   }
+  // };
+
+  const getStatusColor = useCallback((status: string): 'success' | 'warning' | 'info' | 'error' | 'default' => {
     switch (status) {
       case 'published': return 'success';
-      case 'draft': return 'warning';
-      case 'pending': return 'info';
+      case 'draft': return 'default';
+      case 'submitted': return 'info';
+      case 'approved': return 'info';
+      case 'rejected': return 'error';
+      case 'needs_revision': return 'warning';
+      case 'delisted': return 'error';
       default: return 'default';
     }
   }, []);
@@ -206,7 +331,11 @@ const CourseReviews: React.FC = () => {
     switch (status) {
       case 'published': return 'Đã xuất bản';
       case 'draft': return 'Bản nháp';
-      case 'pending': return 'Chờ duyệt';
+      case 'submitted': return 'Chờ duyệt';
+      case 'approved': return 'Đã duyệt';
+      case 'rejected': return 'Bị từ chối';
+      case 'needs_revision': return 'Cần sửa';
+      case 'delisted': return 'Đã gỡ';
       default: return 'Không xác định';
     }
   }, []);
@@ -215,7 +344,7 @@ const CourseReviews: React.FC = () => {
     switch (level) {
       case 'advanced': return 'error';
       case 'intermediate': return 'warning';
-      case 'basic': return 'info';
+      case 'beginner': return 'info';
       default: return 'default';
     }
   }, []);
@@ -224,7 +353,7 @@ const CourseReviews: React.FC = () => {
     switch (level) {
       case 'advanced': return 'Nâng cao';
       case 'intermediate': return 'Trung cấp';
-      case 'basic': return 'Cơ bản';
+      case 'beginner': return 'Cơ bản';
       default: return 'Không xác định';
     }
   }, []);
@@ -251,7 +380,7 @@ const CourseReviews: React.FC = () => {
     return [...filteredReviews].sort((a, b) => {
       let aValue: any;
       let bValue: any;
-      if (sortBy === 'date') { aValue = new Date(a.createdAt).getTime(); bValue = new Date(b.createdAt).getTime(); }
+      if (sortBy === 'createdAt') { aValue = new Date(a.createdAt).getTime(); bValue = new Date(b.createdAt).getTime(); }
       else if (sortBy === 'rating') { aValue = a.rating; bValue = b.rating; }
       else { aValue = a.studentProgress; bValue = b.studentProgress; }
       return sortOrder === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
@@ -319,8 +448,8 @@ const CourseReviews: React.FC = () => {
   }
 
   // Selected course view
-  const totalReviews = reviews.length;
-  const averageRating = totalReviews > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / totalReviews).toFixed(1) : 0;
+  const reviewCount = reviews.length;
+  const averageRating = reviewCount > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviewCount).toFixed(1) : 0;
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -461,10 +590,37 @@ const CourseReviews: React.FC = () => {
                   )}
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'flex-end', p: 2, pt: 0 }}>
-                  {review.status === 'pending' && (
-                    <Button variant="contained" onClick={() => { setSelectedReview(review); setShowResponseModal(true); }}>Phản hồi</Button>
+                  {!review.teacherResponse ? (
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        setSelectedReview(review);
+                        setResponseText('');
+                        setShowResponseModal(true);
+                      }}
+                      disabled={saving}
+                    >
+                      Phản hồi
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outlined"
+                        onClick={() => handleEditResponse(review)}
+                        disabled={saving}
+                      >
+                        Sửa phản hồi
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDeleteResponse(review)}
+                        disabled={saving}
+                      >
+                        Xóa phản hồi
+                      </Button>
+                    </>
                   )}
-                  <Button variant="outlined">Xem chi tiết</Button>
                 </CardActions>
               </Card>
             </Grid>
@@ -516,15 +672,31 @@ const CourseReviews: React.FC = () => {
 
       {/* Response Dialog */}
       <Dialog open={showResponseModal && !!selectedReview} onClose={() => setShowResponseModal(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Phản hồi đánh giá</DialogTitle>
+        <DialogTitle>
+          {selectedReview?.responseId ? 'Sửa phản hồi' : 'Phản hồi đánh giá'}
+        </DialogTitle>
         <DialogContent>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>Học viên: {selectedReview?.studentName}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{selectedReview?.comment}</Typography>
-          <TextField fullWidth label="Phản hồi của bạn" value={responseText} onChange={(e) => setResponseText(e.target.value)} multiline rows={4} />
+          <TextField
+            fullWidth
+            label="Phản hồi của bạn"
+            value={responseText}
+            onChange={(e) => setResponseText(e.target.value)}
+            multiline
+            rows={4}
+            sx={{ mt: 2 }}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowResponseModal(false)}>Hủy</Button>
-          <Button variant="contained" onClick={handleResponseSubmit} disabled={!responseText.trim()}>Gửi phản hồi</Button>
+          <Button onClick={() => setShowResponseModal(false)} disabled={saving}>Hủy</Button>
+          <Button
+            variant="contained"
+            onClick={handleResponseSubmit}
+            disabled={!responseText.trim() || saving}
+          >
+            {saving ? 'Đang gửi...' : (selectedReview?.responseId ? 'Cập nhật' : 'Gửi phản hồi')}
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

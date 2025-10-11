@@ -7,7 +7,6 @@ import {
   Breadcrumbs,
   Card,
   CardContent,
-  CardActions,
   Button,
   TextField,
   FormControl,
@@ -17,313 +16,356 @@ import {
   Grid,
   Stack,
   CircularProgress,
-  Chip,
   IconButton,
   Alert,
-  Paper,
+  Snackbar,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Paper
 } from '@mui/material';
 import {
   Save as SaveIcon,
   Publish as PublishIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
-  Image as ImageIcon,
-  Edit as EditIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
+import { toast } from 'react-hot-toast';
+import {
+  getCourseById,
+  createCourse,
+  updateCourse,
+  updateCourseStatus
+} from '../../../../services/client/teacher-courses.service';
+import { sharedUploadService } from '../../../../services/shared/upload.service';
+import { getCategoryDomains } from '../../../../services/client/category.service';
 
-interface CourseData {
-  _id: string;
+interface CourseFormData {
   title: string;
   description: string;
+  shortDescription: string; // ✅ NEW: Short description
   thumbnail: string;
   domain: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   price: number;
-  status: 'draft' | 'published' | 'pending' | 'rejected';
+  originalPrice: number; // ✅ NEW: Original price
+  discountPercentage: number; // ✅ NEW: Discount percentage
+  language: string;
+  duration: number;
   tags: string[];
   requirements: string[];
   objectives: string[];
-}
-
-interface SectionConfig {
-  id: string;
-  title: string;
-  icon: string;
-  visible: boolean;
-  type: 'tags' | 'requirements' | 'objectives' | 'custom';
-  data: string[];
+  benefits: string[];
+  isFree: boolean;
+  certificateAvailable: boolean;
+  maxStudents: number; // ✅ NEW: Max students
 }
 
 const CourseEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [course, setCourse] = useState<CourseData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const isEditMode = id && id !== 'new';
+
+  // ========== STATE ==========
+  const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<CourseData>>({});
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
 
-  console.log(course, thumbnailFile);
-  // Quản lý hiển thị các section
-  const [sections, setSections] = useState<SectionConfig[]>([
-    { id: 'tags', title: 'Tags', icon: '🏷️', visible: true, type: 'tags', data: [''] },
-    { id: 'requirements', title: 'Yêu cầu đầu vào', icon: '📋', visible: true, type: 'requirements', data: [''] },
-    { id: 'objectives', title: 'Mục tiêu học tập', icon: '🎯', visible: true, type: 'objectives', data: [''] }
-  ]);
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [loadingDomains, setLoadingDomains] = useState(true);
 
-  // State cho section mới
-  const [showAddSectionForm, setShowAddSectionForm] = useState(false);
-  const [newSection, setNewSection] = useState({
+  const [formData, setFormData] = useState<CourseFormData>({
     title: '',
-    icon: '📝',
-    type: 'custom' as const
+    description: '',
+    shortDescription: '', // ✅ NEW: Short description
+    thumbnail: '',
+    domain: '',
+    level: 'beginner',
+    price: 0,
+    originalPrice: 0, // ✅ NEW: Original price
+    discountPercentage: 0, // ✅ NEW: Discount percentage
+    language: 'vi',
+    duration: 0,
+    tags: [''],
+    requirements: [''],
+    objectives: [''],
+    benefits: [''],
+    isFree: false,
+    certificateAvailable: false,
+    maxStudents: 0 // ✅ NEW: Max students
   });
 
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'success' });
+
+  // ========== DATA LOADING ==========
   useEffect(() => {
-    // Check if this is create mode (no id) or edit mode
-    if (!id || id === 'new') {
-      // Create mode - set default values
-      const defaultCourse: Partial<CourseData> = {
-        title: '',
-        description: '',
-        thumbnail: '',
-        domain: '',
-        level: 'beginner',
-        price: 0,
-        status: 'draft',
-        tags: [''],
-        requirements: [''],
-        objectives: ['']
-      };
-      setCourse(null);
-      setFormData(defaultCourse);
-      setThumbnailPreview('');
-      setLoading(false);
-    } else {
-      // Edit mode - fetch existing course data
-      setTimeout(() => {
-        const mockCourse: CourseData = {
-          _id: id,
-          title: 'React Advanced Patterns',
-          description: 'Khóa học nâng cao về React, bao gồm các pattern và best practices để xây dựng ứng dụng web hiện đại.',
-          thumbnail: '/images/apollo.png',
-          domain: 'Web Development',
-          level: 'advanced',
-          price: 299000,
-          status: 'draft',
-          tags: ['React', 'JavaScript', 'Frontend', 'Advanced'],
-          requirements: ['Kiến thức cơ bản về React', 'JavaScript ES6+', 'HTML/CSS'],
-          objectives: ['Hiểu sâu về React patterns', 'Xây dựng ứng dụng scalable', 'Tối ưu hiệu suất']
-        };
-        setCourse(mockCourse);
-        setFormData(mockCourse);
-        setThumbnailPreview(mockCourse.thumbnail);
-        setLoading(false);
-      }, 1000);
+    loadDomains();
+  }, []);
+
+  useEffect(() => {
+    if (isEditMode) {
+      loadCourse();
     }
   }, [id]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setThumbnailFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setThumbnailPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  const loadDomains = async () => {
+    try {
+      setLoadingDomains(true);
+      const domains = await getCategoryDomains();
+      setAvailableDomains(domains);
+    } catch (error) {
+      console.error('Error loading domains:', error);
+      toast.error('Lỗi khi tải danh sách lĩnh vực');
+      // Set default domains if API fails
+      setAvailableDomains(['IT', 'Business', 'Design', 'Marketing', 'Science', 'Law', 'Other']);
+    } finally {
+      setLoadingDomains(false);
     }
   };
 
-  const handleTagChange = (index: number, value: string) => {
-    const newTags = [...(formData.tags || [])];
-    newTags[index] = value;
-    setFormData(prev => ({ ...prev, tags: newTags }));
+  const loadCourse = async () => {
+    try {
+      setLoading(true);
+      const response = await getCourseById(id!);
+
+      if (response.success) {
+        const course = response.data;
+        console.log('🔍 Course data loaded:', {
+          title: course.title,
+          benefits: course.benefits,
+          shortDescription: course.shortDescription,
+          originalPrice: course.originalPrice,
+          maxStudents: course.maxStudents
+        });
+        setFormData({
+          title: course.title || '',
+          description: course.description || '',
+          shortDescription: course.shortDescription || '', // ✅ NEW: Map shortDescription
+          thumbnail: course.thumbnail || '',
+          domain: course.domain || '',
+          level: course.level || 'beginner',
+          price: course.price || 0,
+          originalPrice: course.originalPrice || 0, // ✅ NEW: Map originalPrice
+          discountPercentage: course.discountPercentage || 0, // ✅ NEW: Map discountPercentage
+          language: course.language || 'vi',
+          duration: course.estimatedDuration || 0,
+          tags: course.tags?.length > 0 ? course.tags : [''],
+          requirements: course.prerequisites?.length > 0 ? course.prerequisites : [''],
+          objectives: course.learningObjectives?.length > 0 ? course.learningObjectives : [''],
+          benefits: course.benefits?.length > 0 ? course.benefits : [''],
+          isFree: course.isFree || false,
+          certificateAvailable: course.certificate || false,
+          maxStudents: course.maxStudents || 0 // ✅ NEW: Map maxStudents
+        });
+        setThumbnailPreview(course.thumbnail || '');
+      }
+    } catch (error: any) {
+      console.error('Error loading course:', error);
+      setSnackbar({
+        open: true,
+        message: 'Lỗi khi tải khóa học',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const addTag = () => {
-    setFormData(prev => ({
-      ...prev,
-      tags: [...(prev.tags || []), '']
-    }));
+  // ========== HANDLERS ==========
+  const handleChange = (field: keyof CourseFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const removeTag = (index: number) => {
-    const newTags = [...(formData.tags || [])];
-    newTags.splice(index, 1);
-    setFormData(prev => ({ ...prev, tags: newTags }));
+  const handleArrayChange = (field: 'tags' | 'requirements' | 'objectives' | 'benefits', index: number, value: string) => {
+    const newArray = [...formData[field]];
+    newArray[index] = value;
+    setFormData(prev => ({ ...prev, [field]: newArray }));
   };
 
-  const handleRequirementChange = (index: number, value: string) => {
-    const newRequirements = [...(formData.requirements || [])];
-    newRequirements[index] = value;
-    setFormData(prev => ({ ...prev, requirements: newRequirements }));
+  const handleAddArrayItem = (field: 'tags' | 'requirements' | 'objectives' | 'benefits') => {
+    setFormData(prev => ({ ...prev, [field]: [...prev[field], ''] }));
   };
 
-  const addRequirement = () => {
-    setFormData(prev => ({
-      ...prev,
-      requirements: [...(prev.requirements || []), '']
-    }));
+  const handleRemoveArrayItem = (field: 'tags' | 'requirements' | 'objectives' | 'benefits', index: number) => {
+    const newArray = formData[field].filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, [field]: newArray.length > 0 ? newArray : [''] }));
   };
 
-  const removeRequirement = (index: number) => {
-    const newRequirements = [...(formData.requirements || [])];
-    newRequirements.splice(index, 1);
-    setFormData(prev => ({ ...prev, requirements: newRequirements }));
+  const handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file ảnh hợp lệ');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Kích thước file không được vượt quá 5MB');
+      return;
+    }
+
+    setThumbnailFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setThumbnailPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleObjectiveChange = (index: number, value: string) => {
-    const newObjectives = [...(formData.objectives || [])];
-    newObjectives[index] = value;
-    setFormData(prev => ({ ...prev, objectives: newObjectives }));
+  const uploadThumbnail = async (): Promise<string> => {
+    if (!thumbnailFile) return formData.thumbnail;
+
+    try {
+      setUploading(true);
+      const response = await sharedUploadService.uploadSingleImage(thumbnailFile);
+
+      const thumbnailUrl = response?.url || response?.data?.url || response?.data?.secure_url || '';
+
+      if (thumbnailUrl) {
+        return thumbnailUrl;
+      } else {
+        throw new Error('Upload response không chứa URL');
+      }
+    } catch (error: any) {
+      console.error('Error uploading thumbnail:', error);
+      toast.error('Lỗi khi upload thumbnail');
+      throw error;
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const addObjective = () => {
-    setFormData(prev => ({
-      ...prev,
-      objectives: [...(prev.objectives || []), '']
-    }));
-  };
+  const handleSaveDraft = async () => {
+    try {
+      setSaving(true);
 
-  const removeObjective = (index: number) => {
-    const newObjectives = [...(formData.objectives || [])];
-    newObjectives.splice(index, 1);
-    setFormData(prev => ({ ...prev, objectives: newObjectives }));
-  };
+      // Upload thumbnail nếu có file mới
+      let thumbnailUrl = formData.thumbnail;
+      if (thumbnailFile) {
+        thumbnailUrl = await uploadThumbnail();
+      }
 
-  const handleSave = async () => {
-    setSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setSaving(false);
-    alert('Khóa học đã được lưu thành công!');
+      // Clean up data - remove empty strings from arrays
+      const cleanedData = {
+        ...formData,
+        thumbnail: thumbnailUrl,
+        tags: formData.tags.filter(t => t.trim() !== ''),
+        requirements: formData.requirements.filter(r => r.trim() !== ''),
+        objectives: formData.objectives.filter(o => o.trim() !== ''),
+        benefits: formData.benefits.filter(b => b.trim() !== '') // ✅ NEW: Filter benefits
+      };
+
+      console.log('💾 Saving course data:', {
+        title: cleanedData.title,
+        benefits: cleanedData.benefits,
+        shortDescription: cleanedData.shortDescription,
+        originalPrice: cleanedData.originalPrice,
+        maxStudents: cleanedData.maxStudents
+      });
+
+      let response;
+      if (isEditMode) {
+        response = await updateCourse(id!, cleanedData);
+      } else {
+        response = await createCourse(cleanedData);
+      }
+
+      if (response.success) {
+        toast.success(isEditMode ? 'Cập nhật khóa học thành công' : 'Tạo khóa học thành công');
+        navigate('/teacher/courses');
+      }
+    } catch (error: any) {
+      console.error('Error saving course:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Lỗi khi lưu khóa học',
+        severity: 'error'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePublish = async () => {
-    if (confirm('Bạn có chắc chắn muốn xuất bản khóa học này?')) {
+    try {
+      // Validate required fields
+      if (!formData.title || !formData.description || !formData.domain) {
+        toast.error('Vui lòng điền đầy đủ thông tin bắt buộc (Tên, Mô tả, Lĩnh vực)');
+        return;
+      }
+
       setSaving(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setSaving(false);
-      alert('Khóa học đã được xuất bản thành công!');
-      navigate('/teacher/courses');
-    }
-  };
 
-  // Quản lý hiển thị section
-  // const toggleSection = (sectionId: string) => {
-  //   setSections(prev => prev.map(section => 
-  //     section.id === sectionId 
-  //       ? { ...section, visible: !section.visible }
-  //       : section
-  //   ));
-  // };
+      // Upload thumbnail nếu có file mới
+      let thumbnailUrl = formData.thumbnail;
+      if (thumbnailFile) {
+        thumbnailUrl = await uploadThumbnail();
+      }
 
-  const addSection = (sectionId: string) => {
-    setSections(prev => prev.map(section =>
-      section.id === sectionId
-        ? { ...section, visible: true }
-        : section
-    ));
-  };
-
-  const removeSection = (sectionId: string) => {
-    setSections(prev => prev.map(section =>
-      section.id === sectionId
-        ? { ...section, visible: false }
-        : section
-    ));
-  };
-
-  // Thêm section mới
-  const addNewSection = () => {
-    if (newSection.title.trim()) {
-      const newSectionConfig: SectionConfig = {
-        id: `custom-${Date.now()}`,
-        title: newSection.title.trim(),
-        icon: newSection.icon,
-        visible: true,
-        type: 'custom',
-        data: ['']
+      // Clean up data
+      const cleanedData = {
+        ...formData,
+        thumbnail: thumbnailUrl,
+        tags: formData.tags.filter(t => t.trim() !== ''),
+        requirements: formData.requirements.filter(r => r.trim() !== ''),
+        objectives: formData.objectives.filter(o => o.trim() !== '')
       };
 
-      setSections(prev => [...prev, newSectionConfig]);
-      setNewSection({ title: '', icon: '📝', type: 'custom' });
-      setShowAddSectionForm(false);
+      let courseId = id;
+
+      // If creating new, create first
+      if (!isEditMode) {
+        const createResponse = await createCourse(cleanedData);
+        if (createResponse.success) {
+          courseId = createResponse.data._id;
+        } else {
+          throw new Error('Failed to create course');
+        }
+      } else {
+        // Update existing course
+        await updateCourse(id!, cleanedData);
+      }
+
+      // Then submit for review
+      if (courseId) {
+        const submitResponse = await updateCourseStatus(courseId, 'submitted');
+        if (submitResponse.success) {
+          toast.success('Gửi khóa học để phê duyệt thành công');
+          navigate('/teacher/courses');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error publishing course:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Lỗi khi xuất bản khóa học',
+        severity: 'error'
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Xóa section hoàn toàn
-  const deleteSection = (sectionId: string) => {
-    setSections(prev => prev.filter(section => section.id !== sectionId));
-  };
-
-  // Quản lý data của custom section
-  const handleCustomSectionChange = (sectionId: string, index: number, value: string) => {
-    setSections(prev => prev.map(section =>
-      section.id === sectionId
-        ? { ...section, data: section.data.map((item, i) => i === index ? value : item) }
-        : section
-    ));
-  };
-
-  const addCustomSectionItem = (sectionId: string) => {
-    setSections(prev => prev.map(section =>
-      section.id === sectionId
-        ? { ...section, data: [...section.data, ''] }
-        : section
-    ));
-  };
-
-  const removeCustomSectionItem = (sectionId: string, index: number) => {
-    setSections(prev => prev.map(section =>
-      section.id === sectionId
-        ? { ...section, data: section.data.filter((_, i) => i !== index) }
-        : section
-    ));
-  };
-
+  // ========== RENDER ==========
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        <Box sx={{ mb: 4 }}>
-          <Breadcrumbs sx={{ mb: 2 }}>
-            <Typography color="text.primary">Teacher Dashboard</Typography>
-            <Typography color="text.primary">Course Studio</Typography>
-            <Typography color="text.secondary">
-              {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
-            </Typography>
-          </Breadcrumbs>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-            {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
-          </Typography>
-        </Box>
-
+      <Container maxWidth="lg" sx={{ py: 3 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
           <CircularProgress size={60} sx={{ mb: 3 }} />
           <Typography variant="h6" color="text.secondary">
-            Đang tải dữ liệu...
+            Đang tải khóa học...
           </Typography>
         </Box>
       </Container>
@@ -331,584 +373,472 @@ const CourseEditor: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Breadcrumbs sx={{ mb: 2 }}>
-          <Typography color="text.primary">Teacher Dashboard</Typography>
-          <Typography color="text.primary">Course Studio</Typography>
-          <Typography color="text.secondary">
-            {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
-          </Typography>
-        </Breadcrumbs>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          {!id || id === 'new' ? 'Tạo khóa học mới' : 'Chỉnh sửa khóa học'}
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <IconButton onClick={() => navigate('/teacher/courses')}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Breadcrumbs>
+            <Typography color="text.primary">Teacher</Typography>
+            <Typography color="text.primary">Courses</Typography>
+            <Typography color="text.secondary">
+              {isEditMode ? 'Chỉnh sửa' : 'Tạo mới'}
+            </Typography>
+          </Breadcrumbs>
+        </Stack>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          {isEditMode ? 'Chỉnh sửa khóa học' : 'Tạo khóa học mới'}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          {!id || id === 'new'
-            ? 'Tạo khóa học mới và chia sẻ kiến thức của bạn với học viên'
-            : 'Chỉnh sửa thông tin khóa học và cập nhật nội dung'
-          }
+          {isEditMode ? 'Cập nhật thông tin khóa học của bạn' : 'Điền thông tin để tạo khóa học mới'}
         </Typography>
       </Box>
 
-      <Box component="form" onSubmit={(e) => e.preventDefault()}>
-        {/* Basic Information */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EditIcon color="primary" />
-              Thông tin cơ bản
-            </Typography>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Tên khóa học"
-                  name="title"
-                  value={formData.title || ''}
-                  onChange={handleInputChange}
-                  placeholder="Nhập tên khóa học"
-                  required
-                  variant="outlined"
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Mô tả khóa học"
-                  name="description"
-                  value={formData.description || ''}
-                  onChange={handleInputChange}
-                  placeholder="Mô tả chi tiết về khóa học"
-                  multiline
-                  rows={4}
-                  required
-                  variant="outlined"
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth required>
-                  <InputLabel>Lĩnh vực</InputLabel>
-                  <Select
-                    name="domain"
-                    value={formData.domain || ''}
-                    onChange={handleSelectChange}
-                    label="Lĩnh vực"
-                    MenuProps={{ disableScrollLock: true }}
-                  >
-                    <MenuItem value="Web Development">Web Development</MenuItem>
-                    <MenuItem value="Mobile Development">Mobile Development</MenuItem>
-                    <MenuItem value="Data Science">Data Science</MenuItem>
-                    <MenuItem value="Design">Design</MenuItem>
-                    <MenuItem value="Business">Business</MenuItem>
-                    <MenuItem value="Marketing">Marketing</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth required>
-                  <InputLabel>Cấp độ</InputLabel>
-                  <Select
-                    name="level"
-                    value={formData.level || ''}
-                    onChange={handleSelectChange}
-                    label="Cấp độ"
-                    MenuProps={{ disableScrollLock: true }}
-                  >
-                    <MenuItem value="beginner">Cơ bản</MenuItem>
-                    <MenuItem value="intermediate">Trung cấp</MenuItem>
-                    <MenuItem value="advanced">Nâng cao</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Giá (VND)"
-                  name="price"
-                  type="number"
-                  value={formData.price || ''}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  inputProps={{ min: 0 }}
-                  required
-                  variant="outlined"
-                />
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        {/* Thumbnail */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ImageIcon color="primary" />
-              Thumbnail
-            </Typography>
-
-            <Grid container spacing={3} alignItems="center">
-              <Grid item xs={12} md={4}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    textAlign: 'center',
-                    border: '2px dashed',
-                    borderColor: 'grey.300',
-                    borderRadius: 2,
-                    minHeight: 200,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {thumbnailPreview ? (
-                    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-                      <img
-                        src={thumbnailPreview}
-                        alt="Thumbnail preview"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          borderRadius: '8px'
-                        }}
-                      />
-                    </Box>
-                  ) : (
-                    <Box sx={{ textAlign: 'center' }}>
-                      <ImageIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        Chưa có ảnh thumbnail
-                      </Typography>
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} md={8}>
-                <Stack spacing={2}>
-                  <input
-                    type="file"
-                    id="thumbnail"
-                    accept="image/*"
-                    onChange={handleThumbnailChange}
-                    style={{ display: 'none' }}
-                  />
-                  <Button
-                    component="label"
-                    htmlFor="thumbnail"
-                    variant="outlined"
-                    startIcon={<ImageIcon />}
-                    sx={{ alignSelf: 'flex-start' }}
-                  >
-                    Chọn ảnh thumbnail
-                  </Button>
-
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      <strong>Kích thước khuyến nghị:</strong> 1280x720px<br />
-                      <strong>Định dạng:</strong> JPG, PNG<br />
-                      <strong>Kích thước tối đa:</strong> 5MB
-                    </Typography>
-                  </Alert>
-                </Stack>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        {/* Section Management */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EditIcon color="primary" />
-              Quản lý các section
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Bật/tắt các section để tùy chỉnh giao diện khóa học
-            </Typography>
-
-            <Stack spacing={2}>
-              {sections.map((section) => (
-                <Paper key={section.id} sx={{ p: 2, border: '1px solid', borderColor: 'grey.200' }}>
-                  <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Typography variant="h6" sx={{ fontSize: '1.2rem' }}>
-                        {section.icon}
-                      </Typography>
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {section.title}
-                        </Typography>
-                        {section.type === 'custom' && (
-                          <Chip label="Tùy chỉnh" size="small" color="secondary" />
-                        )}
-                      </Box>
-                    </Stack>
-
-                    <Stack direction="row" spacing={1}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={section.visible}
-                            onChange={() => section.visible ? removeSection(section.id) : addSection(section.id)}
-                            color="primary"
-                          />
-                        }
-                        label={section.visible ? "Hiển thị" : "Ẩn"}
-                        labelPlacement="start"
-                      />
-                      {section.type === 'custom' && (
-                        <IconButton
-                          onClick={() => deleteSection(section.id)}
-                          color="error"
-                          size="small"
-                          title={`Xóa section ${section.title}`}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      )}
-                    </Stack>
-                  </Stack>
-                </Paper>
-              ))}
-            </Stack>
-
-            {/* Add New Section */}
-            <Box sx={{ mt: 3 }}>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => setShowAddSectionForm(!showAddSectionForm)}
-                sx={{ mb: 2 }}
-              >
-                {showAddSectionForm ? 'Hủy' : 'Thêm section mới'}
-              </Button>
-
-              {showAddSectionForm && (
-                <Paper sx={{ p: 3, border: '1px solid', borderColor: 'primary.main' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                    Tạo section mới
-                  </Typography>
-
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid item xs={12} md={6}>
-                      <FormControl fullWidth>
-                        <InputLabel>Icon</InputLabel>
-                        <Select
-                          value={newSection.icon}
-                          onChange={(e) => setNewSection(prev => ({ ...prev, icon: e.target.value }))}
-                          label="Icon"
-                          MenuProps={{ disableScrollLock: true }}
-                        >
-                          <MenuItem value="📝">📝 Văn bản</MenuItem>
-                          <MenuItem value="📚">📚 Tài liệu</MenuItem>
-                          <MenuItem value="🎬">🎬 Video</MenuItem>
-                          <MenuItem value="🔗">🔗 Liên kết</MenuItem>
-                          <MenuItem value="📊">📊 Thống kê</MenuItem>
-                          <MenuItem value="💡">💡 Gợi ý</MenuItem>
-                          <MenuItem value="⚠️">⚠️ Lưu ý</MenuItem>
-                          <MenuItem value="✅">✅ Checklist</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Tên section"
-                        value={newSection.title}
-                        onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Nhập tên section mới"
-                        required
-                      />
-                    </Grid>
-                  </Grid>
-
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={addNewSection}
-                    disabled={!newSection.title.trim()}
-                  >
-                    Tạo section mới
-                  </Button>
-                </Paper>
-              )}
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Tags */}
-        {sections.find(s => s.id === 'tags')?.visible && (
+      {/* Form */}
+      <Grid container spacing={3}>
+        {/* Main Information */}
+        <Grid item xs={12} md={8}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  🏷️ Tags
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setFormData(prev => ({ ...prev, tags: [] }))}
-                  size="small"
-                >
-                  Xóa tất cả
-                </Button>
-              </Stack>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                Thông tin cơ bản
+              </Typography>
 
-              <Stack spacing={2}>
-                {(formData.tags || []).map((tag, index) => (
-                  <Stack key={index} direction="row" spacing={1} alignItems="center">
+              <Stack spacing={3}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Tên khóa học"
+                  value={formData.title}
+                  onChange={(e) => handleChange('title', e.target.value)}
+                  placeholder="Nhập tên khóa học..."
+                />
+
+                <TextField
+                  fullWidth
+                  required
+                  multiline
+                  rows={6}
+                  label="Mô tả khóa học"
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  placeholder="Mô tả chi tiết về khóa học..."
+                />
+
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Mô tả ngắn"
+                  value={formData.shortDescription}
+                  onChange={(e) => handleChange('shortDescription', e.target.value)}
+                  placeholder="Mô tả ngắn gọn về khóa học (1-2 câu)..."
+                  helperText="Mô tả ngắn sẽ hiển thị trên thẻ khóa học và kết quả tìm kiếm"
+                />
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth required>
+                      <InputLabel>Lĩnh vực</InputLabel>
+                      <Select
+                        value={formData.domain}
+                        onChange={(e) => handleChange('domain', e.target.value)}
+                        label="Lĩnh vực"
+                        disabled={loadingDomains}
+                        MenuProps={{ disableScrollLock: true }}
+                      >
+                        {loadingDomains ? (
+                          <MenuItem disabled>Đang tải...</MenuItem>
+                        ) : availableDomains.length > 0 ? (
+                          availableDomains.map((domain) => (
+                            <MenuItem key={domain} value={domain}>
+                              {domain}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>Không có lĩnh vực nào</MenuItem>
+                        )}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth required>
+                      <InputLabel>Cấp độ</InputLabel>
+                      <Select
+                        value={formData.level}
+                        onChange={(e) => handleChange('level', e.target.value)}
+                        label="Cấp độ"
+                        MenuProps={{ disableScrollLock: true }}
+                      >
+                        <MenuItem value="beginner">Cơ bản</MenuItem>
+                        <MenuItem value="intermediate">Trung cấp</MenuItem>
+                        <MenuItem value="advanced">Nâng cao</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
-                      value={tag}
-                      onChange={(e) => handleTagChange(index, e.target.value)}
-                      placeholder="Nhập tag"
-                      variant="outlined"
+                      type="number"
+                      label="Giá hiện tại (VND)"
+                      value={formData.price}
+                      onChange={(e) => handleChange('price', Number(e.target.value))}
+                      disabled={formData.isFree}
+                      InputProps={{ inputProps: { min: 0 } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Giá gốc (VND)"
+                      value={formData.originalPrice}
+                      onChange={(e) => handleChange('originalPrice', Number(e.target.value))}
+                      disabled={formData.isFree}
+                      InputProps={{ inputProps: { min: 0 } }}
+                      helperText="Giá gốc trước khi giảm giá"
+                    />
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Phần trăm giảm giá (%)"
+                      value={formData.discountPercentage}
+                      onChange={(e) => handleChange('discountPercentage', Number(e.target.value))}
+                      disabled={formData.isFree}
+                      InputProps={{ inputProps: { min: 0, max: 100 } }}
+                      helperText="Từ 0-100%"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Thời lượng (giờ)"
+                      value={formData.duration}
+                      onChange={(e) => handleChange('duration', Number(e.target.value))}
+                      InputProps={{ inputProps: { min: 0 } }}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Số học viên tối đa"
+                      value={formData.maxStudents}
+                      onChange={(e) => handleChange('maxStudents', Number(e.target.value))}
+                      InputProps={{ inputProps: { min: 0 } }}
+                      helperText="Để trống hoặc 0 = không giới hạn"
+                    />
+                  </Grid>
+                </Grid>
+
+                <FormControl fullWidth>
+                  <InputLabel>Ngôn ngữ</InputLabel>
+                  <Select
+                    value={formData.language}
+                    onChange={(e) => handleChange('language', e.target.value)}
+                    label="Ngôn ngữ"
+                    MenuProps={{ disableScrollLock: true }}
+                  >
+                    <MenuItem value="vi">Tiếng Việt</MenuItem>
+                    <MenuItem value="en">English</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Stack direction="row" spacing={2}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.isFree}
+                        onChange={(e) => {
+                          handleChange('isFree', e.target.checked);
+                          if (e.target.checked) handleChange('price', 0);
+                        }}
+                      />
+                    }
+                    label="Khóa học miễn phí"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.certificateAvailable}
+                        onChange={(e) => handleChange('certificateAvailable', e.target.checked)}
+                      />
+                    }
+                    label="Có chứng chỉ"
+                  />
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {/* Tags */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Tags 🏷️
+              </Typography>
+              <Stack spacing={2}>
+                {formData.tags.map((tag, index) => (
+                  <Stack key={index} direction="row" spacing={1}>
+                    <TextField
+                      fullWidth
                       size="small"
+                      value={tag}
+                      onChange={(e) => handleArrayChange('tags', index, e.target.value)}
+                      placeholder="Nhập tag..."
                     />
                     <IconButton
-                      onClick={() => removeTag(index)}
                       color="error"
-                      size="small"
+                      onClick={() => handleRemoveArrayItem('tags', index)}
+                      disabled={formData.tags.length === 1}
                     >
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
                 ))}
                 <Button
-                  variant="outlined"
                   startIcon={<AddIcon />}
-                  onClick={addTag}
-                  sx={{ alignSelf: 'flex-start' }}
+                  onClick={() => handleAddArrayItem('tags')}
+                  variant="outlined"
                 >
                   Thêm tag
                 </Button>
               </Stack>
             </CardContent>
           </Card>
-        )}
 
-        {/* Requirements */}
-        {sections.find(s => s.id === 'requirements')?.visible && (
+          {/* Requirements */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  📋 Yêu cầu đầu vào
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setFormData(prev => ({ ...prev, requirements: [] }))}
-                  size="small"
-                >
-                  Xóa tất cả
-                </Button>
-              </Stack>
-
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Yêu cầu đầu vào 📋
+              </Typography>
               <Stack spacing={2}>
-                {(formData.requirements || []).map((req, index) => (
-                  <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
+                {formData.requirements.map((req, index) => (
+                  <Stack key={index} direction="row" spacing={1}>
                     <TextField
                       fullWidth
-                      value={req}
-                      onChange={(e) => handleRequirementChange(index, e.target.value)}
-                      placeholder="Nhập yêu cầu"
-                      multiline
-                      rows={2}
-                      variant="outlined"
                       size="small"
+                      value={req}
+                      onChange={(e) => handleArrayChange('requirements', index, e.target.value)}
+                      placeholder="Nhập yêu cầu..."
                     />
                     <IconButton
-                      onClick={() => removeRequirement(index)}
                       color="error"
-                      size="small"
-                      sx={{ mt: 0.5 }}
+                      onClick={() => handleRemoveArrayItem('requirements', index)}
+                      disabled={formData.requirements.length === 1}
                     >
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
                 ))}
                 <Button
-                  variant="outlined"
                   startIcon={<AddIcon />}
-                  onClick={addRequirement}
-                  sx={{ alignSelf: 'flex-start' }}
+                  onClick={() => handleAddArrayItem('requirements')}
+                  variant="outlined"
                 >
                   Thêm yêu cầu
                 </Button>
               </Stack>
             </CardContent>
           </Card>
-        )}
 
-        {/* Learning Objectives */}
-        {sections.find(s => s.id === 'objectives')?.visible && (
+          {/* Objectives */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  🎯 Mục tiêu học tập
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setFormData(prev => ({ ...prev, objectives: [] }))}
-                  size="small"
-                >
-                  Xóa tất cả
-                </Button>
-              </Stack>
-
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Mục tiêu học tập 🎯
+              </Typography>
               <Stack spacing={2}>
-                {(formData.objectives || []).map((obj, index) => (
-                  <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
+                {formData.objectives.map((obj, index) => (
+                  <Stack key={index} direction="row" spacing={1}>
                     <TextField
                       fullWidth
-                      value={obj}
-                      onChange={(e) => handleObjectiveChange(index, e.target.value)}
-                      placeholder="Nhập mục tiêu học tập"
-                      multiline
-                      rows={2}
-                      variant="outlined"
                       size="small"
+                      value={obj}
+                      onChange={(e) => handleArrayChange('objectives', index, e.target.value)}
+                      placeholder="Nhập mục tiêu..."
                     />
                     <IconButton
-                      onClick={() => removeObjective(index)}
                       color="error"
-                      size="small"
-                      sx={{ mt: 0.5 }}
+                      onClick={() => handleRemoveArrayItem('objectives', index)}
+                      disabled={formData.objectives.length === 1}
                     >
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
                 ))}
                 <Button
-                  variant="outlined"
                   startIcon={<AddIcon />}
-                  onClick={addObjective}
-                  sx={{ alignSelf: 'flex-start' }}
+                  onClick={() => handleAddArrayItem('objectives')}
+                  variant="outlined"
                 >
                   Thêm mục tiêu
                 </Button>
               </Stack>
             </CardContent>
           </Card>
-        )}
 
-        {/* Custom Sections */}
-        {sections
-          .filter(section => section.type === 'custom' && section.visible)
-          .map((section) => (
-            <Card key={section.id} sx={{ mb: 3 }}>
-              <CardContent>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {section.icon} {section.title}
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => setSections(prev => prev.map(s =>
-                      s.id === section.id ? { ...s, data: [] } : s
-                    ))}
-                    size="small"
-                  >
-                    Xóa tất cả
-                  </Button>
-                </Stack>
+          {/* Benefits */}
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Lợi ích khóa học 🌟
+              </Typography>
+              <Stack spacing={2}>
+                {formData.benefits.map((benefit, index) => (
+                  <Stack key={index} direction="row" spacing={1}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={benefit}
+                      onChange={(e) => handleArrayChange('benefits', index, e.target.value)}
+                      placeholder="Nhập lợi ích..."
+                    />
+                    <IconButton
+                      color="error"
+                      onClick={() => handleRemoveArrayItem('benefits', index)}
+                      disabled={formData.benefits.length === 1}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
+                ))}
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={() => handleAddArrayItem('benefits')}
+                  variant="outlined"
+                >
+                  Thêm lợi ích
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
 
-                <Stack spacing={2}>
-                  {section.data.map((item, index) => (
-                    <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
-                      <TextField
-                        fullWidth
-                        value={item}
-                        onChange={(e) => handleCustomSectionChange(section.id, index, e.target.value)}
-                        placeholder={`Nhập ${section.title.toLowerCase()}`}
-                        multiline
-                        rows={2}
-                        variant="outlined"
-                        size="small"
-                      />
-                      <IconButton
-                        onClick={() => removeCustomSectionItem(section.id, index)}
-                        color="error"
-                        size="small"
-                        sx={{ mt: 0.5 }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Stack>
-                  ))}
-                  <Button
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={() => addCustomSectionItem(section.id)}
-                    sx={{ alignSelf: 'flex-start' }}
-                  >
-                    Thêm {section.title.toLowerCase()}
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Sidebar */}
+        <Grid item xs={12} md={4}>
+          {/* Thumbnail */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Thumbnail
+              </Typography>
 
-        {/* Actions */}
-        <Card>
-          <CardActions sx={{ justifyContent: 'space-between', p: 3 }}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              onClick={() => navigate('/teacher/courses')}
-              size="large"
-            >
-              Quay lại
-            </Button>
+              {thumbnailPreview && (
+                <Box
+                  component="img"
+                  src={thumbnailPreview}
+                  alt="Thumbnail preview"
+                  sx={{
+                    width: '100%',
+                    height: 200,
+                    objectFit: 'cover',
+                    borderRadius: 2,
+                    mb: 2
+                  }}
+                />
+              )}
 
-            <Stack direction="row" spacing={2}>
               <Button
-                variant="contained"
-                color="secondary"
-                startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
-                onClick={handleSave}
-                disabled={saving}
-                size="large"
+                fullWidth
+                variant="outlined"
+                component="label"
+                startIcon={uploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+                disabled={uploading}
               >
-                {saving ? 'Đang lưu...' : (!id || id === 'new' ? 'Tạo khóa học' : 'Lưu bản nháp')}
+                {uploading ? 'Đang upload...' : 'Upload Thumbnail'}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                />
               </Button>
+
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                Định dạng: JPG, PNG. Kích thước tối đa: 5MB
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Stack spacing={2}>
               <Button
+                fullWidth
                 variant="contained"
-                startIcon={saving ? <CircularProgress size={20} /> : <PublishIcon />}
-                onClick={handlePublish}
-                disabled={saving}
-                size="large"
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                  },
-                }}
+                startIcon={<SaveIcon />}
+                onClick={handleSaveDraft}
+                disabled={saving || uploading}
               >
-                {saving ? 'Đang xuất bản...' : 'Xuất bản khóa học'}
+                {saving ? 'Đang lưu...' : isEditMode ? 'Lưu thay đổi' : 'Lưu bản nháp'}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="contained"
+                color="success"
+                startIcon={<PublishIcon />}
+                onClick={handlePublish}
+                disabled={saving || uploading}
+              >
+                {saving ? 'Đang xử lý...' : 'Gửi để phê duyệt'}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => navigate('/teacher/courses')}
+              >
+                Hủy
               </Button>
             </Stack>
-          </CardActions>
-        </Card>
-      </Box>
+          </Paper>
+
+          {/* Help */}
+          <Alert severity="info">
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+              💡 Mẹo
+            </Typography>
+            <Typography variant="caption" component="div">
+              • Tên khóa học ngắn gọn, súc tích
+            </Typography>
+            <Typography variant="caption" component="div">
+              • Mô tả chi tiết nội dung khóa học
+            </Typography>
+            <Typography variant="caption" component="div">
+              • Thumbnail hấp dẫn để thu hút học viên
+            </Typography>
+          </Alert>
+        </Grid>
+      </Grid>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

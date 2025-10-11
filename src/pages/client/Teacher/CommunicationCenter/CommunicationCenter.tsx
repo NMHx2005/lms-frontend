@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link as RouterLink } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   Box,
   Container,
@@ -23,7 +24,8 @@ import {
   Switch,
   FormControlLabel,
   IconButton,
-  Divider
+  Divider,
+  CircularProgress
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -34,31 +36,32 @@ import {
   Replay as ReplayIcon,
   Archive as ArchiveIcon
 } from '@mui/icons-material';
+import * as messageService from '@/services/client/message.service';
+import * as teacherCoursesService from '@/services/client/teacher-courses.service';
 
-interface Message {
+interface MessageDisplay {
   _id: string;
-  type: 'announcement' | 'personal' | 'course' | 'system';
-  title: string;
+  subject: string;
   content: string;
-  sender: {
+  senderId: {
     _id: string;
-    name: string;
-    avatar: string;
-    role: 'teacher' | 'student' | 'admin';
+    firstName: string;
+    lastName: string;
+    avatar?: string;
   };
-  recipients: {
+  recipientId: {
     _id: string;
-    name: string;
-    email: string;
-    courseId?: string;
-  }[];
-  courseId?: string;
-  courseName?: string;
-  status: 'draft' | 'sent' | 'read' | 'archived';
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  isRead: boolean;
   createdAt: string;
-  sentAt?: string;
-  readAt?: string;
-  attachments?: string[];
+  attachments?: Array<{
+    url: string;
+    name: string;
+    type: string;
+  }>;
 }
 
 interface Course {
@@ -82,7 +85,7 @@ const CommunicationCenter: React.FC = () => {
   const courseId = searchParams.get('course');
 
   const [activeTab, setActiveTab] = useState<'compose' | 'sent' | 'received' | 'drafts' | 'templates'>('compose');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageDisplay[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,37 +104,66 @@ const CommunicationCenter: React.FC = () => {
   });
 
   useEffect(() => {
-    // Mock data - replace with API call
-    setLoading(true);
-    setTimeout(() => {
-      const mockCourses: Course[] = [
-        { _id: '1', title: 'React Advanced Patterns', thumbnail: '/images/course1.jpg', studentCount: 156 },
-        { _id: '2', title: 'Node.js Backend Development', thumbnail: '/images/course2.jpg', studentCount: 89 },
-        { _id: '3', title: 'UI/UX Design Fundamentals', thumbnail: '/images/course3.jpg', studentCount: 134 }
-      ];
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-      const mockStudents: Student[] = [
-        { _id: '1', name: 'Nguyễn Văn A', email: 'nguyenvana@email.com', avatar: '/images/avatar1.jpg', courseId: '1', courseName: 'React Advanced Patterns' },
-        { _id: '2', name: 'Trần Thị B', email: 'tranthib@email.com', avatar: '/images/avatar2.jpg', courseId: '1', courseName: 'React Advanced Patterns' },
-        { _id: '3', name: 'Lê Văn C', email: 'levanc@email.com', avatar: '/images/avatar3.jpg', courseId: '2', courseName: 'Node.js Backend Development' }
-      ];
+        // Fetch teacher's courses
+        const coursesRes = await teacherCoursesService.getTeacherCourses({ limit: 100 });
+        if (coursesRes.success) {
+          const formattedCourses = coursesRes.data.map((c: any) => ({
+            _id: c._id,
+            title: c.title,
+            thumbnail: c.thumbnail || '/images/default-course.jpg',
+            studentCount: c.studentsCount || 0
+          }));
+          setCourses(formattedCourses);
+        }
 
-      const mockMessages: Message[] = [
-        { _id: '1', type: 'announcement', title: 'Thông báo về bài tập mới', content: 'Các bạn hãy hoàn thành bài tập React Hooks trước ngày 25/06/2024 nhé!', sender: { _id: 'teacher1', name: 'Giảng viên Nguyễn', avatar: '/images/teacher1.jpg', role: 'teacher' }, recipients: mockStudents, courseId: '1', courseName: 'React Advanced Patterns', status: 'sent', createdAt: '2024-06-20T10:00:00Z', sentAt: '2024-06-20T10:00:00Z' },
-        { _id: '2', type: 'personal', title: 'Phản hồi về bài tập', content: 'Bạn đã làm rất tốt bài tập về useState và useEffect!', sender: { _id: 'teacher1', name: 'Giảng viên Nguyễn', avatar: '/images/teacher1.jpg', role: 'teacher' }, recipients: [mockStudents[0]], status: 'sent', createdAt: '2024-06-19T15:30:00Z', sentAt: '2024-06-19T15:30:00Z' }
-      ];
+        // Fetch sent messages
+        const messagesRes = await messageService.getMessages({ type: 'sent', limit: 50 });
+        if (messagesRes.success) {
+          setMessages(messagesRes.data);
+        }
 
-      setCourses(mockCourses);
-      setStudents(mockStudents);
-      setMessages(mockMessages);
-      setLoading(false);
-    }, 800);
+        // Fetch students from teacher's courses (simplified)
+        // For now, leave empty. User needs to select from enrolled students per course
+        // TODO: Add API to get all enrolled students across teacher's courses
+        setStudents([]);
+
+      } catch (error: any) {
+        console.error('Error loading communication data:', error);
+        toast.error(error.response?.data?.message || 'Lỗi khi tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleComposeSubmit = (e: React.FormEvent) => {
+  const handleComposeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle message composition
-    console.log('Composing message:', composeData);
+
+    try {
+      // Validate title and content
+      if (!composeData.title.trim()) {
+        toast.error('Vui lòng nhập tiêu đề tin nhắn');
+        return;
+      }
+
+      if (!composeData.content.trim()) {
+        toast.error('Vui lòng nhập nội dung tin nhắn');
+        return;
+      }
+
+      // For demo: disable sending until students list is implemented
+      toast.warning('Chức năng gửi tin nhắn đang được phát triển. Vui lòng sử dụng trang "Quản lý học viên" để liên hệ trực tiếp.');
+      return;
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi gửi tin nhắn');
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,21 +175,12 @@ const CommunicationCenter: React.FC = () => {
     setComposeData(prev => ({ ...prev, attachments: prev.attachments.filter((_, i) => i !== index) }));
   };
 
-  const getMessageTypeChip = (type: Message['type']) => {
-    const map: Record<Message['type'], { label: string; color: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'info' }> = {
-      announcement: { label: 'Thông báo', color: 'primary' },
-      personal: { label: 'Cá nhân', color: 'success' },
-      course: { label: 'Khóa học', color: 'secondary' },
-      system: { label: 'Hệ thống', color: 'info' }
-    };
-    const cfg = map[type];
-    return <Chip size="small" color={cfg.color} label={cfg.label} />;
-  };
 
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ py: 6 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
           <Typography variant="h6" color="text.secondary">Đang tải trung tâm giao tiếp...</Typography>
         </Box>
       </Container>
@@ -237,23 +260,34 @@ const CommunicationCenter: React.FC = () => {
 
                 {composeData.recipientType === 'specific' && (
                   <Grid item xs={12}>
-                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                      {students.map(s => (
-                        <Chip
-                          key={s._id}
-                          avatar={<Avatar src={s.avatar} />}
-                          label={s.name}
-                          color={composeData.selectedStudents.includes(s._id) ? 'primary' : 'default'}
-                          variant={composeData.selectedStudents.includes(s._id) ? 'filled' : 'outlined'}
-                          onClick={() => setComposeData(prev => ({
-                            ...prev,
-                            selectedStudents: prev.selectedStudents.includes(s._id)
-                              ? prev.selectedStudents.filter(id => id !== s._id)
-                              : [...prev.selectedStudents, s._id]
-                          }))}
-                        />
-                      ))}
-                    </Stack>
+                    {students.length === 0 ? (
+                      <Card>
+                        <CardContent>
+                          <Typography color="text.secondary">
+                            Chức năng chọn học viên cụ thể đang được phát triển.
+                            Vui lòng sử dụng "Theo khóa học" hoặc liên hệ học viên trực tiếp qua trang "Quản lý học viên".
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                        {students.map(s => (
+                          <Chip
+                            key={s._id}
+                            avatar={<Avatar src={s.avatar} />}
+                            label={s.name}
+                            color={composeData.selectedStudents.includes(s._id) ? 'primary' : 'default'}
+                            variant={composeData.selectedStudents.includes(s._id) ? 'filled' : 'outlined'}
+                            onClick={() => setComposeData(prev => ({
+                              ...prev,
+                              selectedStudents: prev.selectedStudents.includes(s._id)
+                                ? prev.selectedStudents.filter(id => id !== s._id)
+                                : [...prev.selectedStudents, s._id]
+                            }))}
+                          />
+                        ))}
+                      </Stack>
+                    )}
                   </Grid>
                 )}
               </Grid>
@@ -290,42 +324,54 @@ const CommunicationCenter: React.FC = () => {
       {activeTab === 'sent' && (
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Tin nhắn đã gửi</Typography>
-          <Grid container spacing={2}>
-            {messages.filter(m => m.status === 'sent').map((message) => (
-              <Grid item xs={12} md={6} key={message._id}>
-                <Card>
-                  <CardContent>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        {getMessageTypeChip(message.type)}
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{message.title}</Typography>
+          {messages.length === 0 ? (
+            <Card><CardContent><Typography color="text.secondary">Chưa có tin nhắn nào được gửi</Typography></CardContent></Card>
+          ) : (
+            <Grid container spacing={2}>
+              {messages.map((message) => (
+                <Grid item xs={12} md={6} key={message._id}>
+                  <Card>
+                    <CardContent>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{message.subject}</Typography>
+                        <Chip size="small" label={new Date(message.createdAt).toLocaleDateString('vi-VN')} />
                       </Stack>
-                      <Chip size="small" label={new Date(message.sentAt || message.createdAt).toLocaleDateString('vi-VN')} />
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{message.content}</Typography>
-                    <Stack direction="row" spacing={2}>
-                      <Chip size="small" label={`Gửi đến: ${message.recipients.length}`} />
-                      {message.courseName && <Chip size="small" label={message.courseName} />}
-                    </Stack>
-                  </CardContent>
-                  <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
-                    <IconButton size="small" title="Xem chi tiết"><VisibilityIcon /></IconButton>
-                    <IconButton size="small" title="Gửi lại"><ReplayIcon /></IconButton>
-                    <IconButton size="small" title="Lưu trữ"><ArchiveIcon /></IconButton>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {message.content.substring(0, 100)}{message.content.length > 100 ? '...' : ''}
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Avatar src={message.recipientId?.avatar} sx={{ width: 24, height: 24 }} />
+                        <Typography variant="caption" color="text.secondary">
+                          Gửi đến: {message.recipientId?.firstName || 'N/A'} {message.recipientId?.lastName || ''}
+                        </Typography>
+                        {message.isRead && <Chip size="small" label="Đã đọc" color="success" />}
+                      </Stack>
+                    </CardContent>
+                    <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
+                      <IconButton size="small" title="Xem chi tiết"><VisibilityIcon /></IconButton>
+                      <IconButton size="small" title="Lưu trữ" onClick={async () => {
+                        try {
+                          await messageService.archiveMessage(message._id);
+                          toast.success('Đã lưu trữ tin nhắn');
+                          // Refresh messages
+                          const res = await messageService.getMessages({ type: 'sent', limit: 50 });
+                          if (res.success) setMessages(res.data);
+                        } catch (error) {
+                          toast.error('Lỗi khi lưu trữ tin nhắn');
+                        }
+                      }}><ArchiveIcon /></IconButton>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Box>
       )}
 
-      {/* Empty states */}
+      {/* Received */}
       {activeTab === 'received' && (
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Tin nhắn đã nhận</Typography>
-          <Card><CardContent><Typography color="text.secondary">Chưa có tin nhắn nào được nhận</Typography></CardContent></Card>
-        </Box>
+        <ReceivedMessages />
       )}
 
       {activeTab === 'drafts' && (
@@ -364,6 +410,87 @@ const CommunicationCenter: React.FC = () => {
         <Button component={RouterLink} to="/teacher/earnings" variant="outlined">Xem thu nhập</Button>
       </Stack>
     </Container>
+  );
+};
+
+// Received Messages Component
+const ReceivedMessages: React.FC = () => {
+  const [receivedMessages, setReceivedMessages] = useState<MessageDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        setLoading(true);
+        const response = await messageService.getMessages({ type: 'inbox', limit: 50 });
+        if (response.success) {
+          setReceivedMessages(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading received messages:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessages();
+  }, []);
+
+  if (loading) {
+    return <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress /></Box>;
+  }
+
+  return (
+    <Box>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Tin nhắn đã nhận</Typography>
+      {receivedMessages.length === 0 ? (
+        <Card><CardContent><Typography color="text.secondary">Chưa có tin nhắn nào được nhận</Typography></CardContent></Card>
+      ) : (
+        <Grid container spacing={2}>
+          {receivedMessages.map((message) => (
+            <Grid item xs={12} md={6} key={message._id}>
+              <Card sx={{ bgcolor: message.isRead ? 'background.paper' : 'action.hover' }}>
+                <CardContent>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: message.isRead ? 400 : 600 }}>
+                      {message.subject}
+                    </Typography>
+                    <Chip size="small" label={new Date(message.createdAt).toLocaleDateString('vi-VN')} />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {message.content.substring(0, 100)}{message.content.length > 100 ? '...' : ''}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Avatar src={message.senderId?.avatar} sx={{ width: 24, height: 24 }} />
+                    <Typography variant="caption" color="text.secondary">
+                      Từ: {message.senderId?.firstName || 'N/A'} {message.senderId?.lastName || ''}
+                    </Typography>
+                    {!message.isRead && <Chip size="small" label="Chưa đọc" color="primary" />}
+                  </Stack>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
+                  {!message.isRead && (
+                    <Button size="small" onClick={async () => {
+                      try {
+                        await messageService.markAsRead(message._id);
+                        toast.success('Đã đánh dấu là đã đọc');
+                        // Refresh
+                        const res = await messageService.getMessages({ type: 'inbox', limit: 50 });
+                        if (res.success) setReceivedMessages(res.data);
+                      } catch (error) {
+                        toast.error('Lỗi khi đánh dấu');
+                      }
+                    }}>Đánh dấu đã đọc</Button>
+                  )}
+                  <IconButton size="small" title="Xem chi tiết"><VisibilityIcon /></IconButton>
+                  <IconButton size="small" title="Trả lời"><ReplayIcon /></IconButton>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Box>
   );
 };
 

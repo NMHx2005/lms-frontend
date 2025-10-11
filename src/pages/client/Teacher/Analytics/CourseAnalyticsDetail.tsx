@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
     Box,
     Container,
@@ -13,7 +14,8 @@ import {
     Stack,
     Button,
     Chip,
-    Divider
+    Divider,
+    CircularProgress
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
@@ -22,6 +24,7 @@ import {
     Visibility as VisibilityIcon,
     AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
+import * as courseAnalyticsService from '@/services/client/course-analytics.service';
 
 interface RevenuePoint { month: string; revenue: number; students: number }
 
@@ -43,36 +46,41 @@ const CourseAnalyticsDetail: React.FC = () => {
     const [series, setSeries] = useState<RevenuePoint[]>([]);
 
     useEffect(() => {
-        setLoading(true);
-        setTimeout(() => {
-            const mockCourse: CourseSummary = {
-                _id: id || 'course1',
-                name: 'React Advanced Patterns',
-                thumbnail: '/images/course1.jpg',
-                students: 234,
-                rating: 4.8,
-                revenue: 8900,
-                completionRate: 82,
-                views: 15420
-            };
-            const mockSeries: RevenuePoint[] = [
-                { month: 'Jan', revenue: 1200, students: 35 },
-                { month: 'Feb', revenue: 1500, students: 38 },
-                { month: 'Mar', revenue: 1300, students: 33 },
-                { month: 'Apr', revenue: 1700, students: 41 },
-                { month: 'May', revenue: 1600, students: 39 },
-                { month: 'Jun', revenue: 2200, students: 48 }
-            ];
-            setCourse(mockCourse);
-            setSeries(mockSeries);
-            setLoading(false);
-        }, 500);
+        const fetchData = async () => {
+            if (!id) return;
+
+            try {
+                setLoading(true);
+
+                // Get course details
+                const courseResponse = await courseAnalyticsService.getCourseAnalyticsDetail(id);
+                if (courseResponse.success) {
+                    setCourse(courseResponse.data);
+                }
+
+                // Get enrollment trends
+                const trendsResponse = await courseAnalyticsService.getCourseEnrollmentTrends(id);
+                if (trendsResponse.success) {
+                    setSeries(trendsResponse.data);
+                }
+            } catch (error: any) {
+                console.error('Error loading course analytics detail:', error);
+                toast.error(error.response?.data?.message || 'Lỗi khi tải dữ liệu analytics');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
     }, [id]);
 
     if (loading || !course) {
         return (
             <Container maxWidth="xl" sx={{ py: 3 }}>
-                <Typography>Đang tải...</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+                    <CircularProgress size={60} sx={{ mb: 3 }} />
+                    <Typography variant="h6" color="text.secondary">Đang tải dữ liệu analytics...</Typography>
+                </Box>
             </Container>
         );
     }
@@ -107,7 +115,7 @@ const CourseAnalyticsDetail: React.FC = () => {
                             </Stack>
                         </CardContent>
                         <CardActions>
-                            <Chip icon={<AttachMoneyIcon />} label={`Thu nhập ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(course.revenue)}`} color="success" />
+                            <Chip icon={<AttachMoneyIcon />} label={`Thu nhập ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.revenue)}`} color="success" />
                             <Chip label={`Hoàn thành ${course.completionRate}%`} />
                         </CardActions>
                     </Card>

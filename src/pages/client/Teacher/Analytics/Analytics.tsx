@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { AnalyticsData } from '../../../../types/index';
+import * as teacherAnalyticsService from '@/services/client/teacher-analytics.service';
 import {
   Box,
   Container,
@@ -15,8 +17,7 @@ import {
   Chip,
   CircularProgress,
   Stack,
-  LinearProgress,
-  Divider
+  LinearProgress
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -26,6 +27,19 @@ import {
   Star as StarIcon,
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Line,
+  Legend,
+  ComposedChart,
+  Area
+} from 'recharts';
 
 const Analytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -33,126 +47,109 @@ const Analytics: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   // const [selectedMetric, setSelectedMetric] = useState<'revenue' | 'students' | 'engagement'>('revenue');
 
-  // Mock data - replace with API call
-  useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const mockData: AnalyticsData = {
-        overview: {
-          totalStudents: 1247,
-          totalCourses: 23,
-          totalRevenue: 45678,
-          totalViews: 89234,
-          averageRating: 4.7,
-          completionRate: 78.5
-        },
-        revenueData: [
-          { month: 'Jan', revenue: 3200, students: 45, courses: 2 },
-          { month: 'Feb', revenue: 4100, students: 52, courses: 3 },
-          { month: 'Mar', revenue: 3800, students: 48, courses: 2 },
-          { month: 'Apr', revenue: 5200, students: 67, courses: 4 },
-          { month: 'May', revenue: 4800, students: 61, courses: 3 },
-          { month: 'Jun', revenue: 6100, students: 78, courses: 5 }
-        ],
-        coursePerformance: [
-          {
-            _id: 'course1',
-            name: 'React Advanced Patterns',
-            students: 234,
-            rating: 4.8,
-            revenue: 8900,
-            completionRate: 82,
-            views: 15420,
-            thumbnail: '/images/course1.jpg'
+  // Load analytics data from API
+  const loadAnalyticsData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      // Map timeRange to API format
+      const apiTimeRange = timeRange === '7d' ? '1month' :
+        timeRange === '30d' ? '1month' :
+          timeRange === '90d' ? '3months' : '1year';
+
+      // Get dashboard data first (faster)
+      const dashboardData = await teacherAnalyticsService.getDashboardOverview();
+
+      // Then get analytics data (slower, may timeout)
+      let analyticsData = null;
+      try {
+        analyticsData = await teacherAnalyticsService.getAnalyticsData(apiTimeRange);
+      } catch (analyticsError: any) {
+        console.warn('Analytics data timeout or error, using dashboard data only:', analyticsError.message);
+        // Continue with just dashboard data
+      }
+
+      if (dashboardData.success) {
+        // Use dashboard stats for overview
+        const stats = dashboardData.data?.statistics || {};
+        const courseStats = stats.courses || {};
+        const studentStats = stats.students || {};
+
+        // Transform API data to match AnalyticsData interface
+        const transformedData: AnalyticsData = {
+          overview: {
+            totalStudents: studentStats.totalStudents || 0,
+            totalCourses: courseStats.totalCourses || 0,
+            totalRevenue: courseStats.totalRevenue || 0,
+            totalViews: 0, // TODO: Add to backend
+            averageRating: courseStats.averageRating || 0,
+            completionRate: studentStats.averageProgress || 0
           },
-          {
-            _id: 'course2',
-            name: 'Node.js Backend Development',
-            students: 189,
-            rating: 4.6,
-            revenue: 7200,
-            completionRate: 75,
-            views: 12890,
-            thumbnail: '/images/course2.jpg'
+          revenueData: analyticsData?.success ? analyticsData.data?.revenueData || [] : [],
+          coursePerformance: analyticsData?.success ? analyticsData.data?.coursePerformance || [] : [],
+          studentGrowth: analyticsData?.success ? analyticsData.data?.studentGrowth || [] : [],
+          topCourses: analyticsData?.success ? analyticsData.data?.topCourses || [] : [],
+          studentDemographics: analyticsData?.success ? analyticsData.data?.studentDemographics || {
+            ageGroups: [],
+            countries: [],
+            experienceLevels: []
+          } : {
+            ageGroups: [],
+            countries: [],
+            experienceLevels: []
           },
-          {
-            _id: 'course3',
-            name: 'UI/UX Design Fundamentals',
-            students: 156,
-            rating: 4.9,
-            revenue: 6800,
-            completionRate: 88,
-            views: 11230,
-            thumbnail: '/images/course3.jpg'
-          },
-          {
-            _id: 'course4',
-            name: 'Machine Learning Basics',
-            students: 134,
-            rating: 4.7,
-            revenue: 5900,
-            completionRate: 71,
-            views: 9870,
-            thumbnail: '/images/course4.jpg'
-          },
-          {
-            _id: 'course5',
-            name: 'Mobile App Development',
-            students: 98,
-            rating: 4.5,
-            revenue: 4200,
-            completionRate: 68,
-            views: 7650,
-            thumbnail: '/images/course5.jpg'
+          engagementMetrics: analyticsData?.success ? analyticsData.data?.engagementMetrics || {
+            averageWatchTime: 0,
+            assignmentSubmissionRate: 0,
+            discussionParticipation: 0,
+            certificateEarned: 0
+          } : {
+            averageWatchTime: 0,
+            assignmentSubmissionRate: 0,
+            discussionParticipation: 0,
+            certificateEarned: 0
           }
-        ],
-        studentGrowth: [
-          { month: 'Jan', newStudents: 45, activeStudents: 180, returningStudents: 135 },
-          { month: 'Feb', newStudents: 52, activeStudents: 195, returningStudents: 143 },
-          { month: 'Mar', newStudents: 48, activeStudents: 210, returningStudents: 162 },
-          { month: 'Apr', newStudents: 67, activeStudents: 245, returningStudents: 178 },
-          { month: 'May', newStudents: 61, activeStudents: 268, returningStudents: 207 },
-          { month: 'Jun', newStudents: 78, activeStudents: 312, returningStudents: 234 }
-        ],
-        topCourses: [
-          { _id: 'course1', name: 'React Advanced Patterns', views: 15420, enrollments: 234, rating: 4.8, revenue: 8900, thumbnail: '/images/course1.jpg' },
-          { _id: 'course2', name: 'Node.js Backend Development', views: 12890, enrollments: 189, rating: 4.6, revenue: 7200, thumbnail: '/images/course2.jpg' },
-          { _id: 'course3', name: 'UI/UX Design Fundamentals', views: 11230, enrollments: 156, rating: 4.9, revenue: 6800, thumbnail: '/images/course3.jpg' },
-          { _id: 'course4', name: 'Machine Learning Basics', views: 9870, enrollments: 134, rating: 4.7, revenue: 5900, thumbnail: '/images/course4.jpg' },
-          { _id: 'course5', name: 'Mobile App Development', views: 7650, enrollments: 98, rating: 4.5, revenue: 4200, thumbnail: '/images/course5.jpg' }
-        ],
+        };
+
+        setAnalyticsData(transformedData);
+      }
+    } catch (error: any) {
+      console.error('Error loading analytics:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải dữ liệu analytics');
+      // Set empty data on error
+      setAnalyticsData({
+        overview: {
+          totalStudents: 0,
+          totalCourses: 0,
+          totalRevenue: 0,
+          totalViews: 0,
+          averageRating: 0,
+          completionRate: 0
+        },
+        revenueData: [],
+        coursePerformance: [],
+        studentGrowth: [],
+        topCourses: [],
         studentDemographics: {
-          ageGroups: [
-            { age: '18-24', count: 456, percentage: 36.6 },
-            { age: '25-34', count: 523, percentage: 42.0 },
-            { age: '35-44', count: 189, percentage: 15.2 },
-            { age: '45+', count: 79, percentage: 6.3 }
-          ],
-          countries: [
-            { country: 'Vietnam', count: 623, percentage: 50.0 },
-            { country: 'United States', count: 187, percentage: 15.0 },
-            { country: 'Singapore', count: 124, percentage: 10.0 },
-            { country: 'Australia', count: 93, percentage: 7.5 },
-            { country: 'Others', count: 220, percentage: 17.6 }
-          ],
-          experienceLevels: [
-            { level: 'Beginner', count: 498, percentage: 40.0 },
-            { level: 'Intermediate', count: 561, percentage: 45.0 },
-            { level: 'Advanced', count: 188, percentage: 15.0 }
-          ]
+          ageGroups: [],
+          countries: [],
+          experienceLevels: []
         },
         engagementMetrics: {
-          averageWatchTime: 42.5,
-          assignmentSubmissionRate: 76.8,
-          discussionParticipation: 68.3,
-          certificateEarned: 72.1
+          averageWatchTime: 0,
+          assignmentSubmissionRate: 0,
+          discussionParticipation: 0,
+          certificateEarned: 0
         }
-      };
-
-      setAnalyticsData(mockData);
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  }, []);
+    }
+  }, [timeRange]);
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [loadAnalyticsData]);
 
   // Removed unused format helpers (inlined where needed)
 
@@ -216,7 +213,7 @@ const Analytics: React.FC = () => {
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <AttachMoneyIcon color="warning" sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(analyticsData.overview.totalRevenue)}</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(analyticsData.overview.totalRevenue)}</Typography>
               <Typography variant="body2" color="text.secondary">Tổng thu nhập</Typography>
               <Chip label="+18%" color="success" size="small" sx={{ mt: 1 }} />
             </CardContent>
@@ -254,46 +251,165 @@ const Analytics: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Charts Section (simple placeholders) */}
+      {/* Charts Section - Professional Charts */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Thu nhập & Học viên theo thời gian</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 180 }}>
-                {analyticsData.revenueData.map((d) => (
-                  <Box key={d.month} sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, width: 24 }}>
-                    <Box sx={{ width: 10, height: `${(d.revenue / 7000) * 100}%`, bgcolor: 'primary.main', borderRadius: 0.5 }} />
-                    <Box sx={{ width: 10, height: `${(d.students / 100) * 100}%`, bgcolor: 'success.main', borderRadius: 0.5 }} />
-                  </Box>
-                ))}
-              </Box>
-              <Divider sx={{ my: 1 }} />
-              <Stack direction="row" spacing={2}>
-                <Chip label="Thu nhập ($)" color="primary" size="small" />
-                <Chip label="Học viên" color="success" size="small" />
-              </Stack>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Thu nhập & Học viên theo thời gian</Typography>
+              {analyticsData.revenueData && analyticsData.revenueData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={analyticsData.revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12 }}
+                      stroke="#888"
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      orientation="left"
+                      tick={{ fontSize: 12 }}
+                      stroke="#888"
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                      label={{ value: 'Thu nhập (VND)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12 }}
+                      stroke="#888"
+                      label={{ value: 'Học viên', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => {
+                        if (name === 'revenue') {
+                          return [new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value), 'Thu nhập'];
+                        }
+                        return [value, 'Học viên'];
+                      }}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #ccc',
+                        borderRadius: 8,
+                        padding: '10px'
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ paddingTop: '10px' }}
+                      formatter={(value) => value === 'revenue' ? 'Thu nhập' : 'Học viên'}
+                    />
+                    <Area
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="revenue"
+                      fill="#5b8def"
+                      fillOpacity={0.1}
+                      stroke="none"
+                    />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="revenue"
+                      fill="#5b8def"
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={40}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="students"
+                      stroke="#4caf50"
+                      strokeWidth={3}
+                      dot={{ fill: '#4caf50', r: 5 }}
+                      activeDot={{ r: 7 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{
+                  height: 300,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  color: 'text.secondary'
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    📊 Chưa có dữ liệu
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Dữ liệu sẽ hiển thị khi có giao dịch
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Tăng trưởng học viên</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 180 }}>
-                {analyticsData.studentGrowth.map((d) => (
-                  <Box key={d.month} sx={{ width: 24 }}>
-                    <Box sx={{ height: `${(d.newStudents / 100) * 100}%`, bgcolor: 'info.light', borderRadius: 0.5 }} />
-                    <Box sx={{ height: 4 }} />
-                    <Box sx={{ height: `${(d.activeStudents / 400) * 100}%`, bgcolor: 'info.main', borderRadius: 0.5 }} />
-                  </Box>
-                ))}
-              </Box>
-              <Divider sx={{ my: 1 }} />
-              <Stack direction="row" spacing={2}>
-                <Chip label="Học viên mới" color="info" size="small" variant="outlined" />
-                <Chip label="Hoạt động" color="info" size="small" />
-              </Stack>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Tăng trưởng học viên</Typography>
+              {analyticsData.studentGrowth && analyticsData.studentGrowth.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={analyticsData.studentGrowth}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12 }}
+                      stroke="#888"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      stroke="#888"
+                      label={{ value: 'Số học viên', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => {
+                        const label = name === 'newStudents' ? 'Học viên mới' : 'Đang hoạt động';
+                        return [value, label];
+                      }}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #ccc',
+                        borderRadius: 8,
+                        padding: '10px'
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ paddingTop: '10px' }}
+                      formatter={(value) => value === 'newStudents' ? 'Học viên mới' : 'Đang hoạt động'}
+                    />
+                    <Bar
+                      dataKey="newStudents"
+                      fill="#29b6f6"
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={40}
+                    />
+                    <Bar
+                      dataKey="activeStudents"
+                      fill="#0288d1"
+                      radius={[8, 8, 0, 0]}
+                      maxBarSize={40}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{
+                  height: 300,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  color: 'text.secondary'
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    📊 Chưa có dữ liệu
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Dữ liệu sẽ hiển thị khi có học viên mới
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -317,7 +433,7 @@ const Analytics: React.FC = () => {
                     <Typography variant="caption" color="text.secondary">⭐ {course.rating}</Typography>
                   </Stack>
                   <Grid container spacing={1}>
-                    <Grid item xs={4}><Typography variant="caption" color="text.secondary">Thu nhập</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(course.revenue)}</Typography></Grid>
+                    <Grid item xs={4}><Typography variant="caption" color="text.secondary">Thu nhập</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.revenue)}</Typography></Grid>
                     <Grid item xs={4}><Typography variant="caption" color="text.secondary">Hoàn thành</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{`${course.completionRate.toFixed(1)}%`}</Typography></Grid>
                     <Grid item xs={4}><Typography variant="caption" color="text.secondary">Lượt xem</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('en-US').format(course.views)}</Typography></Grid>
                   </Grid>

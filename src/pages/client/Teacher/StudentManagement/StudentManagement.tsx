@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { getTeacherCourses } from '@/services/client/teacher-courses.service';
+import * as teacherEnrollmentService from '@/services/client/teacher-enrollments.service';
 import {
   Box,
   Container,
@@ -91,122 +94,97 @@ const StudentManagement: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedCourse, setSelectedCourse] = useState<CourseInfo | null>(null);
 
-  useEffect(() => {
-    // Mock data - replace with API call
-    setLoading(true);
-    setTimeout(() => {
-      const mockCourses: CourseInfo[] = [
-        {
-          _id: '1',
-          title: 'React Advanced Patterns',
-          thumbnail: '/images/course1.jpg',
-          totalStudents: 156,
-          averageProgress: 78.5,
-          status: 'published',
-          field: 'Web Development',
-          level: 'advanced',
-          price: 299000,
-          sections: 8,
-          lessons: 45,
-          rating: 4.8
-        },
-        {
-          _id: '2',
-          title: 'Node.js Backend Development',
-          thumbnail: '/images/course2.jpg',
-          totalStudents: 89,
-          averageProgress: 65.2,
-          status: 'published',
-          field: 'Backend Development',
-          level: 'intermediate',
-          price: 249000,
-          sections: 6,
-          lessons: 32,
-          rating: 4.6
-        },
-        {
-          _id: '3',
-          title: 'UI/UX Design Fundamentals',
-          thumbnail: '/images/course3.jpg',
-          totalStudents: 0,
-          averageProgress: 0,
-          status: 'draft',
-          field: 'Design',
-          level: 'basic',
-          price: 199000,
-          sections: 4,
-          lessons: 24,
-          rating: 0
-        },
-        {
-          _id: '4',
-          title: 'Python Data Science',
-          thumbnail: '/images/course4.jpg',
-          totalStudents: 0,
-          averageProgress: 0,
-          status: 'pending',
-          field: 'Data Science',
-          level: 'intermediate',
-          price: 349000,
-          sections: 7,
-          lessons: 38,
-          rating: 0
-        }
-      ];
-
-      setCourses(mockCourses);
-      // Auto select the first course to immediately show students
-      if (!selectedCourse && mockCourses.length) {
-        setSelectedCourse(mockCourses[0]);
-        setCourseInfo(mockCourses[0]);
-      }
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    if (courseId && selectedCourse) {
-      // Load students for specific course (mock)
+  // Load teacher's courses with enrollment stats
+  const loadCourses = useCallback(async () => {
+    try {
       setLoading(true);
-      setTimeout(() => {
-        const names = [
-          'Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C', 'Phạm Thị D', 'Hoàng Văn E', 'Vũ Thị F', 'Đặng Minh G', 'Bùi Thu H',
-          'Phan Quốc I', 'Đỗ Kim K', 'Trịnh Gia L', 'Võ Thị M', 'Trương Công N', 'Lưu Hải P', 'Tạ Thu Q', 'Lý Minh R',
-          'Đinh Hồng S', 'Ngô Nhật T', 'Cao Thảo U', 'La Bảo V', 'Tôn Nữ W', 'Chu Khánh X', 'Kiều Anh Y', 'Quách Duy Z'
-        ];
-        const avatars = ['/images/avatar1.jpg', '/images/avatar2.jpg', '/images/avatar3.jpg', '/images/avatar4.jpg'];
-        const statuses: Array<Student['status']> = ['active', 'inactive', 'completed'];
+      const response = await getTeacherCourses({ page: 1, limit: 100 });
 
-        const mockStudents: Student[] = names.map((fullName, idx) => {
-          const progress = Math.min(100, Math.max(0, Math.round(((idx * 13) % 101))));
-          const totalLessons = 20 + ((idx * 3) % 10); // 20-29
-          const completedLessons = Math.min(totalLessons, Math.round((progress / 100) * totalLessons));
-          const submitted = Math.min(10, Math.round((progress / 100) * 10));
-          const averageScore = submitted > 0 ? 60 + ((idx * 7) % 41) : 0; // 60-100 if submitted, else 0
-          const status = statuses[idx % statuses.length];
-          const daysAgo = 1 + (idx % 28);
-          const enrolledDaysAgo = 30 + ((idx * 2) % 90);
+      if (response.success && response.data) {
+        const coursesData = response.data.map((course: any) => ({
+          _id: course._id,
+          title: course.title,
+          thumbnail: course.thumbnail,
+          totalStudents: course.studentsCount || 0,
+          averageProgress: 0, // Will be loaded separately
+          status: course.status,
+          field: course.domain,
+          level: course.level,
+          price: course.price,
+          sections: course.sectionsCount || 0,
+          lessons: course.lessonsCount || 0,
+          rating: course.rating || 0
+        }));
 
-          return {
-            _id: `${idx + 1}`,
-            name: fullName,
-            email: `${fullName.toLowerCase().replace(/\s+/g, '')}@email.com`,
-            avatar: avatars[idx % avatars.length],
-            enrolledAt: new Date(Date.now() - enrolledDaysAgo * 24 * 3600 * 1000).toISOString(),
-            lastActive: new Date(Date.now() - daysAgo * 24 * 3600 * 1000).toISOString(),
-            progress,
-            completedLessons,
-            totalLessons,
-            assignments: { submitted, total: 10, averageScore },
-            status
-          };
-        });
+        setCourses(coursesData);
 
-        setStudents(mockStudents);
-        setLoading(false);
-      }, 500);
+        // Only auto-select if courseId is provided in URL params
+        if (courseId) {
+          const course = coursesData.find((c: CourseInfo) => c._id === courseId);
+          if (course) {
+            setSelectedCourse(course);
+            setCourseInfo(course);
+          }
+        }
+        // Otherwise, show course list (don't auto-select)
+      }
+    } catch (error: any) {
+      console.error('Error loading courses:', error);
+      toast.error('Lỗi khi tải danh sách khóa học');
+    } finally {
+      setLoading(false);
     }
   }, [courseId, selectedCourse]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  // Load students for selected course
+  const loadStudents = useCallback(async () => {
+    if (!selectedCourse) return;
+
+    try {
+      setLoading(true);
+      const response = await teacherEnrollmentService.getCourseEnrollments(selectedCourse._id, {
+        page: 1,
+        limit: 100,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        search: searchTerm
+      });
+
+      if (response.success && response.data) {
+        const studentsData = response.data.enrollments.map((e: any) => ({
+          _id: e._id,
+          name: `${e.studentId.firstName} ${e.studentId.lastName}`,
+          email: e.studentId.email,
+          avatar: e.studentId.avatar || '/images/default-avatar.png',
+          enrolledAt: e.enrolledAt,
+          lastActive: e.lastAccessedAt || e.enrolledAt,
+          progress: e.progress || 0,
+          completedLessons: e.completedLessons || 0,
+          totalLessons: selectedCourse.lessons,
+          assignments: {
+            submitted: 0, // TODO: Load from assignments API
+            total: 0,
+            averageScore: 0
+          },
+          status: (e.isCompleted ? 'completed' : e.isActive ? 'active' : 'inactive') as 'active' | 'inactive' | 'completed'
+        }));
+
+        setStudents(studentsData);
+      }
+    } catch (error: any) {
+      console.error('Error loading students:', error);
+      toast.error('Lỗi khi tải danh sách học viên');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCourse, statusFilter, searchTerm]);
+
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
 
   const handleCourseSelect = (course: CourseInfo) => {
     setSelectedCourse(course);

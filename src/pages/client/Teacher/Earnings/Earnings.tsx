@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import {
-  Box, Container, Typography, Breadcrumbs, Grid, Card, CardContent, Chip, CircularProgress, Stack, Button,
-  Select, MenuItem, FormControl, InputLabel, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Divider
+  Box, Container, Typography, Breadcrumbs, Grid, Card, CardContent, CircularProgress, Stack, Button,
+  Select, MenuItem, FormControl, InputLabel, Divider,
+  Tabs, Tab
 } from '@mui/material';
 import { Download as DownloadIcon, Payment as PaymentIcon, Email as EmailIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
+import * as earningsService from '@/services/client/earnings.service';
+import generateEarningsPDF from '@/components/PDFReportGenerator';
+import EarningsAnalytics from './EarningsAnalytics';
 
 interface EarningData {
   totalEarnings: number;
@@ -37,37 +51,77 @@ const Earnings: React.FC = () => {
   const [earningData, setEarningData] = useState<EarningData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    setTimeout(() => {
-      const mockData: EarningData = {
-        totalEarnings: 12500000,
-        monthlyEarnings: 2800000,
-        totalStudents: 245,
-        totalCourses: 4,
-        monthlyGrowth: 15.5,
-        recentTransactions: [
-          { id: '1', courseTitle: 'React Advanced Patterns', studentName: 'Nguyễn Văn A', amount: 299000, type: 'purchase', status: 'completed', date: '2024-01-15T10:30:00Z', transactionId: 'TXN_001' },
-          { id: '2', courseTitle: 'Python Data Science', studentName: 'Trần Thị B', amount: 499000, type: 'purchase', status: 'completed', date: '2024-01-14T14:20:00Z', transactionId: 'TXN_002' },
-          { id: '3', courseTitle: 'React Advanced Patterns', studentName: 'Lê Văn C', amount: 299000, type: 'refund', status: 'completed', date: '2024-01-13T16:45:00Z', transactionId: 'TXN_003' },
-          { id: '4', courseTitle: 'UI/UX Design Fundamentals', studentName: 'Phạm Thị D', amount: 199000, type: 'purchase', status: 'pending', date: '2024-01-12T08:15:00Z', transactionId: 'TXN_004' }
-        ],
-        monthlyBreakdown: [
-          { month: 'Tháng 1', earnings: 2800000, students: 45, courses: 4 },
-          { month: 'Tháng 12', earnings: 2400000, students: 38, courses: 4 },
-          { month: 'Tháng 11', earnings: 2100000, students: 32, courses: 3 },
-          { month: 'Tháng 10', earnings: 1800000, students: 28, courses: 3 },
-          { month: 'Tháng 9', earnings: 1500000, students: 25, courses: 3 },
-          { month: 'Tháng 8', earnings: 1200000, students: 20, courses: 2 }
-        ]
-      };
-      setEarningData(mockData);
-      setLoading(false);
-    }, 800);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch earnings overview
+        const overviewRes = await earningsService.getEarningsOverview();
+
+        // Fetch monthly breakdown
+        const breakdownRes = await earningsService.getMonthlyBreakdown(6);
+
+        if (overviewRes.success) {
+          const overview = overviewRes.data;
+
+          setEarningData({
+            totalEarnings: overview.totalEarnings || 0,
+            monthlyEarnings: overview.currentMonthEarnings || 0,
+            totalStudents: overview.totalStudents || 0,
+            totalCourses: overview.totalCourses || 0,
+            monthlyGrowth: overview.growthRate || 0,
+            recentTransactions: [], // No longer needed
+            monthlyBreakdown: breakdownRes.success ? breakdownRes.data : []
+          });
+        }
+      } catch (error: any) {
+        console.error('Error loading earnings:', error);
+        toast.error(error.response?.data?.message || 'Error loading earnings data');
+
+        // Set empty data on error
+        setEarningData({
+          totalEarnings: 0,
+          monthlyEarnings: 0,
+          totalStudents: 0,
+          totalCourses: 0,
+          monthlyGrowth: 0,
+          recentTransactions: [],
+          monthlyBreakdown: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const handleExportPDF = async () => {
+    if (!earningData) {
+      toast.error('No data available for report generation');
+      return;
+    }
+
+    try {
+      await generateEarningsPDF({
+        totalEarnings: earningData.totalEarnings,
+        monthlyEarnings: earningData.monthlyEarnings,
+        totalStudents: earningData.totalStudents,
+        totalCourses: earningData.totalCourses,
+        monthlyBreakdown: earningData.monthlyBreakdown,
+        teacherName: 'Instructor', // TODO: Get from user context
+        reportDate: new Date()
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Error generating PDF report');
+    }
+  };
 
   if (loading) {
     return (
@@ -93,114 +147,135 @@ const Earnings: React.FC = () => {
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>Doanh thu & Hóa đơn</Typography>
       </Box>
 
-      {/* Period Selector */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 180 }} size="small">
-          <InputLabel>Khoảng thời gian</InputLabel>
-          <Select value={selectedPeriod} label="Khoảng thời gian" onChange={(e) => setSelectedPeriod(e.target.value as any)} MenuProps={{ disableScrollLock: true }}>
-            <MenuItem value="month">Tháng này</MenuItem>
-            <MenuItem value="quarter">Quý này</MenuItem>
-            <MenuItem value="year">Năm nay</MenuItem>
-          </Select>
-        </FormControl>
-        <Chip color="success" label={`Tăng trưởng +${earningData.monthlyGrowth}%`} />
-      </Stack>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(_e, newValue) => setActiveTab(newValue)}>
+          <Tab label="Overview" />
+          <Tab label="Analytics" />
+        </Tabs>
+      </Box>
 
-      {/* Stats Overview */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
-          <Card><CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="subtitle2" color="text.secondary">Tổng doanh thu</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>{formatCurrency(earningData.totalEarnings)}</Typography>
-          </CardContent></Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card><CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="subtitle2" color="text.secondary">Doanh thu tháng này</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>{formatCurrency(earningData.monthlyEarnings)}</Typography>
-            <Chip size="small" color="success" label={`+${earningData.monthlyGrowth}%`} sx={{ mt: 1 }} />
-          </CardContent></Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card><CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="subtitle2" color="text.secondary">Tổng học viên</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>{earningData.totalStudents}</Typography>
-          </CardContent></Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card><CardContent sx={{ textAlign: 'center' }}>
-            <Typography variant="subtitle2" color="text.secondary">Khóa học đang bán</Typography>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>{earningData.totalCourses}</Typography>
-          </CardContent></Card>
-        </Grid>
-      </Grid>
-
-      {/* Monthly Breakdown (bar placeholder) */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Biểu đồ doanh thu theo tháng</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 220 }}>
-            {earningData.monthlyBreakdown.map((m) => (
-              <Box key={m.month}>
-                <Box sx={{ width: 24, height: `${(m.earnings / Math.max(...earningData.monthlyBreakdown.map(mm => mm.earnings))) * 100}%`, bgcolor: 'primary.main', borderRadius: 0.5 }} />
-                <Typography variant="caption" color="text.secondary">{m.month}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Recent Transactions */}
-      <Card>
-        <CardContent>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>Giao dịch gần đây</Typography>
-            <Button variant="outlined">Xem tất cả</Button>
+      {activeTab === 1 && <EarningsAnalytics />}
+      {activeTab === 0 && (
+        <>
+          {/* Period Selector */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+            <FormControl sx={{ minWidth: 180 }} size="small">
+              <InputLabel>Khoảng thời gian</InputLabel>
+              <Select value={selectedPeriod} label="Khoảng thời gian" onChange={(e) => setSelectedPeriod(e.target.value as any)} MenuProps={{ disableScrollLock: true }}>
+                <MenuItem value="month">Tháng này</MenuItem>
+                <MenuItem value="quarter">Quý này</MenuItem>
+                <MenuItem value="year">Năm nay</MenuItem>
+              </Select>
+            </FormControl>
           </Stack>
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Khóa học</TableCell>
-                  <TableCell>Học viên</TableCell>
-                  <TableCell align="right">Số tiền</TableCell>
-                  <TableCell>Loại</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell>Thời gian</TableCell>
-                  <TableCell>ID giao dịch</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {earningData.recentTransactions.map((t) => (
-                  <TableRow key={t.id} hover>
-                    <TableCell>{t.courseTitle}</TableCell>
-                    <TableCell>{t.studentName}</TableCell>
-                    <TableCell align="right">{(t.type === 'refund' ? '-' : '+')}{formatCurrency(t.amount)}</TableCell>
-                    <TableCell>
-                      <Chip size="small" label={t.type === 'purchase' ? 'Mua' : 'Hoàn tiền'} color={t.type === 'refund' ? 'warning' : 'primary'} />
-                    </TableCell>
-                    <TableCell>
-                      <Chip size="small" label={t.status === 'completed' ? 'Hoàn thành' : t.status === 'pending' ? 'Chờ xử lý' : 'Thất bại'} color={t.status === 'completed' ? 'success' : t.status === 'pending' ? 'warning' : 'error'} />
-                    </TableCell>
-                    <TableCell>{formatDate(t.date)}</TableCell>
-                    <TableCell>{t.transactionId}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
 
-      {/* Quick Actions */}
-      <Divider sx={{ my: 3 }} />
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={3}><Button fullWidth variant="contained" startIcon={<DownloadIcon />}>Xuất báo cáo</Button></Grid>
-        <Grid item xs={12} md={3}><Button fullWidth variant="outlined" startIcon={<PaymentIcon />}>Cài đặt thanh toán</Button></Grid>
-        <Grid item xs={12} md={3}><Button fullWidth variant="outlined" startIcon={<EmailIcon />}>Gửi hóa đơn</Button></Grid>
-        <Grid item xs={12} md={3}><Button fullWidth variant="outlined" startIcon={<SettingsIcon />}>Cài đặt hoa hồng</Button></Grid>
-      </Grid>
-    </Container>
+          {/* Stats Overview */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Typography variant="subtitle2" color="text.secondary">Tổng doanh thu</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>{formatCurrency(earningData.totalEarnings)}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Typography variant="subtitle2" color="text.secondary">Doanh thu tháng này</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>{formatCurrency(earningData.monthlyEarnings)}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Typography variant="subtitle2" color="text.secondary">Tổng học viên</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>{earningData.totalStudents}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Typography variant="subtitle2" color="text.secondary">Khóa học đang bán</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>{earningData.totalCourses}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Monthly Breakdown Chart */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Biểu đồ doanh thu theo tháng</Typography>
+              {earningData.monthlyBreakdown && earningData.monthlyBreakdown.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={earningData.monthlyBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `${value / 1000}K`} />
+                    <Tooltip
+                      formatter={(value: number) => [formatCurrency(value), 'Doanh thu']}
+                      labelFormatter={(label) => `Tháng: ${label}`}
+                    />
+                    <Bar dataKey="earnings" fill="#5b8def" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{
+                  height: 300,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  color: 'text.secondary'
+                }}>
+                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                    📊 Chưa có dữ liệu biểu đồ
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Dữ liệu biểu đồ sẽ hiển thị khi có nhiều giao dịch hơn
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Divider sx={{ my: 3 }} />
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={3}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={handleExportPDF}
+                disabled={loading || !earningData}
+              >
+                Xuất báo cáo PDF
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Button fullWidth variant="outlined" startIcon={<PaymentIcon />}>
+                Cài đặt thanh toán
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Button fullWidth variant="outlined" startIcon={<EmailIcon />}>
+                Gửi hóa đơn
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Button fullWidth variant="outlined" startIcon={<SettingsIcon />}>
+                Cài đặt hoa hồng
+              </Button>
+            </Grid>
+          </Grid>
+        </>
+      )}
+    </Container >
   );
 };
 

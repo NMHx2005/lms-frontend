@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import * as sectionService from '@/services/client/section.service';
+import * as lessonService from '@/services/client/lesson.service';
+// import { sharedUploadService } from '../../../services/shared/upload.service'; // Will be used for upload handlers
 import {
   Box,
   Container,
@@ -7,7 +11,6 @@ import {
   Breadcrumbs,
   Card,
   CardContent,
-  CardActions,
   Button,
   TextField,
   FormControl,
@@ -31,7 +34,6 @@ import {
   ListItemSecondaryAction
 } from '@mui/material';
 import {
-  Save as SaveIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -46,13 +48,15 @@ import {
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
   School as SchoolIcon,
   Schedule as ScheduleIcon,
-  LibraryBooks as LibraryBooksIcon
+  LibraryBooks as LibraryBooksIcon,
+  Quiz as QuizIcon,
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
 
 interface Section {
   _id: string;
   title: string;
-  description: string;
+  description?: string;
   order: number;
   lessons: Lesson[];
 }
@@ -60,14 +64,21 @@ interface Section {
 interface Lesson {
   _id: string;
   title: string;
-  type: 'video' | 'text' | 'file' | 'link';
+  type: 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment';
   duration: number;
+  estimatedTime?: number; // Backend field name
   order: number;
   isPublished: boolean;
   content?: string;
   videoUrl?: string;
   fileUrl?: string;
   linkUrl?: string;
+  quizQuestions?: Array<{
+    question: string;
+    answers: string[];
+    correctAnswer: number;
+    explanation?: string;
+  }>;
 }
 
 interface CourseStructure {
@@ -90,158 +101,187 @@ const CourseStructure: React.FC = () => {
   const [newSection, setNewSection] = useState({ title: '', description: '' });
   const [newLesson, setNewLesson] = useState<{
     title: string;
-    type: 'video' | 'text' | 'file' | 'link';
+    type: 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment';
+    duration: number;
     content: string;
     videoUrl: string;
     fileUrl: string;
     linkUrl: string;
+    quizQuestions: Array<{
+      question: string;
+      answers: string[];
+      correctAnswer: number;
+      explanation: string;
+    }>;
   }>({
     title: '',
     type: 'video',
+    duration: 5,
     content: '',
     videoUrl: '',
     fileUrl: '',
-    linkUrl: ''
+    linkUrl: '',
+    quizQuestions: [{
+      question: '',
+      answers: ['', '', '', ''],
+      correctAnswer: 0,
+      explanation: ''
+    }]
   });
 
-  useEffect(() => {
-    // Simulate API call to get course structure
-    setTimeout(() => {
-      const mockCourse: CourseStructure = {
-        _id: id || '1',
-        title: 'React Advanced Patterns',
-        sections: [
-          {
-            _id: 's1',
-            title: 'Giới thiệu và Cài đặt',
-            description: 'Tổng quan về khóa học và hướng dẫn cài đặt môi trường',
-            order: 1,
-            lessons: [
-              {
-                _id: 'l1',
-                title: 'Chào mừng đến với khóa học',
-                type: 'video',
-                duration: 300,
-                order: 1,
-                isPublished: true,
-                videoUrl: 'https://example.com/video1.mp4'
-              },
-              {
-                _id: 'l2',
-                title: 'Cài đặt môi trường phát triển',
-                type: 'text',
-                duration: 180,
-                order: 2,
-                isPublished: true,
-                content: 'Hướng dẫn chi tiết cài đặt Node.js, npm và các công cụ cần thiết...'
-              }
-            ]
-          },
-          {
-            _id: 's2',
-            title: 'React Hooks Nâng cao',
-            description: 'Tìm hiểu sâu về React Hooks và custom hooks',
-            order: 2,
-            lessons: [
-              {
-                _id: 'l3',
-                title: 'useState và useEffect',
-                type: 'video',
-                duration: 600,
-                order: 1,
-                isPublished: true,
-                videoUrl: 'https://example.com/video2.mp4'
-              },
-              {
-                _id: 'l4',
-                title: 'Custom Hooks',
-                type: 'video',
-                duration: 450,
-                order: 2,
-                isPublished: false,
-                videoUrl: 'https://example.com/video3.mp4'
-              }
-            ]
-          }
-        ]
-      };
-      setCourse(mockCourse);
+  // Load course structure from API
+  const loadCourseStructure = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      setLoading(true);
+
+      // Get sections for the course
+      const sectionsResponse = await sectionService.getSectionsByCourse(id);
+
+      if (sectionsResponse.success && sectionsResponse.data) {
+        // Load lessons for each section
+        const sectionsWithLessons = await Promise.all(
+          sectionsResponse.data.map(async (section: sectionService.Section) => {
+            const lessonsResponse = await lessonService.getLessonsBySection(section._id);
+            const lessons = lessonsResponse.success && lessonsResponse.data ?
+              lessonsResponse.data.map((lesson: any) => ({
+                ...lesson,
+                duration: lesson.estimatedTime || lesson.duration || 0 // Map estimatedTime -> duration
+              })) : [];
+            return {
+              ...section,
+              lessons
+            };
+          })
+        );
+
+        // Set course structure
+        setCourse({
+          _id: id,
+          title: '', // Will be loaded from course details if needed
+          sections: sectionsWithLessons
+        });
+      }
+    } catch (error: any) {
+      console.error('Error loading course structure:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải cấu trúc khóa học');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   }, [id]);
 
-  const handleSectionSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadCourseStructure();
+  }, [loadCourseStructure]);
+
+  const handleSectionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSection.title.trim()) return;
+    if (!newSection.title.trim() || !id) return;
 
-    const newSectionData: Section = {
-      _id: `s${Date.now()}`,
-      title: newSection.title,
-      description: newSection.description,
-      order: (course?.sections.length || 0) + 1,
-      lessons: []
-    };
+    try {
+      setSaving(true);
+      const response = await sectionService.createSection({
+        courseId: id,
+        title: newSection.title,
+        description: newSection.description,
+        order: (course?.sections.length || 0) + 1
+      });
 
-    setCourse(prev => prev ? {
-      ...prev,
-      sections: [...prev.sections, newSectionData]
-    } : null);
-
-    setNewSection({ title: '', description: '' });
-    setShowAddSection(false);
+      if (response.success && response.data) {
+        toast.success('Tạo chương mới thành công');
+        setNewSection({ title: '', description: '' });
+        setShowAddSection(false);
+        // Reload course structure
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error creating section:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tạo chương mới');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleLessonSubmit = (e: React.FormEvent, sectionId: string) => {
+  const handleLessonSubmit = async (e: React.FormEvent, sectionId: string) => {
     e.preventDefault();
-    if (!newLesson.title.trim()) return;
+    if (!newLesson.title.trim() || !id) return;
 
     const section = course?.sections.find(s => s._id === sectionId);
     if (!section) return;
 
-    const newLessonData: Lesson = {
-      _id: `l${Date.now()}`,
-      title: newLesson.title,
-      type: newLesson.type,
-      duration: 0,
-      order: section.lessons.length + 1,
-      isPublished: false,
-      content: newLesson.content,
-      videoUrl: newLesson.videoUrl,
-      fileUrl: newLesson.fileUrl,
-      linkUrl: newLesson.linkUrl
-    };
+    try {
+      setSaving(true);
+      const lessonData: any = {
+        sectionId,
+        courseId: id,
+        title: newLesson.title,
+        type: newLesson.type,
+        content: newLesson.content,
+        videoUrl: newLesson.videoUrl,
+        fileUrl: newLesson.fileUrl,
+        linkUrl: newLesson.linkUrl,
+        duration: newLesson.duration,
+        order: section.lessons.length + 1,
+        isPublished: false
+      };
 
-    setCourse(prev => prev ? {
-      ...prev,
-      sections: prev.sections.map(s =>
-        s._id === sectionId
-          ? { ...s, lessons: [...s.lessons, newLessonData] }
-          : s
-      )
-    } : null);
+      // Add quiz questions if type is quiz
+      if (newLesson.type === 'quiz') {
+        lessonData.quizQuestions = newLesson.quizQuestions;
+      }
 
-    setNewLesson({
-      title: '',
-      type: 'video',
-      content: '',
-      videoUrl: '',
-      fileUrl: '',
-      linkUrl: ''
-    });
-    setShowAddLesson(null);
+      const response = await lessonService.createLesson(lessonData);
+
+      if (response.success && response.data) {
+        toast.success('Tạo bài học mới thành công');
+        setNewLesson({
+          title: '',
+          type: 'video',
+          duration: 5,
+          content: '',
+          videoUrl: '',
+          fileUrl: '',
+          linkUrl: '',
+          quizQuestions: [{
+            question: '',
+            answers: ['', '', '', ''],
+            correctAnswer: 0,
+            explanation: ''
+          }]
+        });
+        setShowAddLesson(null);
+        // Reload course structure
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error creating lesson:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tạo bài học mới');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateSection = (sectionId: string, updates: Partial<Section>) => {
-    setCourse(prev => prev ? {
-      ...prev,
-      sections: prev.sections.map(s =>
-        s._id === sectionId ? { ...s, ...updates } : s
-      )
-    } : null);
-    setEditingSection(null);
+  const updateSection = async (sectionId: string, updates: Partial<Section>) => {
+    try {
+      setSaving(true);
+      const response = await sectionService.updateSection(sectionId, updates);
+
+      if (response.success) {
+        toast.success('Cập nhật chương thành công');
+        setEditingSection(null);
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error updating section:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi cập nhật chương');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateLesson = (sectionId: string, lessonId: string, updates: Partial<Lesson>) => {
+  const updateLesson = async (sectionId: string, lessonId: string, updates: Partial<Lesson>) => {
+    // For real-time updates, update local state first
     setCourse(prev => prev ? {
       ...prev,
       sections: prev.sections.map(s =>
@@ -255,69 +295,157 @@ const CourseStructure: React.FC = () => {
           : s
       )
     } : null);
-    setEditingLesson(null);
   };
 
-  const deleteSection = (sectionId: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa section này?')) {
-      setCourse(prev => prev ? {
-        ...prev,
-        sections: prev.sections.filter(s => s._id !== sectionId)
-      } : null);
-    }
-  };
+  const saveLessonChanges = async (lessonId: string) => {
+    try {
+      setSaving(true);
+      const lesson = course?.sections
+        .flatMap(s => s.lessons)
+        .find(l => l._id === lessonId);
 
-  const deleteLesson = (sectionId: string, lessonId: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa lesson này?')) {
-      setCourse(prev => prev ? {
-        ...prev,
-        sections: prev.sections.map(s =>
-          s._id === sectionId
-            ? { ...s, lessons: s.lessons.filter(l => l._id !== lessonId) }
-            : s
-        )
-      } : null);
-    }
-  };
+      if (!lesson) return;
 
-  const moveSection = (sectionId: string, direction: 'up' | 'down') => {
-    setCourse(prev => {
-      if (!prev) return null;
+      // Map fields for backend
+      const updates: any = {
+        title: lesson.title,
+        type: lesson.type,
+        duration: lesson.duration,
+        content: lesson.content,
+        videoUrl: lesson.videoUrl,
+        fileUrl: lesson.fileUrl,
+        linkUrl: lesson.linkUrl
+      };
 
-      const sections = [...prev.sections];
-      const currentIndex = sections.findIndex(s => s._id === sectionId);
-
-      if (direction === 'up' && currentIndex > 0) {
-        [sections[currentIndex], sections[currentIndex - 1]] = [sections[currentIndex - 1], sections[currentIndex]];
-      } else if (direction === 'down' && currentIndex < sections.length - 1) {
-        [sections[currentIndex], sections[currentIndex + 1]] = [sections[currentIndex + 1], sections[currentIndex]];
+      // Add quiz questions if type is quiz
+      if (lesson.type === 'quiz') {
+        updates.quizQuestions = lesson.quizQuestions;
       }
 
-      return { ...prev, sections };
-    });
+      const response = await lessonService.updateLesson(lessonId, updates);
+
+      if (response.success) {
+        toast.success('Cập nhật bài học thành công');
+        setEditingLesson(null);
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error saving lesson:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi lưu bài học');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const moveLesson = (sectionId: string, lessonId: string, direction: 'up' | 'down') => {
-    setCourse(prev => {
-      if (!prev) return null;
+  const deleteSection = async (sectionId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa chương này? Tất cả bài học trong chương cũng sẽ bị xóa.')) {
+      return;
+    }
 
-      const sections = prev.sections.map(s => {
-        if (s._id !== sectionId) return s;
+    try {
+      setSaving(true);
+      const response = await sectionService.deleteSection(sectionId);
 
-        const lessons = [...s.lessons];
-        const currentIndex = lessons.findIndex(l => l._id === lessonId);
+      if (response.success) {
+        toast.success('Xóa chương thành công');
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error deleting section:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi xóa chương');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-        if (direction === 'up' && currentIndex > 0) {
-          [lessons[currentIndex], lessons[currentIndex - 1]] = [lessons[currentIndex - 1], lessons[currentIndex]];
-        } else if (direction === 'down' && currentIndex < lessons.length - 1) {
-          [lessons[currentIndex], lessons[currentIndex + 1]] = [lessons[currentIndex + 1], lessons[currentIndex]];
-        }
+  const deleteLesson = async (_sectionId: string, lessonId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bài học này?')) {
+      return;
+    }
 
-        return { ...s, lessons };
-      });
+    try {
+      setSaving(true);
+      const response = await lessonService.deleteLesson(lessonId);
 
-      return { ...prev, sections };
-    });
+      if (response.success) {
+        toast.success('Xóa bài học thành công');
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error deleting lesson:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi xóa bài học');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const moveSection = async (sectionId: string, direction: 'up' | 'down') => {
+    if (!course || !id) return;
+
+    const sections = [...course.sections];
+    const currentIndex = sections.findIndex(s => s._id === sectionId);
+
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === sections.length - 1) return;
+
+    // Swap positions
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    [sections[currentIndex], sections[newIndex]] = [sections[newIndex], sections[currentIndex]];
+
+    // Update order numbers
+    const reorderedSections = sections.map((section, index) => ({
+      sectionId: section._id,
+      newOrder: index + 1
+    }));
+
+    try {
+      setSaving(true);
+      const response = await sectionService.reorderSections(id, reorderedSections);
+
+      if (response.success) {
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error reordering sections:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi sắp xếp lại chương');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const moveLesson = async (sectionId: string, lessonId: string, direction: 'up' | 'down') => {
+    const section = course?.sections.find(s => s._id === sectionId);
+    if (!section) return;
+
+    const lessons = [...section.lessons];
+    const currentIndex = lessons.findIndex(l => l._id === lessonId);
+
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === lessons.length - 1) return;
+
+    // Swap positions
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    [lessons[currentIndex], lessons[newIndex]] = [lessons[newIndex], lessons[currentIndex]];
+
+    // Update order numbers
+    const reorderedLessons = lessons.map((lesson, index) => ({
+      lessonId: lesson._id,
+      newOrder: index + 1
+    }));
+
+    try {
+      setSaving(true);
+      const response = await lessonService.reorderLessons(sectionId, reorderedLessons);
+
+      if (response.success) {
+        await loadCourseStructure();
+      }
+    } catch (error: any) {
+      console.error('Error reordering lessons:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi sắp xếp lại bài học');
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -332,7 +460,9 @@ const CourseStructure: React.FC = () => {
       video: <PlayArrowIcon />,
       text: <DescriptionIcon />,
       file: <AttachFileIcon />,
-      link: <LinkIcon />
+      link: <LinkIcon />,
+      quiz: <QuizIcon />,
+      assignment: <AssignmentIcon />
     };
     return icons[type as keyof typeof icons] || <DescriptionIcon />;
   }, []);
@@ -585,12 +715,12 @@ const CourseStructure: React.FC = () => {
                             variant="outlined"
                           />
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid item xs={12} md={3}>
                           <FormControl fullWidth>
                             <InputLabel>Loại lesson</InputLabel>
                             <Select
                               value={newLesson.type}
-                              onChange={(e) => setNewLesson(prev => ({ ...prev, type: e.target.value as 'video' | 'text' | 'file' | 'link' }))}
+                              onChange={(e) => setNewLesson(prev => ({ ...prev, type: e.target.value as 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment' }))}
                               label="Loại lesson"
                               MenuProps={{ disableScrollLock: true }}
                             >
@@ -598,8 +728,22 @@ const CourseStructure: React.FC = () => {
                               <MenuItem value="text">Văn bản</MenuItem>
                               <MenuItem value="file">File</MenuItem>
                               <MenuItem value="link">Link</MenuItem>
+                              <MenuItem value="quiz">Quiz</MenuItem>
+                              <MenuItem value="assignment">Bài tập</MenuItem>
                             </Select>
                           </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                          <TextField
+                            fullWidth
+                            type="number"
+                            label="Thời lượng (phút)"
+                            value={newLesson.duration}
+                            onChange={(e) => setNewLesson(prev => ({ ...prev, duration: Number(e.target.value) }))}
+                            InputProps={{ inputProps: { min: 1 } }}
+                            required
+                            variant="outlined"
+                          />
                         </Grid>
                       </Grid>
 
@@ -656,6 +800,132 @@ const CourseStructure: React.FC = () => {
                         />
                       )}
 
+                      {newLesson.type === 'quiz' && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                            Câu hỏi trắc nghiệm
+                          </Typography>
+                          {newLesson.quizQuestions.map((q, qIndex) => (
+                            <Paper key={qIndex} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                              <Stack spacing={2}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    Câu {qIndex + 1}
+                                  </Typography>
+                                  {newLesson.quizQuestions.length > 1 && (
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => {
+                                        const newQuestions = newLesson.quizQuestions.filter((_, i) => i !== qIndex);
+                                        setNewLesson(prev => ({ ...prev, quizQuestions: newQuestions }));
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  )}
+                                </Stack>
+
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="Câu hỏi"
+                                  value={q.question}
+                                  onChange={(e) => {
+                                    const newQuestions = [...newLesson.quizQuestions];
+                                    newQuestions[qIndex].question = e.target.value;
+                                    setNewLesson(prev => ({ ...prev, quizQuestions: newQuestions }));
+                                  }}
+                                  placeholder="Nhập câu hỏi..."
+                                  required
+                                />
+
+                                {q.answers.map((answer, aIndex) => (
+                                  <Stack key={aIndex} direction="row" spacing={1} alignItems="center">
+                                    <IconButton
+                                      size="small"
+                                      color={q.correctAnswer === aIndex ? 'success' : 'default'}
+                                      onClick={() => {
+                                        const newQuestions = [...newLesson.quizQuestions];
+                                        newQuestions[qIndex].correctAnswer = aIndex;
+                                        setNewLesson(prev => ({ ...prev, quizQuestions: newQuestions }));
+                                      }}
+                                    >
+                                      {q.correctAnswer === aIndex ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
+                                    </IconButton>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      label={`Đáp án ${aIndex + 1}`}
+                                      value={answer}
+                                      onChange={(e) => {
+                                        const newQuestions = [...newLesson.quizQuestions];
+                                        newQuestions[qIndex].answers[aIndex] = e.target.value;
+                                        setNewLesson(prev => ({ ...prev, quizQuestions: newQuestions }));
+                                      }}
+                                      placeholder={`Nhập đáp án ${aIndex + 1}...`}
+                                      required
+                                    />
+                                  </Stack>
+                                ))}
+
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="Giải thích (tùy chọn)"
+                                  value={q.explanation}
+                                  onChange={(e) => {
+                                    const newQuestions = [...newLesson.quizQuestions];
+                                    newQuestions[qIndex].explanation = e.target.value;
+                                    setNewLesson(prev => ({ ...prev, quizQuestions: newQuestions }));
+                                  }}
+                                  placeholder="Giải thích đáp án đúng..."
+                                  multiline
+                                  rows={2}
+                                />
+                              </Stack>
+                            </Paper>
+                          ))}
+
+                          <Button
+                            startIcon={<AddIcon />}
+                            onClick={() => {
+                              setNewLesson(prev => ({
+                                ...prev,
+                                quizQuestions: [
+                                  ...prev.quizQuestions,
+                                  {
+                                    question: '',
+                                    answers: ['', '', '', ''],
+                                    correctAnswer: 0,
+                                    explanation: ''
+                                  }
+                                ]
+                              }));
+                            }}
+                            variant="outlined"
+                            size="small"
+                          >
+                            Thêm câu hỏi
+                          </Button>
+                        </Box>
+                      )}
+
+                      {newLesson.type === 'assignment' && (
+                        <TextField
+                          fullWidth
+                          label="Mô tả Bài tập"
+                          value={newLesson.content}
+                          onChange={(e) => setNewLesson(prev => ({ ...prev, content: e.target.value }))}
+                          placeholder="Nhập mô tả bài tập, yêu cầu, deadline..."
+                          multiline
+                          rows={4}
+                          variant="outlined"
+                          sx={{ mb: 2 }}
+                          helperText="Chi tiết bài tập và cách nộp bài"
+                        />
+                      )}
+
                       <Stack direction="row" spacing={2} justifyContent="flex-end">
                         <Button
                           variant="outlined"
@@ -699,28 +969,240 @@ const CourseStructure: React.FC = () => {
                       <ListItemText
                         primary={
                           editingLesson === lesson._id ? (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <TextField
-                                fullWidth
-                                size="small"
-                                value={lesson.title}
-                                onChange={(e) => updateLesson(section._id, lesson._id, { title: e.target.value })}
-                                variant="outlined"
-                              />
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 1 }}>
+                              <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Tiêu đề"
+                                    value={lesson.title}
+                                    onChange={(e) => updateLesson(section._id, lesson._id, { title: e.target.value })}
+                                    variant="outlined"
+                                  />
+                                </Grid>
+                                <Grid item xs={12} md={3}>
+                                  <FormControl fullWidth size="small">
+                                    <InputLabel>Loại</InputLabel>
+                                    <Select
+                                      value={lesson.type}
+                                      onChange={(e) => updateLesson(section._id, lesson._id, { type: e.target.value as any })}
+                                      label="Loại"
+                                      MenuProps={{ disableScrollLock: true }}
+                                    >
+                                      <MenuItem value="video">Video</MenuItem>
+                                      <MenuItem value="text">Văn bản</MenuItem>
+                                      <MenuItem value="file">File</MenuItem>
+                                      <MenuItem value="link">Link</MenuItem>
+                                      <MenuItem value="quiz">Quiz</MenuItem>
+                                      <MenuItem value="assignment">Bài tập</MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                </Grid>
+                                <Grid item xs={12} md={3}>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    type="number"
+                                    label="Thời lượng (phút)"
+                                    value={lesson.duration}
+                                    onChange={(e) => updateLesson(section._id, lesson._id, { duration: Number(e.target.value) })}
+                                    InputProps={{ inputProps: { min: 1 } }}
+                                    variant="outlined"
+                                  />
+                                </Grid>
+                              </Grid>
+
+                              {lesson.type === 'text' && (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="Nội dung"
+                                  value={lesson.content || ''}
+                                  onChange={(e) => updateLesson(section._id, lesson._id, { content: e.target.value })}
+                                  multiline
+                                  rows={3}
+                                  variant="outlined"
+                                />
+                              )}
+
+                              {lesson.type === 'video' && (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="URL Video"
+                                  value={lesson.videoUrl || ''}
+                                  onChange={(e) => updateLesson(section._id, lesson._id, { videoUrl: e.target.value })}
+                                  variant="outlined"
+                                />
+                              )}
+
+                              {lesson.type === 'file' && (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="URL File"
+                                  value={lesson.fileUrl || ''}
+                                  onChange={(e) => updateLesson(section._id, lesson._id, { fileUrl: e.target.value })}
+                                  variant="outlined"
+                                />
+                              )}
+
+                              {lesson.type === 'link' && (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="URL Link"
+                                  value={lesson.linkUrl || ''}
+                                  onChange={(e) => updateLesson(section._id, lesson._id, { linkUrl: e.target.value })}
+                                  variant="outlined"
+                                />
+                              )}
+
+                              {lesson.type === 'quiz' && (
+                                <Box>
+                                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                                    Câu hỏi trắc nghiệm
+                                  </Typography>
+                                  {(lesson.quizQuestions && lesson.quizQuestions.length > 0 ? lesson.quizQuestions : [{
+                                    question: '',
+                                    answers: ['', '', '', ''],
+                                    correctAnswer: 0,
+                                    explanation: ''
+                                  }]).map((q, qIndex) => (
+                                    <Paper key={qIndex} sx={{ p: 1.5, mb: 1.5, bgcolor: 'grey.50' }}>
+                                      <Stack spacing={1}>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                          <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                            Câu {qIndex + 1}
+                                          </Typography>
+                                          {(lesson.quizQuestions?.length || 0) > 1 && (
+                                            <IconButton
+                                              size="small"
+                                              color="error"
+                                              onClick={() => {
+                                                const newQuestions = lesson.quizQuestions?.filter((_, i) => i !== qIndex) || [];
+                                                updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                                              }}
+                                            >
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                        </Stack>
+
+                                        <TextField
+                                          fullWidth
+                                          size="small"
+                                          label="Câu hỏi"
+                                          value={q.question}
+                                          onChange={(e) => {
+                                            const newQuestions = [...(lesson.quizQuestions || [])];
+                                            newQuestions[qIndex].question = e.target.value;
+                                            updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                                          }}
+                                          placeholder="Nhập câu hỏi..."
+                                        />
+
+                                        {q.answers.map((answer, aIndex) => (
+                                          <Stack key={aIndex} direction="row" spacing={0.5} alignItems="center">
+                                            <IconButton
+                                              size="small"
+                                              color={q.correctAnswer === aIndex ? 'success' : 'default'}
+                                              onClick={() => {
+                                                const newQuestions = [...(lesson.quizQuestions || [])];
+                                                newQuestions[qIndex].correctAnswer = aIndex;
+                                                updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                                              }}
+                                            >
+                                              {q.correctAnswer === aIndex ? <CheckCircleIcon fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}
+                                            </IconButton>
+                                            <TextField
+                                              fullWidth
+                                              size="small"
+                                              label={`Đáp án ${aIndex + 1}`}
+                                              value={answer}
+                                              onChange={(e) => {
+                                                const newQuestions = [...(lesson.quizQuestions || [])];
+                                                newQuestions[qIndex].answers[aIndex] = e.target.value;
+                                                updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                                              }}
+                                              placeholder={`Đáp án ${aIndex + 1}`}
+                                            />
+                                          </Stack>
+                                        ))}
+
+                                        <TextField
+                                          fullWidth
+                                          size="small"
+                                          label="Giải thích"
+                                          value={q.explanation || ''}
+                                          onChange={(e) => {
+                                            const newQuestions = [...(lesson.quizQuestions || [])];
+                                            newQuestions[qIndex].explanation = e.target.value;
+                                            updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                                          }}
+                                          placeholder="Giải thích đáp án đúng..."
+                                          multiline
+                                          rows={2}
+                                        />
+                                      </Stack>
+                                    </Paper>
+                                  ))}
+
+                                  <Button
+                                    startIcon={<AddIcon />}
+                                    onClick={() => {
+                                      const newQuestions = [
+                                        ...(lesson.quizQuestions || []),
+                                        {
+                                          question: '',
+                                          answers: ['', '', '', ''],
+                                          correctAnswer: 0,
+                                          explanation: ''
+                                        }
+                                      ];
+                                      updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                                    }}
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth
+                                  >
+                                    Thêm câu hỏi
+                                  </Button>
+                                </Box>
+                              )}
+
+                              {lesson.type === 'assignment' && (
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="Mô tả Bài tập"
+                                  value={lesson.content || ''}
+                                  onChange={(e) => updateLesson(section._id, lesson._id, { content: e.target.value })}
+                                  multiline
+                                  rows={4}
+                                  variant="outlined"
+                                />
+                              )}
+
                               <Stack direction="row" spacing={1} justifyContent="flex-end">
                                 <Button
                                   size="small"
                                   variant="outlined"
-                                  onClick={() => setEditingLesson(null)}
+                                  onClick={() => {
+                                    setEditingLesson(null);
+                                    loadCourseStructure(); // Reload to discard changes
+                                  }}
                                 >
                                   Hủy
                                 </Button>
                                 <Button
                                   size="small"
                                   variant="contained"
-                                  onClick={() => setEditingLesson(null)}
+                                  onClick={() => saveLessonChanges(lesson._id)}
+                                  disabled={saving}
                                 >
-                                  Lưu
+                                  {saving ? 'Đang lưu...' : 'Lưu'}
                                 </Button>
                               </Stack>
                             </Box>
@@ -732,10 +1214,11 @@ const CourseStructure: React.FC = () => {
                                   {lesson.title}
                                 </Typography>
                                 <Chip
-                                  label={formatDuration(lesson.duration)}
+                                  label={`${lesson.duration} phút`}
                                   size="small"
                                   color="info"
                                   variant="outlined"
+                                  icon={<ScheduleIcon />}
                                 />
                                 <Chip
                                   label={lesson.isPublished ? 'Đã xuất bản' : 'Bản nháp'}
@@ -744,12 +1227,62 @@ const CourseStructure: React.FC = () => {
                                   icon={lesson.isPublished ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
                                 />
                               </Stack>
-                              <Stack direction="row" alignItems="center" spacing={1}>
-                                <Chip label={lesson.type} size="small" variant="outlined" />
-                                {lesson.content && (
-                                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                                    {lesson.content.substring(0, 100)}...
+                              <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                                <Chip
+                                  label={lesson.type}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ textTransform: 'capitalize' }}
+                                />
+                                {lesson.videoUrl && (
+                                  <Chip
+                                    label="Có video"
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                    icon={<PlayArrowIcon />}
+                                  />
+                                )}
+                                {lesson.fileUrl && (
+                                  <Chip
+                                    label="Có file"
+                                    size="small"
+                                    color="secondary"
+                                    variant="outlined"
+                                    icon={<AttachFileIcon />}
+                                  />
+                                )}
+                                {lesson.linkUrl && (
+                                  <Chip
+                                    label="Có link"
+                                    size="small"
+                                    color="info"
+                                    variant="outlined"
+                                    icon={<LinkIcon />}
+                                  />
+                                )}
+                                {lesson.type === 'quiz' && lesson.quizQuestions && (
+                                  <Chip
+                                    label={`${lesson.quizQuestions.length} câu hỏi`}
+                                    size="small"
+                                    color="warning"
+                                    variant="outlined"
+                                    icon={<QuizIcon />}
+                                  />
+                                )}
+                                {lesson.content && lesson.type === 'text' && (
+                                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1, ml: 1 }}>
+                                    {lesson.content.substring(0, 80)}...
                                   </Typography>
+                                )}
+                                {lesson.type === 'assignment' && (
+                                  <Chip
+                                    label="Bài tập"
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    icon={<AssignmentIcon />}
+                                  />
                                 )}
                               </Stack>
                             </Box>
@@ -869,34 +1402,20 @@ const CourseStructure: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Save Changes */}
-      <Card>
-        <CardActions sx={{ justifyContent: 'center', p: 3 }}>
-          <Button
-            variant="contained"
-            startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
-            onClick={() => {
-              setSaving(true);
-              setTimeout(() => {
-                setSaving(false);
-                alert('Cấu trúc khóa học đã được lưu thành công!');
-              }, 2000);
-            }}
-            disabled={saving}
-            size="large"
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-              },
-              px: 4,
-              py: 1.5
-            }}
-          >
-            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-          </Button>
-        </CardActions>
-      </Card>
+      {/* Info Card */}
+      {course.sections.length === 0 && (
+        <Card sx={{ textAlign: 'center', py: 4 }}>
+          <CardContent>
+            <SchoolIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Chưa có chương nào
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Bắt đầu bằng cách tạo chương đầu tiên cho khóa học của bạn
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
     </Container>
   );
 };

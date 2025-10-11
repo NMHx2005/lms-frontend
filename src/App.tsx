@@ -3,6 +3,8 @@ import { useEffect, Suspense, lazy } from 'react';
 import { Provider, useDispatch } from 'react-redux';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, CircularProgress } from '@mui/material';
@@ -24,6 +26,7 @@ const Home = lazy(() => import('./pages/client/Home/Home.tsx'));
 const Login = lazy(() => import('./pages/client/Login/Login.tsx'));
 const Register = lazy(() => import('./pages/client/Register/Register.tsx'));
 const CourseDetail = lazy(() => import('./pages/client/CourseDetail/CourseDetail.tsx'));
+const PaymentResult = lazy(() => import('./pages/client/PaymentResult/PaymentResult.tsx'));
 const Learning = lazy(() => import('./pages/client/Learning/Learning.tsx'));
 const LearningPlayer = lazy(() => import('./pages/client/LearningPlayer/LearningPlayer.tsx'));
 import { UserRole } from './components/common/ProtectedRoute.tsx';
@@ -64,7 +67,6 @@ const Notifications = lazy(() => import('./pages/client/Dashboard/Notifications/
 const Wishlist = lazy(() => import('./pages/client/Wishlist/Wishlist.tsx'));
 const StudyGroups = lazy(() => import('./pages/client/StudyGroups/StudyGroups.tsx'));
 const Calendar = lazy(() => import('./pages/client/Calendar/Calendar.tsx'));
-const PaymentResult = lazy(() => import('./pages/client/PaymentResult/PaymentResult.tsx'));
 
 // Teacher Pages
 const CourseStudio = lazy(() => import('./pages/client/Teacher/CourseStudio/CourseStudio.tsx'));
@@ -76,7 +78,6 @@ const StudentManagement = lazy(() => import('./pages/client/Teacher/StudentManag
 const CommunicationCenter = lazy(() => import('./pages/client/Teacher/CommunicationCenter/CommunicationCenter.tsx'));
 const CourseReviews = lazy(() => import('./pages/client/Teacher/CourseReviews/CourseReviews.tsx'));
 const Earnings = lazy(() => import('./pages/client/Teacher/Earnings/Earnings.tsx'));
-const EarningsTransactions = lazy(() => import('./pages/client/Teacher/Earnings/EarningsTransactions.tsx'));
 const EarningsAnalytics = lazy(() => import('./pages/client/Teacher/Earnings/EarningsAnalytics.tsx'));
 const AITools = lazy(() => import('./pages/client/Teacher/AITools/AITools.tsx'));
 const AvatarTool = lazy(() => import('./pages/client/Teacher/AITools/AvatarTool.tsx'));
@@ -84,8 +85,6 @@ const ThumbnailTool = lazy(() => import('./pages/client/Teacher/AITools/Thumbnai
 const ModerationTool = lazy(() => import('./pages/client/Teacher/AITools/ModerationTool.tsx'));
 const CourseEditor = lazy(() => import('./pages/client/Teacher/CourseEditor/CourseEditor.tsx'));
 const CourseStructure = lazy(() => import('./pages/client/Teacher/CourseStructure/CourseStructure.tsx'));
-const AssignmentsManager = lazy(() => import('./pages/client/Teacher/AssignmentsManager/AssignmentsManager.tsx'));
-const SubmissionsGrading = lazy(() => import('./pages/client/Teacher/SubmissionsGrading/SubmissionsGrading.tsx'));
 const PackagePlans = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlans.tsx'));
 const TeacherProfileManage = lazy(() => import('./pages/client/Teacher/Advanced/TeacherProfileManage.tsx'));
 const PackagePlanDetail = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlanDetail'));
@@ -205,17 +204,12 @@ function AppContent() {
                     <Route path="analytics/course/:id" element={<CourseAnalyticsDetail />} />
                     <Route path="analytics/students" element={<StudentAnalytics />} />
                     <Route path="messages" element={<CommunicationCenter />} />
-                    <Route path="lessons/:lessonId/assignments" element={<AssignmentsManager />} />
-                    <Route path="assignments/:id/submissions" element={<SubmissionsGrading />} />
                     <Route path="earnings" element={<Earnings />} />
-                    <Route path="earnings/transactions" element={<EarningsTransactions />} />
                     <Route path="earnings/analytics" element={<EarningsAnalytics />} />
                     <Route path="ai" element={<AITools />} />
                     <Route path="ai/avatar" element={<AvatarTool />} />
                     <Route path="ai/thumbnail" element={<ThumbnailTool />} />
                     <Route path="ai/moderation" element={<ModerationTool />} />
-                    <Route path="lessons/assignments" element={<AssignmentsManager />} />
-                    <Route path="assignments/submissions" element={<SubmissionsGrading />} />
                     <Route path="student-management" element={<StudentManagement />} />
                     <Route path="communication-center" element={<CommunicationCenter />} />
                     <Route path="course-reviews" element={<CourseReviews />} />
@@ -285,6 +279,17 @@ function AppContent() {
           </ErrorBoundary>
         </Router>
         <Toaster position="top-right" />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </ThemeProvider>
     </QueryClientProvider>
   );

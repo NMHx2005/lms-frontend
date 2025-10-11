@@ -132,6 +132,28 @@ export type {
 // Export backup service
 export * from './backupService';
 
+// Export AI moderation service
+export {
+    getEvaluationStatistics,
+    getPendingEvaluations,
+    getAllEvaluations,
+    getEvaluationById,
+    submitAdminReview,
+    retryAIEvaluation,
+    bulkApproveEvaluations,
+    getCourseEvaluationHistory,
+    exportEvaluations
+} from './aiModerationService';
+export type {
+    AIEvaluation,
+    AIEvaluationStats,
+    AIEvaluationFilters,
+    AdminReviewData,
+    BulkApproveData,
+    PaginatedResponse as AIModerationPaginatedResponse,
+    ApiResponse as AIModerationApiResponse
+} from './aiModerationService';
+
 // Common types that are shared across services
 export type { ApiResponse } from './userService';
 export type { SystemLog as SystemServiceLog } from './systemService';

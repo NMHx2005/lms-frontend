@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientCoursesService } from '../../../../services/client/courses.service';
 import { wishlistService } from '../../../../services/client/wishlist.service';
-import PaymentForm from '../PaymentForm/PaymentForm';
 import { toast } from 'react-hot-toast';
 import './CourseHero.css';
 
@@ -34,11 +33,12 @@ interface CourseHeroProps {
 
 const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
   const [enrollmentStatus, setEnrollmentStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage] = useState('');
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isProcessingVNPay, setIsProcessingVNPay] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'vnpay' | 'contact_teacher'>('vnpay');
 
   // Wishlist states
   const [isInWishlist, setIsInWishlist] = useState(false);
@@ -185,43 +185,72 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
       navigate(`/dashboard/courses/${course.id}`);
       return;
     }
-    setShowPaymentForm(true);
+    // Show payment modal
+    setShowPaymentModal(true);
   };
 
-  const handleVNPayPayment = async (paymentInfo: { fullName: string; phone: string; address: string }) => {
+  const handleVNPayPayment = async () => {
     try {
       setIsProcessingVNPay(true);
 
-      // Use real VNPay for production, mock for development
-      const useRealVNPay = import.meta.env.PROD || import.meta.env.VITE_USE_REAL_VNPAY === 'true';
+      // Use mock VNPay payment - no user input needed, auto-creates enrollment
+      const response = await clientCoursesService.createVNPayPayment(course.id, {
+        amount: course.price,
+        courseTitle: course.title
+      });
 
-      const response = useRealVNPay
-        ? await clientCoursesService.createVNPayPaymentReal(course.id, {
-          amount: course.price,
-          courseTitle: course.title,
-          userInfo: paymentInfo
-        })
-        : await clientCoursesService.createVNPayPayment(course.id, {
-          amount: course.price,
-          courseTitle: course.title,
-          userInfo: paymentInfo
-        });
-
-      if (response.success && response.data?.paymentUrl) {
-        // Redirect to VNPay payment page
-        window.location.href = response.data.paymentUrl;
+      if (response.success) {
+        // Check if already enrolled
+        if (response.data?.alreadyEnrolled) {
+          setIsEnrolled(true);
+          toast.success('Bạn đã đăng ký khóa học này rồi!');
+          setShowPaymentModal(false);
+          setTimeout(() => navigate(`/dashboard/courses/${course.id}`), 2000);
+        } else if (response.data?.paymentUrl) {
+          // Redirect to payment result page
+          window.location.href = response.data.paymentUrl;
+        } else {
+          toast.error('Không thể tạo thanh toán. Vui lòng thử lại.');
+          setShowPaymentModal(false);
+        }
       } else {
-        setEnrollmentStatus('error');
-        setErrorMessage(response.error || 'Không thể tạo liên kết thanh toán VNPay');
-        setShowPaymentForm(false);
-        toast.error(response.error || 'Không thể tạo liên kết thanh toán VNPay');
+        toast.error(response.error || 'Không thể tạo thanh toán VNPay');
+        setShowPaymentModal(false);
       }
     } catch (error: any) {
       console.error('VNPay payment error:', error);
-      setEnrollmentStatus('error');
-      setErrorMessage('Có lỗi xảy ra khi tạo liên kết thanh toán VNPay. Vui lòng thử lại.');
-      setShowPaymentForm(false);
-      toast.error('Có lỗi xảy ra khi tạo liên kết thanh toán VNPay. Vui lòng thử lại.');
+      toast.error(error.response?.data?.error || 'Có lỗi xảy ra khi thanh toán');
+      setShowPaymentModal(false);
+    } finally {
+      setIsProcessingVNPay(false);
+    }
+  };
+
+  const handleContactTeacher = async () => {
+    try {
+      setIsProcessingVNPay(true);
+
+      const response = await clientCoursesService.enrollInCourseDirect(course.id, {
+        paymentMethod: 'contact_teacher',
+        agreeToTerms: true
+      });
+
+      if (response.success) {
+        if (response.data?.alreadyEnrolled) {
+          setIsEnrolled(true);
+          toast.success('Bạn đã đăng ký khóa học này rồi!');
+        } else {
+          setIsEnrolled(true);
+          toast.success('Đã gửi yêu cầu đăng ký. Vui lòng liên hệ giáo viên để hoàn tất.');
+        }
+        setShowPaymentModal(false);
+      } else {
+        toast.error(response.error || 'Có lỗi xảy ra');
+        setShowPaymentModal(false);
+      }
+    } catch (error: any) {
+      toast.error('Có lỗi xảy ra khi gửi yêu cầu');
+      setShowPaymentModal(false);
     } finally {
       setIsProcessingVNPay(false);
     }
@@ -329,7 +358,7 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
                     <div className="course-hero__error-actions">
                       <button
                         className="course-hero__error-retry-btn"
-                        onClick={() => setShowPaymentForm(true)}
+                        onClick={() => setShowPaymentModal(true)}
                       >
                         Thử phương thức khác
                       </button>
@@ -482,14 +511,99 @@ const CourseHero: React.FC<CourseHeroProps> = ({ course }) => {
       </section>
 
       {/* Payment Form Modal */}
-      <PaymentForm
-        visible={showPaymentForm}
-        onCancel={() => setShowPaymentForm(false)}
-        onConfirm={handleVNPayPayment}
-        courseTitle={course.title}
-        coursePrice={course.price}
-        loading={isProcessingVNPay}
-      />
+      {/* Payment Modal - Same as CourseCTA */}
+      {showPaymentModal && (
+        <div className="course-hero__payment-modal">
+          <div className="course-hero__payment-modal-content">
+            <div className="course-hero__payment-modal-header">
+              <h3>Chọn phương thức thanh toán</h3>
+              <button
+                className="course-hero__payment-modal-close"
+                onClick={() => setShowPaymentModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="course-hero__payment-modal-body">
+              <div className="course-hero__payment-methods">
+                <div className="course-hero__payment-method">
+                  <input
+                    type="radio"
+                    id="vnpay-hero"
+                    name="paymentMethodHero"
+                    value="vnpay"
+                    checked={selectedPaymentMethod === 'vnpay'}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value as any)}
+                  />
+                  <label htmlFor="vnpay-hero">
+                    <span className="course-hero__payment-method-icon">🏦</span>
+                    <span className="course-hero__payment-method-name">Thanh toán qua VNPay</span>
+                    <span className="course-hero__payment-method-desc">Thanh toán tự động - Không cần nhập form</span>
+                  </label>
+                </div>
+
+                <div className="course-hero__payment-method">
+                  <input
+                    type="radio"
+                    id="contact_teacher-hero"
+                    name="paymentMethodHero"
+                    value="contact_teacher"
+                    checked={selectedPaymentMethod === 'contact_teacher'}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value as any)}
+                  />
+                  <label htmlFor="contact_teacher-hero">
+                    <span className="course-hero__payment-method-icon">👨‍🏫</span>
+                    <span className="course-hero__payment-method-name">Liên hệ giáo viên</span>
+                    <span className="course-hero__payment-method-desc">Đăng ký trực tiếp với giáo viên</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="course-hero__payment-summary">
+                <div className="course-hero__payment-summary-item">
+                  <span>Giá khóa học:</span>
+                  <span>{formatPrice(course.price)}</span>
+                </div>
+                <div className="course-hero__payment-summary-item course-hero__payment-summary-total">
+                  <span>Tổng cộng:</span>
+                  <span>{formatPrice(course.price)}</span>
+                </div>
+              </div>
+
+              <div className="course-hero__payment-note">
+                <p>ℹ️ Thông tin thanh toán sẽ được lấy từ tài khoản của bạn. Không cần nhập form!</p>
+              </div>
+
+              <div className="course-hero__payment-actions">
+                <button
+                  className="course-hero__payment-cancel-btn"
+                  onClick={() => setShowPaymentModal(false)}
+                >
+                  Hủy
+                </button>
+                {selectedPaymentMethod === 'vnpay' ? (
+                  <button
+                    className="course-hero__payment-confirm-btn course-hero__payment-confirm-btn--vnpay"
+                    onClick={handleVNPayPayment}
+                    disabled={isProcessingVNPay}
+                  >
+                    {isProcessingVNPay ? 'Đang xử lý...' : 'Thanh toán ngay'}
+                  </button>
+                ) : (
+                  <button
+                    className="course-hero__payment-confirm-btn course-hero__payment-confirm-btn--contact"
+                    onClick={handleContactTeacher}
+                    disabled={isProcessingVNPay}
+                  >
+                    {isProcessingVNPay ? 'Đang xử lý...' : 'Liên hệ giáo viên'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

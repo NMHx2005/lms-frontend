@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
     Box, Container, Typography, Breadcrumbs, Grid, Card, CardContent, CardActions, CardMedia,
-    Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
+    Button, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress
 } from '@mui/material';
+import * as courseAnalyticsService from '@/services/client/course-analytics.service';
 
 interface CourseRow {
     _id: string;
@@ -21,21 +23,31 @@ const CourseAnalytics: React.FC = () => {
     const [rows, setRows] = useState<CourseRow[]>([]);
 
     useEffect(() => {
-        setLoading(true);
-        setTimeout(() => {
-            setRows([
-                { _id: 'course1', name: 'React Advanced Patterns', thumbnail: '/images/course1.jpg', students: 234, rating: 4.8, revenue: 8900, completionRate: 82, views: 15420 },
-                { _id: 'course2', name: 'Node.js Backend Development', thumbnail: '/images/course2.jpg', students: 189, rating: 4.6, revenue: 7200, completionRate: 75, views: 12890 },
-                { _id: 'course3', name: 'UI/UX Design Fundamentals', thumbnail: '/images/course3.jpg', students: 156, rating: 4.9, revenue: 6800, completionRate: 88, views: 11230 },
-            ]);
-            setLoading(false);
-        }, 500);
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await courseAnalyticsService.getCourseAnalyticsOverview();
+                if (response.success) {
+                    setRows(response.data);
+                }
+            } catch (error: any) {
+                console.error('Error loading course analytics:', error);
+                toast.error(error.response?.data?.message || 'Lỗi khi tải dữ liệu analytics');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
     }, []);
 
     if (loading) {
         return (
             <Container maxWidth="xl" sx={{ py: 3 }}>
-                <Typography>Đang tải...</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
+                    <CircularProgress size={60} sx={{ mb: 3 }} />
+                    <Typography variant="h6" color="text.secondary">Đang tải dữ liệu analytics...</Typography>
+                </Box>
             </Container>
         );
     }
@@ -61,7 +73,7 @@ const CourseAnalytics: React.FC = () => {
                                 <Stack spacing={1}>
                                     <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Học viên</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{course.students}</Typography></Stack>
                                     <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Đánh giá</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{course.rating}</Typography></Stack>
-                                    <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Thu nhập</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(course.revenue)}</Typography></Stack>
+                                    <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Thu nhập</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.revenue)}</Typography></Stack>
                                     <Stack direction="row" justifyContent="space-between"><Typography variant="caption" color="text.secondary">Hoàn thành</Typography><Typography variant="body2" sx={{ fontWeight: 600 }}>{course.completionRate}%</Typography></Stack>
                                 </Stack>
                             </CardContent>
@@ -96,7 +108,7 @@ const CourseAnalytics: React.FC = () => {
                                         <TableCell>{r.name}</TableCell>
                                         <TableCell align="right">{r.students}</TableCell>
                                         <TableCell align="right">{r.rating}</TableCell>
-                                        <TableCell align="right">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(r.revenue)}</TableCell>
+                                        <TableCell align="right">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(r.revenue)}</TableCell>
                                         <TableCell align="right">{r.completionRate}%</TableCell>
                                         <TableCell align="right">{new Intl.NumberFormat('en-US').format(r.views)}</TableCell>
                                     </TableRow>
