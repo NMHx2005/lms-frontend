@@ -83,18 +83,18 @@ const DashboardLayout: React.FC = () => {
       label: 'Danh sách yêu thích',
       description: 'Khóa học bạn quan tâm'
     },
-    {
-      path: '/dashboard/groups',
-      icon: '👥',
-      label: 'Nhóm học tập',
-      description: 'Tham gia nhóm học tập'
-    },
-    {
-      path: '/dashboard/calendar',
-      icon: '📅',
-      label: 'Lịch học',
-      description: 'Quản lý lịch học và deadline'
-    },
+    // {
+    //   path: '/dashboard/groups',
+    //   icon: '👥',
+    //   label: 'Nhóm học tập',
+    //   description: 'Tham gia nhóm học tập'
+    // },
+    // {
+    //   path: '/dashboard/calendar',
+    //   icon: '📅',
+    //   label: 'Lịch học',
+    //   description: 'Quản lý lịch học và deadline'
+    // },
     {
       path: '/dashboard/progress',
       icon: '📊',
@@ -124,12 +124,6 @@ const DashboardLayout: React.FC = () => {
       icon: '👤',
       label: 'Hồ sơ cá nhân',
       description: 'Thông tin cá nhân và cài đặt'
-    },
-    {
-      path: '/dashboard/notifications',
-      icon: '🔔',
-      label: 'Thông báo',
-      description: 'Trung tâm thông báo'
     }
   ];
 

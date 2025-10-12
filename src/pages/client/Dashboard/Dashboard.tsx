@@ -14,7 +14,6 @@ import {
   Chip,
   Stack,
   LinearProgress,
-  Divider,
   Avatar,
   Alert,
   CircularProgress,
@@ -40,15 +39,6 @@ interface DashboardCourse {
   estimatedTime: number;
 }
 
-interface DashboardAssignment {
-  _id: string;
-  title: string;
-  courseTitle: string;
-  dueDate: string;
-  status: 'pending' | 'submitted' | 'graded';
-  grade?: number;
-}
-
 interface DashboardStats {
   totalCourses: number;
   completedCourses: number;
@@ -58,35 +48,31 @@ interface DashboardStats {
   currentStreak: number;
 }
 
-// Helpers used across components
-type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('vi-VN');
-const getStatusColor = (status: string): ChipColor => {
-  switch (status) {
-    case 'pending': return 'warning';
-    case 'submitted': return 'info';
-    case 'graded': return 'success';
-    default: return 'default';
-  }
-};
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'pending': return 'Chưa nộp';
-    case 'submitted': return 'Đã nộp';
-    case 'graded': return 'Đã chấm';
-    default: return 'Không xác định';
-  }
-};
-
 // Small presentational components for cleaner JSX
 function StatCard({ icon, value, label, color }: { icon: React.ReactNode; value: React.ReactNode; label: string; color: string }) {
   return (
-    <Card sx={{ borderRadius: 2, boxShadow: 'none', border: (t) => `1px solid ${t.palette.divider}` }}>
-      <CardContent>
-        <Stack direction="column" spacing={1.25} alignItems="center" textAlign="center">
-          <Avatar sx={{ bgcolor: `${color}20`, color: color, width: 48, height: 48 }}>{icon}</Avatar>
-          <Typography variant="h3" fontWeight={800} lineHeight={1}>{value}</Typography>
-          <Typography color="text.secondary" variant="subtitle2">{label}</Typography>
+    <Card
+      sx={{
+        borderRadius: 3,
+        boxShadow: 'none',
+        border: (t) => `1px solid ${t.palette.divider}`,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: 3,
+          transform: 'translateY(-4px)',
+          borderColor: color
+        }
+      }}
+    >
+      <CardContent sx={{ py: 2.5 }}>
+        <Stack direction="column" spacing={1} alignItems="center" textAlign="center">
+          <Avatar sx={{ bgcolor: `${color}15`, color: color, width: 52, height: 52 }}>
+            {icon}
+          </Avatar>
+          <Typography variant="h4" fontWeight={700} lineHeight={1}>{value}</Typography>
+          <Typography color="text.secondary" variant="caption" fontWeight={500}>
+            {label}
+          </Typography>
         </Stack>
       </CardContent>
     </Card>
@@ -95,72 +81,93 @@ function StatCard({ icon, value, label, color }: { icon: React.ReactNode; value:
 
 function CourseCard({ course }: { course: DashboardCourse }) {
   return (
-    <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'transform .2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
-      <Box sx={{ position: 'relative' }}>
-        <CardMedia component="img" height="180" image={course.thumbnail} alt={course.title} />
-        <Stack direction="row" spacing={1} sx={{ position: 'absolute', top: 12, left: 12 }}>
-          <Chip size="small" color="primary" label={`Tiến độ ${course.progress}%`} />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ position: 'absolute', bottom: 12, right: 12 }}>
-          <Chip size="small" variant="outlined" icon={<AccessTimeIcon sx={{ fontSize: 16 }} />} label={`${course.estimatedTime} phút`} />
-        </Stack>
+    <Card
+      variant="outlined"
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 3,
+        transition: 'all 0.3s ease',
+        border: '1px solid',
+        borderColor: 'divider',
+        '&:hover': {
+          transform: 'translateY(-6px)',
+          boxShadow: 6,
+          borderColor: 'primary.main'
+        }
+      }}
+    >
+      <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+        <CardMedia
+          component="img"
+          height="180"
+          image={course.thumbnail}
+          alt={course.title}
+          sx={{ objectFit: 'cover' }}
+        />
+        <Chip
+          size="small"
+          label={`${course.progress}%`}
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            fontWeight: 700,
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)'
+          }}
+        />
       </Box>
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Typography variant="h6" fontWeight={700} gutterBottom noWrap>{course.title}</Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Giảng viên: {course.instructor}
+      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+        <Typography variant="h6" fontWeight={700} gutterBottom sx={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical'
+        }}>
+          {course.title}
         </Typography>
-        <Box sx={{ my: 1 }}>
-          <LinearProgress variant="determinate" value={Math.max(0, Math.min(100, course.progress))} sx={{ borderRadius: 2 }} />
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          👨‍🏫 {course.instructor}
+        </Typography>
+        <Box sx={{ mb: 1.5 }}>
+          <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">Tiến độ</Typography>
+            <Typography variant="caption" fontWeight={600}>{course.progress}%</Typography>
+          </Stack>
+          <LinearProgress
+            variant="determinate"
+            value={Math.max(0, Math.min(100, course.progress))}
+            sx={{
+              height: 8,
+              borderRadius: 2,
+              bgcolor: 'grey.200',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 2
+              }
+            }}
+          />
         </Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} divider={<Divider orientation="vertical" flexItem />}>
-          <Typography variant="body2"><strong>Bài học cuối:</strong> {course.lastLesson}</Typography>
-          <Typography variant="body2"><strong>Tiếp theo:</strong> {course.nextLesson}</Typography>
-        </Stack>
       </CardContent>
-      <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: 'space-between' }}>
-        <Button component={Link} to={`/learning/${course._id}`} variant="contained" endIcon={<ArrowForwardIosIcon sx={{ fontSize: 16 }} />}>
+      <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
+        <Button
+          component={Link}
+          to={`/learning/${course._id}`}
+          variant="contained"
+          fullWidth
+          endIcon={<ArrowForwardIosIcon sx={{ fontSize: 14 }} />}
+        >
           Tiếp tục học
         </Button>
-        <Typography variant="body2" color="text.secondary">⏱️ {course.estimatedTime} phút</Typography>
       </CardActions>
-    </Card>
-  );
-}
-
-function AssignmentItem({ a, toLink }: { a: DashboardAssignment; toLink: string }) {
-  const chipColor: ChipColor = getStatusColor(a.status);
-  return (
-    <Card variant="outlined" sx={{ borderRadius: 2 }}>
-      <CardContent>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" fontWeight={700} gutterBottom>{a.title}</Typography>
-            <Typography variant="body2" color="text.secondary">{a.courseTitle}</Typography>
-            <Typography variant="body2" color="error.main">Hạn nộp: {formatDate(a.dueDate)}</Typography>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip color={chipColor} label={getStatusText(a.status)} size="small" />
-              {a.grade !== undefined && (
-                <Chip label={`Điểm: ${a.grade}`} color="success" size="small" variant="outlined" />
-              )}
-            </Stack>
-          </Grid>
-          <Grid item xs={12} md={3} textAlign={{ xs: 'left', md: 'right' }}>
-            <Button component={Link} to={toLink} variant="outlined">
-              Xem chi tiết
-            </Button>
-          </Grid>
-        </Grid>
-      </CardContent>
     </Card>
   );
 }
 
 const Dashboard: React.FC = () => {
   const [recentCourses, setRecentCourses] = useState<DashboardCourse[]>([]);
-  const [upcomingAssignments, setUpcomingAssignments] = useState<DashboardAssignment[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalCourses: 0,
     completedCourses: 0,
@@ -171,6 +178,7 @@ const Dashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
   const theme = useTheme();
 
   useEffect(() => {
@@ -179,16 +187,26 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch dashboard data
-        const dashboardResponse = await clientAuthService.getDashboardData();
-        // Fetch learning statistics
-        const statsResponse = await clientAuthService.getLearningStatistics();
-        // Fetch recent activity (hiện tại chỉ log, UI chưa dùng dữ liệu này)
-        await clientAuthService.getRecentActivity();
+        // Fetch all data in parallel
+        const [dashboardResponse, statsResponse, certificatesResponse] = await Promise.all([
+          clientAuthService.getDashboardData(),
+          clientAuthService.getLearningStatistics(),
+          clientAuthService.getCertificates().catch(() => ({ success: false, data: [] }))
+        ]);
 
         // Process and set data
         if (dashboardResponse.success && dashboardResponse.data) {
           const dashboardData = dashboardResponse.data;
+
+          // Set user name
+          if (dashboardData.user) {
+            setUserName(dashboardData.user.name || dashboardData.user.firstName || 'Học viên');
+          }
+
+          // Count certificates
+          const certificatesCount = certificatesResponse.success && Array.isArray(certificatesResponse.data)
+            ? certificatesResponse.data.length
+            : 0;
 
           // Set stats from user data
           if (dashboardData.user && dashboardData.user.stats) {
@@ -196,10 +214,10 @@ const Dashboard: React.FC = () => {
             setStats({
               totalCourses: userStats.totalCoursesEnrolled || 0,
               completedCourses: userStats.totalCoursesCompleted || 0,
-              totalHours: userStats.totalLearningTime || 0,
+              totalHours: Math.round((userStats.totalLearningTime || 0) / 60), // Convert minutes to hours
               averageGrade: userStats.averageScore || 0,
-              certificatesEarned: 0,
-              currentStreak: 0
+              certificatesEarned: certificatesCount,
+              currentStreak: userStats.currentStreak || 0
             });
           } else if (statsResponse.success && statsResponse.data) {
             // Fallback to statistics API
@@ -207,43 +225,54 @@ const Dashboard: React.FC = () => {
             setStats({
               totalCourses: statsData.totalEnrollments || 0,
               completedCourses: statsData.completedCourses || 0,
-              totalHours: statsData.totalStudyTime || 0,
+              totalHours: Math.round((statsData.totalStudyTime || 0) / 60),
               averageGrade: statsData.averageProgress || 0,
-              certificatesEarned: 0,
-              currentStreak: 0
+              certificatesEarned: certificatesCount,
+              currentStreak: statsData.currentStreak || 0
             });
           }
 
           // Set recent courses from dashboard data
           if (dashboardData.enrolledCourses && Array.isArray(dashboardData.enrolledCourses)) {
-            const processedCourses: DashboardCourse[] = dashboardData.enrolledCourses.map((course: any) => ({
-              _id: course._id || course.id,
-              title: course.name || course.title || 'Khóa học không có tên',
-              thumbnail: course.thumbnail || '/images/default-course.jpg',
-              progress: course.progress || 0,
-              lastLesson: 'Chưa có bài học nào',
-              nextLesson: 'Bắt đầu khóa học',
-              instructor: 'Giảng viên không xác định',
-              estimatedTime: course.totalDuration || 0,
-            }));
+            // Create a map of course progress
+            const progressMap = new Map();
+            if (dashboardData.courseProgress && Array.isArray(dashboardData.courseProgress)) {
+              dashboardData.courseProgress.forEach((cp: any) => {
+                progressMap.set(cp.courseId, {
+                  progress: cp.progress || 0,
+                  completedLessons: cp.completedLessons || 0,
+                  totalLessons: cp.totalLessons || 0
+                });
+              });
+            }
+
+            const processedCourses: DashboardCourse[] = dashboardData.enrolledCourses.map((course: any) => {
+              const courseProgress = progressMap.get(course._id || course.id);
+
+              // Get instructor name
+              const instructorName = course.instructor?.name
+                || course.instructor?.firstName
+                || course.instructorName
+                || 'Giảng viên';
+
+              return {
+                _id: course._id || course.id,
+                title: course.title || 'Khóa học không có tên',
+                thumbnail: course.thumbnail || '/images/default-course.jpg',
+                progress: courseProgress?.progress || 0,
+                lastLesson: courseProgress?.completedLessons
+                  ? `Bài ${courseProgress.completedLessons}/${courseProgress.totalLessons}`
+                  : 'Chưa bắt đầu',
+                nextLesson: courseProgress?.completedLessons < courseProgress?.totalLessons
+                  ? `Bài ${(courseProgress?.completedLessons || 0) + 1}`
+                  : 'Đã hoàn thành',
+                instructor: instructorName,
+                estimatedTime: course.totalDuration || 0,
+              };
+            });
             setRecentCourses(processedCourses);
           } else {
             setRecentCourses([]);
-          }
-
-          // Set assignments (if available in dashboard data)
-          if (dashboardData.upcomingAssignments && Array.isArray(dashboardData.upcomingAssignments)) {
-            const processedAssignments: DashboardAssignment[] = dashboardData.upcomingAssignments.map((assignment: any) => ({
-              _id: assignment._id || assignment.id,
-              title: assignment.title || 'Bài tập không có tên',
-              courseTitle: assignment.courseTitle || assignment.course?.name || 'Khóa học không xác định',
-              dueDate: assignment.dueDate || new Date().toISOString(),
-              status: assignment.status || 'pending',
-              grade: assignment.grade,
-            }));
-            setUpcomingAssignments(processedAssignments);
-          } else {
-            setUpcomingAssignments([]);
           }
         }
       } catch (err: any) {
@@ -291,95 +320,194 @@ const Dashboard: React.FC = () => {
       {/* Hero */}
       <Card sx={{
         mb: 3,
-        borderRadius: 2,
+        borderRadius: 3,
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #7c8cf8 0%, #8a6fd6 100%)',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'common.white',
       }}>
         <CardContent sx={{ py: { xs: 3, md: 4 } }}>
-          <Typography variant="h3" fontWeight={700} sx={{ letterSpacing: 0.2 }}>Chào mừng trở lại!</Typography>
-          <Typography variant="subtitle1" sx={{ opacity: 0.95, mt: 0.5 }}>Đây là tổng quan về hành trình học tập của bạn</Typography>
+          <Typography variant="h3" fontWeight={700} sx={{ letterSpacing: 0.2 }}>
+            Chào mừng trở lại{userName ? `, ${userName}` : ''}! 👋
+          </Typography>
+          <Typography variant="subtitle1" sx={{ opacity: 0.95, mt: 0.5 }}>
+            Hãy tiếp tục hành trình học tập của bạn hôm nay
+          </Typography>
         </CardContent>
       </Card>
 
       {/* Stats Overview */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <StatCard icon={<SchoolIcon />} value={stats.totalCourses} label="Khóa học đã đăng ký" color={theme.palette.primary.main} />
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={6} sm={6} md={4} lg={2}>
+          <StatCard
+            icon={<SchoolIcon />}
+            value={stats.totalCourses}
+            label="Khóa học"
+            color={theme.palette.primary.main}
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <StatCard icon={<CheckCircleIcon />} value={stats.completedCourses} label="Khóa học đã hoàn thành" color={theme.palette.success.main} />
+        <Grid item xs={6} sm={6} md={4} lg={2}>
+          <StatCard
+            icon={<CheckCircleIcon />}
+            value={stats.completedCourses}
+            label="Đã hoàn thành"
+            color={theme.palette.success.main}
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <StatCard icon={<AccessTimeIcon />} value={`${stats.totalHours}h`} label="Tổng thời gian học" color={theme.palette.warning.main} />
+        <Grid item xs={6} sm={6} md={4} lg={2}>
+          <StatCard
+            icon={<AccessTimeIcon />}
+            value={`${stats.totalHours}h`}
+            label="Giờ học"
+            color={theme.palette.warning.main}
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <StatCard icon={<StarIcon />} value={stats.averageGrade} label="Điểm trung bình" color={theme.palette.secondary.main} />
+        <Grid item xs={6} sm={6} md={4} lg={2}>
+          <StatCard
+            icon={<StarIcon />}
+            value={stats.averageGrade.toFixed(1)}
+            label="Điểm TB"
+            color={theme.palette.secondary.main}
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <StatCard icon={<EmojiEventsIcon />} value={stats.certificatesEarned} label="Chứng chỉ đã nhận" color={theme.palette.info.main} />
+        <Grid item xs={6} sm={6} md={4} lg={2}>
+          <StatCard
+            icon={<EmojiEventsIcon />}
+            value={stats.certificatesEarned}
+            label="Chứng chỉ"
+            color={theme.palette.info.main}
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <StatCard icon={<WhatshotIcon />} value={stats.currentStreak} label="Ngày học liên tiếp" color={theme.palette.error.main} />
+        <Grid item xs={6} sm={6} md={4} lg={2}>
+          <StatCard
+            icon={<WhatshotIcon />}
+            value={stats.currentStreak}
+            label="Streak"
+            color={theme.palette.error.main}
+          />
         </Grid>
       </Grid>
 
       <Grid container spacing={3}>
         <Grid item xs={12}>
           {/* Recent Courses */}
-          <Card sx={{ mb: 3, borderRadius: 3 }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography variant="h5" fontWeight={700}>Khóa học gần đây</Typography>
-                <Button component={Link} to="/dashboard/courses" variant="text">Xem tất cả</Button>
-              </Stack>
+          <Box sx={{ mb: 3 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Typography variant="h5" fontWeight={700}>
+                📚 Khóa học đang học
+              </Typography>
+              <Button component={Link} to="/dashboard/courses" variant="text" endIcon={<ArrowForwardIosIcon />}>
+                Xem tất cả
+              </Button>
+            </Stack>
 
-              {recentCourses.length > 0 ? (
-                <Grid container spacing={2}>
-                  {recentCourses.map((course) => (
-                    <Grid key={course._id} item xs={12} sm={6} md={4}>
-                      <CourseCard course={course} />
-                    </Grid>
-                  ))}
-                </Grid>
-              ) : (
-                <Box textAlign="center" py={4}>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
+            {recentCourses.length > 0 ? (
+              <Grid container spacing={3}>
+                {recentCourses.map((course) => (
+                  <Grid key={course._id} item xs={12} sm={6} md={4}>
+                    <CourseCard course={course} />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Card sx={{ borderRadius: 3, textAlign: 'center', py: 6 }}>
+                <CardContent>
+                  <SchoolIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
                     Bạn chưa đăng ký khóa học nào
                   </Typography>
-                  <Button component={Link} to="/courses" variant="contained">Khám phá khóa học</Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12}>
-          {/* Upcoming Assignments */}
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography variant="h5" fontWeight={700}>Bài tập sắp đến hạn</Typography>
-                <Button component={Link} to="/dashboard/assignments" variant="text">Xem tất cả</Button>
-              </Stack>
-
-              {upcomingAssignments.length > 0 ? (
-                <Stack spacing={2}>
-                  {upcomingAssignments.map((assignment) => (
-                    <AssignmentItem key={assignment._id} a={assignment} toLink={`/assignments/${assignment._id}`} />
-                  ))}
-                </Stack>
-              ) : (
-                <Box textAlign="center" py={4}>
-                  <Typography variant="body1" color="text.secondary">
-                    Không có bài tập nào sắp đến hạn
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Khám phá hàng ngàn khóa học chất lượng ngay hôm nay
                   </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+                  <Button component={Link} to="/courses" variant="contained" size="large">
+                    Khám phá khóa học
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </Box>
         </Grid>
       </Grid>
+
+      {/* Quick Actions */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>
+          ⚡ Truy cập nhanh
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sm={4} md={2}>
+            <Button
+              component={Link}
+              to="/courses"
+              variant="outlined"
+              fullWidth
+              sx={{ py: 2, flexDirection: 'column', gap: 1 }}
+            >
+              <SchoolIcon />
+              <Typography variant="caption">Khóa học</Typography>
+            </Button>
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <Button
+              component={Link}
+              to="/dashboard/progress"
+              variant="outlined"
+              fullWidth
+              sx={{ py: 2, flexDirection: 'column', gap: 1 }}
+            >
+              <CheckCircleIcon />
+              <Typography variant="caption">Tiến độ</Typography>
+            </Button>
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <Button
+              component={Link}
+              to="/dashboard/bills"
+              variant="outlined"
+              fullWidth
+              sx={{ py: 2, flexDirection: 'column', gap: 1 }}
+            >
+              <AccessTimeIcon />
+              <Typography variant="caption">Hóa đơn</Typography>
+            </Button>
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <Button
+              component={Link}
+              to="/dashboard/wishlist"
+              variant="outlined"
+              fullWidth
+              sx={{ py: 2, flexDirection: 'column', gap: 1 }}
+            >
+              <StarIcon />
+              <Typography variant="caption">Yêu thích</Typography>
+            </Button>
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <Button
+              component={Link}
+              to="/dashboard/notifications"
+              variant="outlined"
+              fullWidth
+              sx={{ py: 2, flexDirection: 'column', gap: 1 }}
+            >
+              <EmojiEventsIcon />
+              <Typography variant="caption">Thông báo</Typography>
+            </Button>
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <Button
+              component={Link}
+              to="/dashboard/profile"
+              variant="outlined"
+              fullWidth
+              sx={{ py: 2, flexDirection: 'column', gap: 1 }}
+            >
+              <WhatshotIcon />
+              <Typography variant="caption">Hồ sơ</Typography>
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
     </Container>
   );
 };

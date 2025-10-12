@@ -1,4 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { ratingService, CourseRating, RatingStats } from '@/services/client/rating.service';
 import {
   Container,
   Card,
@@ -8,336 +11,572 @@ import {
   Stack,
   Chip,
   Button,
-  Tabs,
-  Tab,
   TextField,
   Alert,
   Avatar,
-  Divider,
-  Paper,
-  Grid
+  Grid,
+  Rating,
+  CircularProgress,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControlLabel,
+  Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  ThumbUp as ThumbUpIcon,
-  ThumbDown as ThumbDownIcon,
-  Report as ReportIcon,
-  CheckCircle as CheckCircleIcon,
-  Undo as UndoIcon,
-  Assessment as AssessmentIcon
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Star as StarIcon,
+  RateReview as ReviewIcon,
+  TrendingUp as TrendingUpIcon,
+  Close as CloseIcon,
+  Visibility as VisibilityIcon,
+  Assessment as AssessmentIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 
-interface RatingAction {
-  id: string;
-  courseId: string;
-  courseName: string;
-  courseImage: string;
-  actionType: 'upvotes' | 'reports';
-  action: 'added' | 'removed';
-  reason?: string;
-  createdAt: string;
-  canUndo: boolean;
+interface EligibleCourse {
+  _id: string;
+  title: string;
+  thumbnail?: string;
+  enrollmentId: string;
 }
 
 const Ratings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'all' | 'upvotes' | 'reports'>('all');
+  const [reviews, setReviews] = useState<CourseRating[]>([]);
+  const [stats, setStats] = useState<RatingStats | null>(null);
+  const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data
-  const ratingActions: RatingAction[] = [
-    {
-      id: '1',
-      courseId: '1',
-      courseName: 'React Advanced Patterns',
-      courseImage: '/images/apollo.png',
-      actionType: 'upvotes',
-      action: 'added',
-      createdAt: '2024-01-15T10:30:00Z',
-      canUndo: true
-    },
-    {
-      id: '2',
-      courseId: '2',
-      courseName: 'Node.js Backend Development',
-      courseImage: '/images/aptech.png',
-      actionType: 'upvotes',
-      action: 'removed',
-      createdAt: '2024-01-14T14:20:00Z',
-      canUndo: false
-    },
-    {
-      id: '3',
-      courseId: '3',
-      courseName: 'UI/UX Design Fundamentals',
-      courseImage: '/images/codegym.png',
-      actionType: 'reports',
-      action: 'added',
-      reason: 'Nội dung không phù hợp với lứa tuổi',
-      createdAt: '2024-01-13T16:45:00Z',
-      canUndo: true
-    },
-    {
-      id: '4',
-      courseId: '4',
-      courseName: 'Python Data Science',
-      courseImage: '/images/funix.png',
-      actionType: 'upvotes',
-      action: 'added',
-      createdAt: '2024-01-12T08:15:00Z',
-      canUndo: true
-    },
-    {
-      id: '5',
-      courseId: '5',
-      courseName: 'Machine Learning Basics',
-      courseImage: '/images/rikedu.png',
-      actionType: 'reports',
-      action: 'removed',
-      reason: 'Báo cáo sai, nội dung hoàn toàn phù hợp',
-      createdAt: '2024-01-11T11:30:00Z',
-      canUndo: false
-    },
-    {
-      id: '6',
-      courseId: '6',
-      courseName: 'Web Development Bootcamp',
-      courseImage: '/images/logo.png',
-      actionType: 'upvotes',
-      action: 'added',
-      createdAt: '2024-01-10T09:45:00Z',
-      canUndo: true
-    }
-  ];
+  // Create dialog state
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    courseId: '',
+    rating: 5,
+    title: '',
+    content: '',
+    isPublic: true
+  });
 
-  const filteredActions = useMemo(() => {
-    return ratingActions.filter(action => {
-      const matchesTab = activeTab === 'all' || action.actionType === activeTab;
-      const matchesSearch = action.courseName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesTab && matchesSearch;
+  // Edit dialog state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingReview, setEditingReview] = useState<CourseRating | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    rating: 5,
+    title: '',
+    content: '',
+    isPublic: true
+  });
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  useEffect(() => {
+    if (reviews.length >= 0) {
+      fetchEligibleCourses();
+    }
+  }, [reviews.length]);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [reviewsResponse, statsResponse] = await Promise.all([
+        ratingService.getMyReviews({ limit: 100 }),
+        ratingService.getMyReviewStats()
+      ]);
+
+      if (reviewsResponse.success) {
+        setReviews(reviewsResponse.data || []);
+      }
+
+      if (statsResponse.success) {
+        setStats(statsResponse.data);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.error || 'Failed to load reviews';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEligibleCourses = async () => {
+    try {
+      // Get enrolled courses
+      const { clientAuthService } = await import('@/services/client/auth.service');
+      const enrollmentsResponse = await clientAuthService.getEnrolledCourses({ limit: 100 });
+
+      if (enrollmentsResponse.success && enrollmentsResponse.data?.enrollments) {
+        const enrollments = enrollmentsResponse.data.enrollments;
+
+        // Filter out courses that already have reviews
+        const reviewedCourseIds = new Set(reviews.map(r =>
+          typeof r.courseId === 'object' ? r.courseId._id : r.courseId
+        ));
+
+        const eligible = enrollments
+          .filter((e: any) => {
+            const courseId = e.courseId?._id;
+            // Only include ACTIVE enrollments that haven't been reviewed
+            return (
+              courseId &&
+              e.isActive === true &&           // ✅ Must be active (not refunded)
+              !reviewedCourseIds.has(courseId) // ✅ Not already reviewed
+            );
+          })
+          .map((e: any) => ({
+            _id: e.courseId._id,
+            title: e.courseId.title,
+            thumbnail: e.courseId.thumbnail,
+            enrollmentId: e._id
+          }));
+
+        setEligibleCourses(eligible);
+      }
+    } catch (err: any) {
+      console.error('Error fetching eligible courses:', err);
+    }
+  };
+
+  const handleEditClick = (review: CourseRating) => {
+    setEditingReview(review);
+    setEditFormData({
+      rating: review.rating,
+      title: review.title || '',
+      content: review.content || review.review || '',
+      isPublic: review.isPublic
     });
-  }, [ratingActions, activeTab, searchTerm]);
+    setShowEditDialog(true);
+  };
 
-  const stats = useMemo(() => {
-    const totalUpvotes = ratingActions.filter(a => a.actionType === 'upvotes' && a.action === 'added').length;
-    const totalReports = ratingActions.filter(a => a.actionType === 'reports' && a.action === 'added').length;
-    return { totalUpvotes, totalReports };
-  }, [ratingActions]);
-
-  const getActionIcon = useCallback((actionType: string, action: string) => {
-    if (actionType === 'upvotes') {
-      return action === 'added' ? <ThumbUpIcon /> : <ThumbDownIcon />;
-    } else {
-      return action === 'added' ? <ReportIcon /> : <CheckCircleIcon />;
+  const handleCreateReview = async () => {
+    if (!createFormData.courseId) {
+      toast.error('Vui lòng chọn khóa học');
+      return;
     }
-  }, []);
 
-  const getActionLabel = useCallback((actionType: string, action: string) => {
-    if (actionType === 'upvotes') {
-      return action === 'added' ? 'Đã upvote' : 'Đã bỏ upvote';
-    } else {
-      return action === 'added' ? 'Đã báo cáo' : 'Đã hủy báo cáo';
+    if (!createFormData.title || createFormData.title.length < 5 || createFormData.title.length > 200) {
+      toast.error('Tiêu đề phải từ 5-200 ký tự');
+      return;
     }
-  }, []);
 
-  const getActionColor = useCallback((actionType: string, action: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
-    if (actionType === 'upvotes') {
-      return action === 'added' ? 'success' : 'error';
-    } else {
-      return action === 'added' ? 'warning' : 'info';
+    if (!createFormData.content || createFormData.content.length < 10 || createFormData.content.length > 2000) {
+      toast.error('Nội dung phải từ 10-2000 ký tự');
+      return;
     }
-  }, []);
 
-  const formatDate = useCallback((dateString: string) => {
+    if (createFormData.rating < 1 || createFormData.rating > 5) {
+      toast.error('Rating phải từ 1-5 sao');
+      return;
+    }
+
+    try {
+      const loadingToast = toast.loading('Đang tạo đánh giá...');
+      const response = await ratingService.createReview(createFormData.courseId, {
+        rating: createFormData.rating,
+        title: createFormData.title,
+        content: createFormData.content,
+        isPublic: createFormData.isPublic
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (response.success) {
+        toast.success('Tạo đánh giá thành công!');
+        setShowCreateDialog(false);
+        setCreateFormData({ courseId: '', rating: 5, title: '', content: '', isPublic: true });
+        fetchReviews();
+        fetchEligibleCourses();
+      }
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err?.response?.data?.error || 'Failed to create review');
+    }
+  };
+
+  const handleUpdateReview = async () => {
+    if (!editingReview) return;
+
+    if (!editFormData.title || editFormData.title.length < 5 || editFormData.title.length > 200) {
+      toast.error('Tiêu đề phải từ 5-200 ký tự');
+      return;
+    }
+
+    if (!editFormData.content || editFormData.content.length < 10 || editFormData.content.length > 2000) {
+      toast.error('Nội dung phải từ 10-2000 ký tự');
+      return;
+    }
+
+    if (editFormData.rating < 1 || editFormData.rating > 5) {
+      toast.error('Rating phải từ 1-5 sao');
+      return;
+    }
+
+    try {
+      const loadingToast = toast.loading('Đang cập nhật đánh giá...');
+      const response = await ratingService.updateReview(editingReview._id, {
+        rating: editFormData.rating,
+        title: editFormData.title,
+        content: editFormData.content,
+        isPublic: editFormData.isPublic
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (response.success) {
+        toast.success('Cập nhật đánh giá thành công!');
+        setShowEditDialog(false);
+        setEditingReview(null);
+        fetchReviews();
+      }
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err?.response?.data?.error || 'Failed to update review');
+    }
+  };
+
+  const filteredReviews = useMemo(() => {
+    if (!searchTerm) return reviews;
+
+    const searchLower = searchTerm.toLowerCase();
+    return reviews.filter(r =>
+      (typeof r.courseId === 'object' && r.courseId.title?.toLowerCase().includes(searchLower)) ||
+      r.title?.toLowerCase().includes(searchLower) ||
+      r.content?.toLowerCase().includes(searchLower) ||
+      r.review?.toLowerCase().includes(searchLower)
+    );
+  }, [reviews, searchTerm]);
+
+  const handleDeleteReview = async (reviewId: string, courseName: string) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa đánh giá cho khóa học "${courseName}"?`)) {
+      return;
+    }
+
+    try {
+      const loadingToast = toast.loading('Đang xóa đánh giá...');
+      const response = await ratingService.deleteReview(reviewId);
+
+      toast.dismiss(loadingToast);
+
+      if (response.success) {
+        toast.success('Xóa đánh giá thành công!');
+        fetchReviews();
+      }
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err?.response?.data?.error || 'Failed to delete review');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'long',
+      day: 'numeric'
     });
-  }, []);
+  };
 
-  const handleUndoAction = useCallback((actionId: string) => {
-    // Mock function - in real app this would call API
-    console.log('Undoing action:', actionId);
-    alert('Đã hủy hành động thành công!');
-  }, []);
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" alignItems="center" justifyContent="center" minHeight={400}>
+          <Stack spacing={2} alignItems="center">
+            <CircularProgress size={60} />
+            <Typography variant="h6">Đang tải dữ liệu...</Typography>
+          </Stack>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="h6">Đã xảy ra lỗi</Typography>
+          <Typography>{error}</Typography>
+        </Alert>
+        <Button variant="contained" onClick={fetchReviews}>
+          🔄 Thử lại
+        </Button>
+      </Container>
+    );
+  }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Lịch sử đánh giá & báo cáo
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Theo dõi các hoạt động đánh giá và báo cáo của bạn
-        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box>
+            <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
+              Đánh giá của tôi
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Quản lý các đánh giá bạn đã viết cho khóa học
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<ReviewIcon />}
+            onClick={() => setShowCreateDialog(true)}
+            disabled={eligibleCourses.length === 0}
+          >
+            Tạo đánh giá
+          </Button>
+        </Stack>
       </Box>
 
-      {/* Tabs */}
-      <Card sx={{ mb: 3 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={activeTab}
-            onChange={(_, newValue) => setActiveTab(newValue)}
-            variant="fullWidth"
-          >
-            <Tab
-              label="Tất cả"
-              value="all"
-              icon={<AssessmentIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Upvotes"
-              value="upvotes"
-              icon={<ThumbUpIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Báo cáo"
-              value="reports"
-              icon={<ReportIcon />}
-              iconPosition="start"
-            />
-          </Tabs>
-        </Box>
-      </Card>
+      {/* Stats */}
+      {stats && (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: 'primary.light', width: 60, height: 60 }}>
+                    <ReviewIcon sx={{ color: 'primary.main' }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight={800}>{stats.totalReviews}</Typography>
+                    <Typography color="text.secondary" variant="body2">Tổng đánh giá</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: 'warning.light', width: 60, height: 60 }}>
+                    <StarIcon sx={{ color: 'warning.main' }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight={800}>
+                      {stats.averageRating.toFixed(1)}
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">Trung bình</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: 'success.light', width: 60, height: 60 }}>
+                    <TrendingUpIcon sx={{ color: 'success.main' }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight={800}>{stats.helpfulVotesReceived}</Typography>
+                    <Typography color="text.secondary" variant="body2">Hữu ích</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}` }}>
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: 'info.light', width: 60, height: 60 }}>
+                    <AssessmentIcon sx={{ color: 'info.main' }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight={800}>{stats.coursesReviewed}</Typography>
+                    <Typography color="text.secondary" variant="body2">Khóa học</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
 
-      {/* Filter Bar */}
-      <Card sx={{ mb: 3 }}>
+      {/* Search */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
         <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
-            <TextField
-              fullWidth
-              placeholder="Tìm kiếm theo tên khóa học..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
-              sx={{ maxWidth: 500 }}
-            />
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Paper variant="outlined" sx={{ p: 2, minWidth: 150 }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <ThumbUpIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Tổng upvotes
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {stats.totalUpvotes}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Paper>
-
-              <Paper variant="outlined" sx={{ p: 2, minWidth: 150 }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <ReportIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Tổng báo cáo
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {stats.totalReports}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Paper>
-            </Stack>
-          </Stack>
+          <TextField
+            fullWidth
+            placeholder="Tìm kiếm theo tên khóa học hoặc nội dung đánh giá..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+            }}
+          />
         </CardContent>
       </Card>
 
-      {/* Rating Actions List */}
-      <Card>
+      {/* Reviews List */}
+      <Card sx={{ borderRadius: 3 }}>
         <CardContent>
-          {filteredActions.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <AssessmentIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            Danh sách đánh giá ({filteredReviews.length})
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Quản lý tất cả đánh giá bạn đã viết
+          </Typography>
+
+          {filteredReviews.length === 0 ? (
+            <Box textAlign="center" py={8}>
+              <ReviewIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
-                Không có hoạt động nào
+                Không có đánh giá nào
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Bạn chưa có hoạt động đánh giá hoặc báo cáo nào hoặc không có hoạt động nào khớp với bộ lọc hiện tại.
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {searchTerm
+                  ? 'Không tìm thấy đánh giá phù hợp'
+                  : 'Bạn chưa đánh giá khóa học nào'}
               </Typography>
+              {!searchTerm && eligibleCourses.length > 0 && (
+                <Alert severity="info" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
+                  Bạn có {eligibleCourses.length} khóa học có thể đánh giá
+                </Alert>
+              )}
+              {!searchTerm && (
+                <Stack direction="row" spacing={2} justifyContent="center">
+                  {eligibleCourses.length > 0 ? (
+                    <Button
+                      variant="contained"
+                      onClick={() => setShowCreateDialog(true)}
+                      startIcon={<ReviewIcon />}
+                    >
+                      Tạo đánh giá ngay
+                    </Button>
+                  ) : (
+                    <Button
+                      component={Link}
+                      to="/dashboard/courses"
+                      variant="contained"
+                      startIcon={<StarIcon />}
+                    >
+                      Xem khóa học của tôi
+                    </Button>
+                  )}
+                </Stack>
+              )}
             </Box>
           ) : (
             <Stack spacing={3}>
-              {filteredActions.map((action) => (
-                <Card key={action.id} variant="outlined">
+              {filteredReviews.map((review) => (
+                <Card key={review._id} variant="outlined" sx={{ borderRadius: 2 }}>
                   <CardContent>
-                    {/* Header */}
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start" sx={{ mb: 2 }}>
-                      <Avatar
-                        src={action.courseImage}
-                        alt={action.courseName}
-                        sx={{ width: 80, height: 60 }}
-                        variant="rounded"
-                      />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" gutterBottom>
-                          {action.courseName}
-                        </Typography>
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
-                          <Chip
-                            icon={getActionIcon(action.actionType, action.action)}
-                            label={getActionLabel(action.actionType, action.action)}
-                            color={getActionColor(action.actionType, action.action)}
-                            size="small"
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(action.createdAt)}
-                          </Typography>
+                    <Grid container spacing={3}>
+                      {/* Course Info */}
+                      <Grid item xs={12} md={3}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          {typeof review.courseId === 'object' && review.courseId.thumbnail && (
+                            <Avatar
+                              src={review.courseId.thumbnail}
+                              variant="rounded"
+                              sx={{ width: 80, height: 80 }}
+                            />
+                          )}
+                          <Box>
+                            <Typography variant="subtitle1" fontWeight={600}>
+                              {typeof review.courseId === 'object' ? review.courseId.title : 'N/A'}
+                            </Typography>
+                            <Button
+                              component={Link}
+                              to={`/courses/${typeof review.courseId === 'object' ? review.courseId._id : ''}`}
+                              size="small"
+                              startIcon={<VisibilityIcon />}
+                            >
+                              Xem khóa học
+                            </Button>
+                          </Box>
                         </Stack>
-                      </Box>
-                      <Box>
-                        {action.canUndo && (
+                      </Grid>
+
+                      {/* Rating & Review */}
+                      <Grid item xs={12} md={6}>
+                        <Stack spacing={1}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Rating value={review.rating} readOnly size="small" />
+                            <Typography variant="body2" fontWeight={600}>
+                              {review.rating}/5
+                            </Typography>
+                            <Chip
+                              label={review.isPublic ? 'Công khai' : 'Riêng tư'}
+                              size="small"
+                              color={review.isPublic ? 'success' : 'default'}
+                              variant="outlined"
+                            />
+                          </Stack>
+
+                          {review.title && (
+                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                              {review.title}
+                            </Typography>
+                          )}
+
+                          {(review.content || review.review) && (
+                            <Typography variant="body2" color="text.secondary" sx={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}>
+                              {review.content || review.review}
+                            </Typography>
+                          )}
+
+                          <Typography variant="caption" color="text.secondary">
+                            Đánh giá: {formatDate(review.createdAt)}
+                            {review.updatedAt !== review.createdAt && ` • Sửa: ${formatDate(review.updatedAt)}`}
+                          </Typography>
+
+                          {review.helpfulCount > 0 && (
+                            <Chip
+                              icon={<TrendingUpIcon />}
+                              label={`${review.helpfulCount} người thấy hữu ích`}
+                              size="small"
+                              variant="outlined"
+                              color="success"
+                            />
+                          )}
+                        </Stack>
+                      </Grid>
+
+                      {/* Actions */}
+                      <Grid item xs={12} md={3}>
+                        <Stack spacing={1}>
                           <Button
                             variant="outlined"
-                            size="small"
-                            startIcon={<UndoIcon />}
-                            onClick={() => handleUndoAction(action.id)}
+                            startIcon={<EditIcon />}
+                            onClick={() => handleEditClick(review)}
+                            fullWidth
                           >
-                            Hủy hành động
+                            Chỉnh sửa
                           </Button>
-                        )}
-                      </Box>
-                    </Stack>
-
-                    {action.reason && (
-                      <>
-                        <Divider sx={{ my: 2 }} />
-                        <Alert severity="info">
-                          <Typography variant="body2">
-                            <strong>Lý do:</strong> {action.reason}
-                          </Typography>
-                        </Alert>
-                      </>
-                    )}
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* Footer */}
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={4}>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Loại:</strong> {action.actionType === 'upvotes' ? 'Upvote' : 'Báo cáo'}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Hành động:</strong> {action.action === 'added' ? 'Thêm' : 'Xóa'}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Có thể hủy:</strong> {action.canUndo ? 'Có' : 'Không'}
-                        </Typography>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleDeleteReview(
+                              review._id,
+                              typeof review.courseId === 'object' ? review.courseId.title : ''
+                            )}
+                            fullWidth
+                          >
+                            Xóa
+                          </Button>
+                        </Stack>
                       </Grid>
                     </Grid>
                   </CardContent>
@@ -347,6 +586,173 @@ const Ratings: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Review Dialog */}
+      <Dialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight={700}>Tạo đánh giá mới</Typography>
+            <IconButton onClick={() => setShowCreateDialog(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={3}>
+            <FormControl fullWidth required>
+              <InputLabel>Chọn khóa học</InputLabel>
+              <Select
+                value={createFormData.courseId}
+                onChange={(e) => setCreateFormData({ ...createFormData, courseId: e.target.value })}
+                label="Chọn khóa học"
+              >
+                {eligibleCourses.map((course) => (
+                  <MenuItem key={course._id} value={course._id}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      {course.thumbnail && (
+                        <Avatar src={course.thumbnail} variant="rounded" />
+                      )}
+                      <Typography>{course.title}</Typography>
+                    </Stack>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Đánh giá sao *
+              </Typography>
+              <Rating
+                value={createFormData.rating}
+                onChange={(_, newValue) => setCreateFormData({ ...createFormData, rating: newValue || 5 })}
+                size="large"
+              />
+            </Box>
+
+            <TextField
+              fullWidth
+              required
+              label="Tiêu đề đánh giá"
+              value={createFormData.title}
+              onChange={(e) => setCreateFormData({ ...createFormData, title: e.target.value })}
+              placeholder="Ví dụ: Khóa học rất bổ ích"
+              inputProps={{ maxLength: 200 }}
+              helperText={`${createFormData.title.length}/200 ký tự (tối thiểu 5)`}
+              error={createFormData.title.length > 0 && createFormData.title.length < 5}
+            />
+
+            <TextField
+              fullWidth
+              required
+              multiline
+              rows={4}
+              label="Nội dung đánh giá"
+              value={createFormData.content}
+              onChange={(e) => setCreateFormData({ ...createFormData, content: e.target.value })}
+              placeholder="Chia sẻ trải nghiệm chi tiết của bạn về khóa học..."
+              inputProps={{ maxLength: 2000 }}
+              helperText={`${createFormData.content.length}/2000 ký tự (tối thiểu 10)`}
+              error={createFormData.content.length > 0 && createFormData.content.length < 10}
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={createFormData.isPublic}
+                  onChange={(e) => setCreateFormData({ ...createFormData, isPublic: e.target.checked })}
+                />
+              }
+              label="Hiển thị công khai"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCreateDialog(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleCreateReview}>
+            Tạo đánh giá
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onClose={() => setShowEditDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight={700}>Chỉnh sửa đánh giá</Typography>
+            <IconButton onClick={() => setShowEditDialog(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={3}>
+            {editingReview && (
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Khóa học
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {typeof editingReview.courseId === 'object' ? editingReview.courseId.title : 'N/A'}
+                </Typography>
+              </Box>
+            )}
+
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Đánh giá sao
+              </Typography>
+              <Rating
+                value={editFormData.rating}
+                onChange={(_, newValue) => setEditFormData({ ...editFormData, rating: newValue || 5 })}
+                size="large"
+              />
+            </Box>
+
+            <TextField
+              fullWidth
+              required
+              label="Tiêu đề đánh giá"
+              value={editFormData.title}
+              onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+              placeholder="Ví dụ: Khóa học rất bổ ích"
+              inputProps={{ maxLength: 200 }}
+              helperText={`${editFormData.title.length}/200 ký tự (tối thiểu 5)`}
+              error={editFormData.title.length > 0 && editFormData.title.length < 5}
+            />
+
+            <TextField
+              fullWidth
+              required
+              multiline
+              rows={4}
+              label="Nội dung đánh giá"
+              value={editFormData.content}
+              onChange={(e) => setEditFormData({ ...editFormData, content: e.target.value })}
+              placeholder="Chia sẻ trải nghiệm chi tiết của bạn về khóa học..."
+              inputProps={{ maxLength: 2000 }}
+              helperText={`${editFormData.content.length}/2000 ký tự (tối thiểu 10)`}
+              error={editFormData.content.length > 0 && editFormData.content.length < 10}
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editFormData.isPublic}
+                  onChange={(e) => setEditFormData({ ...editFormData, isPublic: e.target.checked })}
+                />
+              }
+              label="Hiển thị công khai"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowEditDialog(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleUpdateReview}>
+            Cập nhật
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

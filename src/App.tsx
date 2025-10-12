@@ -40,7 +40,6 @@ const CourseModeration = lazy(() => import('./pages/admin/CourseModeration'));
 const CourseDirectory = lazy(() => import('./pages/admin/CourseDirectory'));
 const RefundCenter = lazy(() => import('./pages/admin/RefundCenter'));
 const BillsPayments = lazy(() => import('./pages/admin/BillsPayments'));
-const AIModeration = lazy(() => import('./pages/admin/AIModeration'));
 const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
 const SystemSettings = lazy(() => import('./pages/admin/SystemSettings'));
 const PermissionsManagement = lazy(() => import('./pages/admin/PermissionsManagement'));
@@ -61,7 +60,6 @@ const Bills = lazy(() => import('./pages/client/Dashboard/Bills/Bills'));
 const Refunds = lazy(() => import('./pages/client/Dashboard/Refunds/Refunds'));
 const Ratings = lazy(() => import('./pages/client/Dashboard/Ratings/Ratings'));
 const ProfileDashboard = lazy(() => import('./pages/client/Dashboard/Profile/Profile'));
-const Notifications = lazy(() => import('./pages/client/Dashboard/Notifications/Notifications'));
 
 // New Dashboard Pages
 const Wishlist = lazy(() => import('./pages/client/Wishlist/Wishlist.tsx'));
@@ -75,7 +73,7 @@ const CourseAnalyticsDetail = lazy(() => import('./pages/client/Teacher/Analytic
 const CourseAnalytics = lazy(() => import('./pages/client/Teacher/Analytics/CourseAnalytics.tsx'));
 const StudentAnalytics = lazy(() => import('./pages/client/Teacher/Analytics/StudentAnalytics.tsx'));
 const StudentManagement = lazy(() => import('./pages/client/Teacher/StudentManagement/StudentManagement.tsx'));
-const CommunicationCenter = lazy(() => import('./pages/client/Teacher/CommunicationCenter/CommunicationCenter.tsx'));
+const TeacherRefunds = lazy(() => import('./pages/client/Teacher/Refunds/TeacherRefunds.tsx'));
 const CourseReviews = lazy(() => import('./pages/client/Teacher/CourseReviews/CourseReviews.tsx'));
 const Earnings = lazy(() => import('./pages/client/Teacher/Earnings/Earnings.tsx'));
 const EarningsAnalytics = lazy(() => import('./pages/client/Teacher/Earnings/EarningsAnalytics.tsx'));
@@ -180,7 +178,6 @@ function AppContent() {
                     <Route path="refunds" element={<Refunds />} />
                     <Route path="ratings" element={<Ratings />} />
                     <Route path="profile" element={<ProfileDashboard />} />
-                    <Route path="notifications" element={<Notifications />} />
                   </Route>
 
                   {/* Teacher Dashboard Routes */}
@@ -203,7 +200,7 @@ function AppContent() {
                     <Route path="analytics/courses" element={<CourseAnalytics />} />
                     <Route path="analytics/course/:id" element={<CourseAnalyticsDetail />} />
                     <Route path="analytics/students" element={<StudentAnalytics />} />
-                    <Route path="messages" element={<CommunicationCenter />} />
+                    <Route path="refunds" element={<TeacherRefunds />} />
                     <Route path="earnings" element={<Earnings />} />
                     <Route path="earnings/analytics" element={<EarningsAnalytics />} />
                     <Route path="ai" element={<AITools />} />
@@ -211,7 +208,6 @@ function AppContent() {
                     <Route path="ai/thumbnail" element={<ThumbnailTool />} />
                     <Route path="ai/moderation" element={<ModerationTool />} />
                     <Route path="student-management" element={<StudentManagement />} />
-                    <Route path="communication-center" element={<CommunicationCenter />} />
                     <Route path="course-reviews" element={<CourseReviews />} />
                     <Route path="advanced/packages" element={<PackagePlans />} />
                     <Route path="advanced/packages/:id" element={<PackagePlanDetail />} />
@@ -261,7 +257,6 @@ function AppContent() {
                     <Route path="packages" element={<PackageManagement />} />
                     <Route path="refunds" element={<RefundCenter />} />
                     <Route path="bills" element={<BillsPayments />} />
-                    <Route path="ai" element={<AIModeration />} />
                     <Route path="reports" element={<AdminAnalytics />} />
                     <Route path="settings" element={<SystemSettings />} />
                     <Route path="permissions" element={<PermissionsManagement />} />

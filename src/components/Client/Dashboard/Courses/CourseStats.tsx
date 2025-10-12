@@ -29,9 +29,15 @@ const CourseStats: React.FC<CourseStatsProps> = ({ courses }) => {
     return Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0][0];
   }, [courses, totalCourses]);
 
+  const formatValue = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}tr`;
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+    return value.toString();
+  };
+
   const stats = [
     { label: 'Khóa học đã mua', value: totalCourses, icon: <SchoolIcon />, color: 'primary.main' },
-    { label: 'Tổng giá trị', value: `${(totalValue / 1000).toFixed(0)}k`, icon: <MonetizationOnIcon />, color: 'success.main' },
+    { label: 'Tổng giá trị', value: formatValue(totalValue), icon: <MonetizationOnIcon />, color: 'success.main' },
     { label: 'Tổng đánh giá', value: totalUpvotes, icon: <StarIcon />, color: 'warning.main' },
     { label: 'Lĩnh vực chính', value: mainDomain, icon: <LocalOfferIcon />, color: 'secondary.main' },
   ] as const;

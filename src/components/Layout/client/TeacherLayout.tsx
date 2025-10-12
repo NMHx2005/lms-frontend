@@ -25,7 +25,6 @@ import {
   Close as CloseIcon,
   School as SchoolIcon,
   Analytics as AnalyticsIcon,
-  Message as MessageIcon,
   AccountBalanceWallet as EarningsIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
@@ -119,11 +118,11 @@ const TeacherLayout: React.FC = () => {
       ]
     },
     {
-      id: 'messages',
-      label: 'Communication Center',
-      icon: <MessageIcon />,
-      path: '/teacher/messages',
-      description: 'Giao tiếp với học viên'
+      id: 'refunds',
+      label: 'Quản lý Hoàn tiền',
+      icon: <MonetizationOnIcon />,
+      path: '/teacher/refunds',
+      description: 'Xử lý yêu cầu hoàn tiền từ học viên'
     },
     {
       id: 'earnings',

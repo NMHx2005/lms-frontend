@@ -33,7 +33,6 @@ import {
 } from '@mui/material';
 import SortIcon from '@mui/icons-material/Sort';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import StarIcon from '@mui/icons-material/Star';
@@ -41,9 +40,10 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import ExploreIcon from '@mui/icons-material/Explore';
 import HomeIcon from '@mui/icons-material/Home';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 
 const Wishlist: React.FC = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
@@ -175,26 +175,6 @@ const Wishlist: React.FC = () => {
     }
   };
 
-  // Move item to cart
-  const moveToCart = async (itemId: string) => {
-    try {
-      const response = await wishlistService.moveToCart(itemId);
-
-      if (response.success) {
-        toast.success('Course moved to cart successfully');
-        // Optionally remove from wishlist after moving to cart
-        setWishlistItems(prev => prev.filter(item => item._id !== itemId));
-        fetchWishlistStats();
-      } else {
-        toast.error(response.message || 'Failed to move course to cart');
-      }
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Failed to move course to cart';
-      toast.error(errorMessage);
-      console.error('Error moving to cart:', err);
-    }
-  };
-
   // Clear all wishlist items
   const clearAllWishlist = async () => {
     try {
@@ -322,7 +302,13 @@ const Wishlist: React.FC = () => {
                   <LocalOfferIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" fontWeight={800} lineHeight={1}>{formatPrice(stats.totalValue)}</Typography>
+                  <Typography variant="h4" fontWeight={800} lineHeight={1}>
+                    {stats.totalValue >= 1000000
+                      ? `${(stats.totalValue / 1000000).toFixed(1)}tr`
+                      : stats.totalValue >= 1000
+                        ? `${(stats.totalValue / 1000).toFixed(0)}k`
+                        : formatPrice(stats.totalValue)}
+                  </Typography>
                   <Typography color="text.secondary" variant="body2">Tổng giá trị</Typography>
                 </Box>
               </Stack>
@@ -472,10 +458,20 @@ const Wishlist: React.FC = () => {
                 </Box>
 
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" fontWeight={700} gutterBottom noWrap>
-                    <Link to={`/courses/${item.courseId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      {item.title}
-                    </Link>
+                  <Typography
+                    component={Link}
+                    to={`/courses/${item.courseId}`}
+                    variant="h6"
+                    fontWeight={700}
+                    gutterBottom
+                    noWrap
+                    sx={{
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      '&:hover': { color: 'primary.main' }
+                    }}
+                  >
+                    {item.title}
                   </Typography>
 
                   <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
@@ -525,21 +521,25 @@ const Wishlist: React.FC = () => {
 
                 <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
                   <Button
-                    variant="outlined"
-                    startIcon={<ShoppingCartIcon />}
-                    onClick={() => moveToCart(item._id)}
-                    sx={{ flex: 1 }}
-                  >
-                    Thêm vào giỏ
-                  </Button>
-                  <Button
                     component={Link}
-                    to={`/checkout/${item.courseId}`}
-                    variant="contained"
-                    startIcon={<ShoppingCartCheckoutIcon />}
+                    to={`/courses/${item.courseId}`}
+                    variant="outlined"
+                    startIcon={<VisibilityIcon />}
+                    sx={{ flex: 1, minHeight: 44 }}
                   >
-                    Mua ngay
+                    Chi tiết
                   </Button>
+                  {item.isOnSale && (
+                    <Button
+                      component={Link}
+                      to={`/courses/${item.courseId}`}
+                      variant="contained"
+                      startIcon={<PlayCircleOutlineIcon />}
+                      sx={{ flex: 1, minHeight: 44 }}
+                    >
+                      Đăng ký
+                    </Button>
+                  )}
                 </CardActions>
               </Card>
             </Grid>

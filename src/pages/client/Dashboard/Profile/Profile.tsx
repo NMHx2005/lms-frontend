@@ -174,16 +174,37 @@ const Profile: React.FC = () => {
     try {
       setSaving(true);
 
-      // Prepare data for API
-      const updateData = {
-        fullName: formData.fullName,
-        phone: formData.phone,
-        bio: formData.bio,
+      // Validate name (2-100 chars)
+      if (!formData.fullName || formData.fullName.trim().length < 2 || formData.fullName.trim().length > 100) {
+        toast.error('Họ tên phải từ 2-100 ký tự');
+        setSaving(false);
+        return;
+      }
+
+      // Prepare data for API - match backend validation
+      const updateData: any = {
+        name: formData.fullName.trim(),  // Backend expects 'name', not 'fullName'
+        profile: {
+          bio: formData.bio || ''
+        },
         preferences: {
           language: formData.language,
           timezone: formData.timezone
         }
       };
+
+      // Only include phone if it's not empty and valid (10-15 digits)
+      if (formData.phone && formData.phone.trim()) {
+        // Remove spaces and special chars, keep only digits and +
+        const cleanPhone = formData.phone.replace(/[\s\-()]/g, '');
+        if (/^(0\d{9,14}|\+?[1-9]\d{9,14})$/.test(cleanPhone)) {
+          updateData.profile.phone = cleanPhone;
+        } else {
+          toast.error('Số điện thoại không hợp lệ (phải có 10-15 chữ số)');
+          setSaving(false);
+          return;
+        }
+      }
 
       const response = await clientAuthService.updateProfile(updateData);
 

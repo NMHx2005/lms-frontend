@@ -28,8 +28,6 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import SchoolIcon from '@mui/icons-material/School';
 import StarIcon from '@mui/icons-material/Star';
 import PeopleIcon from '@mui/icons-material/People';
 import AssessmentIcon from '@mui/icons-material/Assessment';
@@ -54,9 +52,11 @@ interface EnrolledCourse {
     relatedLinks: string[];
     instructorId: {
       _id: string;
-      name: string;
-      email: string;
-      avatar: string;
+      name?: string;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      avatar?: string;
     };
     price: number;
     isPublished: boolean;
@@ -129,13 +129,18 @@ const getStatusText = (status: string) => {
 };
 
 // Course Card Component
-const CourseCard = React.memo(({ enrollment, onStartLearning, onViewDetails, onViewAll }: {
+const CourseCard = React.memo(({ enrollment, onStartLearning }: {
   enrollment: EnrolledCourse;
   onStartLearning: (courseId: string) => void;
-  onViewDetails: () => void;
-  onViewAll: () => void;
 }) => {
   const course = enrollment.courseId;
+
+  // Map status từ isActive, isCompleted
+  const enrollmentStatus = (enrollment as any).isCompleted
+    ? 'completed'
+    : (enrollment as any).isActive
+      ? 'active'
+      : 'paused';
 
   return (
     <Card sx={{
@@ -146,24 +151,24 @@ const CourseCard = React.memo(({ enrollment, onStartLearning, onViewDetails, onV
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       willChange: 'transform',
       '&:hover': {
-        transform: 'translateY(-2px)',
-        boxShadow: 4
+        transform: 'translateY(-4px)',
+        boxShadow: 6
       }
     }}>
       <Box sx={{ position: 'relative' }}>
-        <CardMedia component="img" height="200" image={course.thumbnail} alt={course.title} />
+        <CardMedia component="img" height="200" image={course.thumbnail} alt={course.title} sx={{ objectFit: 'cover' }} />
         <Stack direction="row" spacing={1} sx={{ position: 'absolute', top: 12, left: 12 }}>
           <Chip
             size="small"
             color={getLevelColor(course.level)}
             label={getLevelText(course.level)}
-            sx={{ fontWeight: 600 }}
+            sx={{ fontWeight: 600, bgcolor: 'rgba(255, 255, 255, 0.95)' }}
           />
           <Chip
             size="small"
-            color={getStatusColor(enrollment.status)}
-            label={getStatusText(enrollment.status)}
-            sx={{ fontWeight: 600 }}
+            color={getStatusColor(enrollmentStatus)}
+            label={getStatusText(enrollmentStatus)}
+            sx={{ fontWeight: 600, bgcolor: 'rgba(255, 255, 255, 0.95)' }}
           />
         </Stack>
         <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
@@ -180,6 +185,12 @@ const CourseCard = React.memo(({ enrollment, onStartLearning, onViewDetails, onV
         <Typography variant="h6" fontWeight={700} gutterBottom noWrap>
           {course.title}
         </Typography>
+
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            👨‍🏫 {course.instructorId?.name || course.instructorId?.firstName || 'Giảng viên'}
+          </Typography>
+        </Stack>
 
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
           <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
@@ -274,25 +285,10 @@ const CourseCard = React.memo(({ enrollment, onStartLearning, onViewDetails, onV
           variant="contained"
           startIcon={<PlayArrowIcon />}
           onClick={() => onStartLearning(course._id)}
-          sx={{ flex: 1, minHeight: 40 }}
+          fullWidth
+          sx={{ minHeight: 44 }}
         >
-          {enrollment.status === 'completed' ? 'Xem lại' : 'Học'}
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<VisibilityIcon />}
-          onClick={onViewDetails}
-          sx={{ minHeight: 40, minWidth: 100 }}
-        >
-          Chi tiết
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<SchoolIcon />}
-          onClick={onViewAll}
-          sx={{ minHeight: 40, minWidth: 100 }}
-        >
-          Tất cả
+          {enrollmentStatus === 'completed' ? 'Xem lại' : 'Tiếp tục học'}
         </Button>
       </CardActions>
     </Card>
@@ -311,6 +307,54 @@ const MyCourses: React.FC = () => {
     status: 'all'
   });
   const [searchInput, setSearchInput] = useState('');
+
+  // Lấy danh sách domains có trong khóa học
+  const availableDomains = useMemo(() => {
+    const domains = new Set<string>();
+    enrolledCourses.forEach(enrollment => {
+      if (enrollment?.courseId?.domain) {
+        domains.add(enrollment.courseId.domain);
+      }
+    });
+    return Array.from(domains).sort();
+  }, [enrolledCourses]);
+
+  // Tính số lượng theo status
+  const statusCounts = useMemo(() => {
+    const counts = {
+      active: 0,
+      completed: 0,
+      paused: 0,
+      cancelled: 0
+    };
+    enrolledCourses.forEach(enrollment => {
+      const status = (enrollment as any).isCompleted
+        ? 'completed'
+        : (enrollment as any).isActive
+          ? 'active'
+          : 'paused';
+      counts[status as keyof typeof counts]++;
+    });
+    return counts;
+  }, [enrolledCourses]);
+
+  // Tính số lượng theo level
+  const levelCounts = useMemo(() => {
+    const counts = {
+      beginner: 0,
+      intermediate: 0,
+      advanced: 0
+    };
+    enrolledCourses.forEach(enrollment => {
+      if (enrollment?.courseId?.level) {
+        const level = enrollment.courseId.level as keyof typeof counts;
+        if (counts[level] !== undefined) {
+          counts[level]++;
+        }
+      }
+    });
+    return counts;
+  }, [enrolledCourses]);
 
   useEffect(() => {
     fetchEnrolledCourses();
@@ -366,11 +410,18 @@ const MyCourses: React.FC = () => {
         return false;
       }
 
+      // Map enrollment status
+      const enrollmentStatus = (enrollment as any).isCompleted
+        ? 'completed'
+        : (enrollment as any).isActive
+          ? 'active'
+          : 'paused';
+
       const matchesSearch = course.title.toLowerCase().includes(filters.search.toLowerCase()) ||
         course.description.toLowerCase().includes(filters.search.toLowerCase());
       const matchesDomain = filters.domain === 'all' || course.domain === filters.domain;
       const matchesLevel = filters.level === 'all' || course.level === filters.level;
-      const matchesStatus = filters.status === 'all' || enrollment.status === filters.status;
+      const matchesStatus = filters.status === 'all' || enrollmentStatus === filters.status;
 
       return matchesSearch && matchesDomain && matchesLevel && matchesStatus;
     });
@@ -395,15 +446,6 @@ const MyCourses: React.FC = () => {
 
   const handleStartLearning = useCallback((courseId: string) => {
     navigate(`/learning/${courseId}`);
-  }, [navigate]);
-
-  const handleViewDetails = useCallback(() => {
-    // Navigate to course detail page
-    console.log('View details');
-  }, []);
-
-  const handleViewAll = useCallback(() => {
-    navigate('/learning');
   }, [navigate]);
 
   if (loading) {
@@ -461,27 +503,30 @@ const MyCourses: React.FC = () => {
       {/* Stats */}
       <Box sx={{ mb: 4 }}>
         <CourseStats courses={enrolledCourses
-          .filter(enrollment => enrollment && enrollment.courseId)
-          .map(enrollment => ({
-            _id: enrollment.courseId._id || '',
-            title: enrollment.courseId.title || '',
-            description: enrollment.courseId.description || '',
-            thumbnail: enrollment.courseId.thumbnail || '',
-            domain: enrollment.courseId.domain || '',
-            level: (enrollment.courseId.level as 'beginner' | 'intermediate' | 'advanced') || 'beginner',
-            prerequisites: enrollment.courseId.prerequisites || [],
-            benefits: enrollment.courseId.benefits || [],
-            relatedLinks: enrollment.courseId.relatedLinks || [],
-            instructorId: enrollment.courseId.instructorId?._id || '',
-            price: enrollment.courseId.price || 0,
-            isPublished: enrollment.courseId.isPublished || false,
-            isApproved: enrollment.courseId.isApproved || false,
-            upvotes: enrollment.courseId.upvotes || 0,
-            reports: enrollment.courseId.reports || 0,
-            enrolledStudents: enrollment.courseId.enrolledStudents || [],
-            createdAt: enrollment.courseId.createdAt || new Date().toISOString(),
-            updatedAt: enrollment.courseId.updatedAt || new Date().toISOString()
-          }))} />
+          .filter(enrollment => enrollment?.courseId)
+          .map(enrollment => {
+            const course = enrollment.courseId;
+            return {
+              _id: course._id,
+              title: course.title,
+              description: course.description,
+              thumbnail: course.thumbnail,
+              domain: course.domain,
+              level: (course.level as 'beginner' | 'intermediate' | 'advanced'),
+              prerequisites: course.prerequisites || [],
+              benefits: course.benefits || [],
+              relatedLinks: course.relatedLinks || [],
+              instructorId: typeof course.instructorId === 'string' ? course.instructorId : course.instructorId?._id || '',
+              price: course.price,
+              isPublished: course.isPublished || false,
+              isApproved: course.isApproved || false,
+              upvotes: course.upvotes || 0,
+              reports: course.reports || 0,
+              enrolledStudents: course.enrolledStudents || [],
+              createdAt: course.createdAt,
+              updatedAt: course.updatedAt
+            };
+          })} />
       </Box>
 
       {/* Filters */}
@@ -515,11 +560,12 @@ const MyCourses: React.FC = () => {
                     disableScrollLock: true
                   }}
                 >
-                  <MenuItem value="all">Tất cả lĩnh vực</MenuItem>
-                  <MenuItem value="IT">IT</MenuItem>
-                  <MenuItem value="Design">Design</MenuItem>
-                  <MenuItem value="Business">Business</MenuItem>
-                  <MenuItem value="Marketing">Marketing</MenuItem>
+                  <MenuItem value="all">Tất cả ({availableDomains.length})</MenuItem>
+                  {availableDomains.map(domain => (
+                    <MenuItem key={domain} value={domain}>
+                      {domain}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -534,10 +580,10 @@ const MyCourses: React.FC = () => {
                     disableScrollLock: true
                   }}
                 >
-                  <MenuItem value="all">Tất cả cấp độ</MenuItem>
-                  <MenuItem value="beginner">Cơ bản</MenuItem>
-                  <MenuItem value="intermediate">Trung cấp</MenuItem>
-                  <MenuItem value="advanced">Nâng cao</MenuItem>
+                  <MenuItem value="all">Tất cả ({enrolledCourses.length})</MenuItem>
+                  <MenuItem value="beginner">Cơ bản ({levelCounts.beginner})</MenuItem>
+                  <MenuItem value="intermediate">Trung cấp ({levelCounts.intermediate})</MenuItem>
+                  <MenuItem value="advanced">Nâng cao ({levelCounts.advanced})</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -552,11 +598,11 @@ const MyCourses: React.FC = () => {
                     disableScrollLock: true
                   }}
                 >
-                  <MenuItem value="all">Tất cả trạng thái</MenuItem>
-                  <MenuItem value="active">Đang học</MenuItem>
-                  <MenuItem value="completed">Hoàn thành</MenuItem>
-                  <MenuItem value="paused">Tạm dừng</MenuItem>
-                  <MenuItem value="cancelled">Đã hủy</MenuItem>
+                  <MenuItem value="all">Tất cả ({enrolledCourses.length})</MenuItem>
+                  <MenuItem value="active">Đang học ({statusCounts.active})</MenuItem>
+                  <MenuItem value="completed">Hoàn thành ({statusCounts.completed})</MenuItem>
+                  <MenuItem value="paused">Tạm dừng ({statusCounts.paused})</MenuItem>
+                  <MenuItem value="cancelled">Đã hủy ({statusCounts.cancelled})</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -592,8 +638,6 @@ const MyCourses: React.FC = () => {
                   <CourseCard
                     enrollment={enrollment}
                     onStartLearning={handleStartLearning}
-                    onViewDetails={handleViewDetails}
-                    onViewAll={handleViewAll}
                   />
                 </Grid>
               ))}

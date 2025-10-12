@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { progressService, ProgressOverview, Certificate, RecentActivity } from '@/services/client/progress.service';
 import {
   Container,
   Grid,
@@ -18,7 +21,9 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Avatar
+  Avatar,
+  CardMedia,
+  LinearProgress
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -28,93 +33,67 @@ import {
   Download as DownloadIcon,
   Visibility as VisibilityIcon,
   TrendingUp as TrendingUpIcon,
-  Star as StarIcon
+  PlayArrow as PlayArrowIcon
 } from '@mui/icons-material';
 
-interface ProgressData {
-  totalCourses: number;
-  completedCourses: number;
-  totalLessons: number;
-  completedLessons: number;
-  overallProgress: number;
-  certificates: Certificate[];
-}
-
-interface Certificate {
-  _id: string;
-  courseId: string;
-  courseTitle: string;
-  issuedAt: string;
-  downloadUrl: string;
-  grade?: string;
-}
-
 const Progress: React.FC = () => {
-  const [progressData, setProgressData] = useState<ProgressData | null>(null);
+  const [progressData, setProgressData] = useState<ProgressOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'completed' | 'in-progress'>('all');
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockData: ProgressData = {
-        totalCourses: 8,
-        completedCourses: 3,
-        totalLessons: 156,
-        completedLessons: 89,
-        overallProgress: 57,
-        certificates: [
-          {
-            _id: 'cert_001',
-            courseId: 'course_001',
-            courseTitle: 'React Fundamentals',
-            issuedAt: '2025-01-15T10:30:00Z',
-            downloadUrl: '/certificates/react-fundamentals.pdf',
-            grade: 'A+'
-          },
-          {
-            _id: 'cert_002',
-            courseId: 'course_002',
-            courseTitle: 'Node.js Backend Development',
-            issuedAt: '2025-01-10T14:20:00Z',
-            downloadUrl: '/certificates/nodejs-backend.pdf',
-            grade: 'A'
-          },
-          {
-            _id: 'cert_003',
-            courseId: 'course_003',
-            courseTitle: 'Database Design & SQL',
-            issuedAt: '2025-01-05T09:15:00Z',
-            downloadUrl: '/certificates/database-design.pdf',
-            grade: 'A+'
-          }
-        ]
-      };
-      setProgressData(mockData);
-      setLoading(false);
-    }, 1000);
+    fetchProgressData();
   }, []);
 
-  const handleDownloadCertificate = useCallback((certificate: Certificate) => {
-    // Simulate download
-    console.log('Downloading certificate:', certificate.courseTitle);
-    // In real app, this would trigger actual download
-    window.open(certificate.downloadUrl, '_blank');
+  const fetchProgressData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await progressService.getOverview();
+      setProgressData(data);
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to load progress data';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error fetching progress data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadCertificate = useCallback(async (certificate: Certificate) => {
+    try {
+      const loadingToast = toast.loading('Đang tải chứng chỉ...');
+
+      // Use _id as enrollmentId for download
+      const blob = await progressService.downloadCertificate(certificate._id);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `certificate-${certificate.courseTitle.replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(loadingToast);
+      toast.success('Đã tải chứng chỉ thành công!');
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err?.response?.data?.error || 'Không thể tải chứng chỉ');
+      console.error('Error downloading certificate:', err);
+    }
   }, []);
 
   const formatDate = useCallback((dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-  }, []);
-
-  const getGradeColor = useCallback((grade: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
-    if (grade.includes('A+')) return 'success';
-    if (grade.includes('A')) return 'primary';
-    if (grade.includes('B')) return 'info';
-    return 'default';
   }, []);
 
   const statsCards = useMemo(() => [
@@ -144,29 +123,49 @@ const Progress: React.FC = () => {
     }
   ], [progressData]);
 
-  const recentActivities = useMemo(() => [
-    {
-      icon: <CheckCircleIcon sx={{ color: 'success.main' }} />,
-      title: 'Hoàn thành bài học "React Hooks"',
-      subtitle: 'Khóa học: React Fundamentals',
-      time: '2 giờ trước',
-      color: 'success'
-    },
-    {
-      icon: <TrophyIcon sx={{ color: 'warning.main' }} />,
-      title: 'Nhận chứng chỉ "Database Design"',
-      subtitle: 'Điểm: A+',
-      time: '1 ngày trước',
-      color: 'warning'
-    },
-    {
-      icon: <BookIcon sx={{ color: 'info.main' }} />,
-      title: 'Bắt đầu khóa học "Node.js Backend"',
-      subtitle: 'Tiến độ: 15%',
-      time: '3 ngày trước',
-      color: 'info'
+  const recentActivities = useMemo(() => {
+    if (!progressData?.recentActivities) return [];
+
+    return progressData.recentActivities.map((activity: RecentActivity) => {
+      let icon;
+      switch (activity.icon) {
+        case 'check':
+          icon = <CheckCircleIcon sx={{ color: `${activity.color}.main` }} />;
+          break;
+        case 'trophy':
+          icon = <TrophyIcon sx={{ color: `${activity.color}.main` }} />;
+          break;
+        case 'book':
+          icon = <BookIcon sx={{ color: `${activity.color}.main` }} />;
+          break;
+        default:
+          icon = <BookIcon sx={{ color: `${activity.color}.main` }} />;
+      }
+
+      return {
+        icon,
+        title: activity.title,
+        subtitle: activity.subtitle,
+        time: activity.time,
+        color: activity.color
+      };
+    });
+  }, [progressData]);
+
+  // Filter courses based on selected tab
+  const filteredCourses = useMemo(() => {
+    if (!progressData?.courses) return [];
+
+    switch (selectedFilter) {
+      case 'completed':
+        return progressData.courses.filter(course => course.isCompleted);
+      case 'in-progress':
+        return progressData.courses.filter(course => course.isActive && !course.isCompleted);
+      case 'all':
+      default:
+        return progressData.courses;
     }
-  ], []);
+  }, [progressData, selectedFilter]);
 
   if (loading) {
     return (
@@ -194,7 +193,7 @@ const Progress: React.FC = () => {
     );
   }
 
-  if (!progressData) {
+  if (error || !progressData) {
     return (
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {/* Header */}
@@ -210,8 +209,12 @@ const Progress: React.FC = () => {
         {/* Error State */}
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="h6">Không thể tải dữ liệu</Typography>
-          <Typography>Vui lòng thử lại sau</Typography>
+          <Typography>{error || 'Vui lòng thử lại sau'}</Typography>
         </Alert>
+
+        <Button variant="contained" onClick={fetchProgressData}>
+          🔄 Thử lại
+        </Button>
       </Container>
     );
   }
@@ -345,13 +348,146 @@ const Progress: React.FC = () => {
               iconPosition="start"
             />
             <Tab
-              label={`Đang học (${progressData.totalCourses - progressData.completedCourses})`}
+              label={`Đang học (${progressData.inProgressCourses})`}
               value="in-progress"
               icon={<TrendingUpIcon />}
               iconPosition="start"
             />
           </Tabs>
         </Box>
+      </Card>
+
+      {/* Courses List */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" component="h2" gutterBottom>
+              {selectedFilter === 'all' && 'Tất cả khóa học'}
+              {selectedFilter === 'completed' && 'Khóa học đã hoàn thành'}
+              {selectedFilter === 'in-progress' && 'Khóa học đang học'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {filteredCourses.length} khóa học
+            </Typography>
+          </Box>
+
+          {filteredCourses.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <SchoolIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Không có khóa học nào
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedFilter === 'completed' && 'Bạn chưa hoàn thành khóa học nào'}
+                {selectedFilter === 'in-progress' && 'Bạn chưa có khóa học đang học nào'}
+                {selectedFilter === 'all' && 'Bạn chưa đăng ký khóa học nào'}
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {filteredCourses.map((course) => (
+                <Grid item xs={12} sm={6} md={4} key={course._id}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: 4
+                      }
+                    }}
+                  >
+                    <Box sx={{ position: 'relative' }}>
+                      <CardMedia
+                        component="img"
+                        height="160"
+                        image={course.courseThumbnail || '/images/default-course.jpg'}
+                        alt={course.courseTitle}
+                      />
+                      {course.isCompleted && (
+                        <Chip
+                          icon={<CheckCircleIcon />}
+                          label="Hoàn thành"
+                          color="success"
+                          size="small"
+                          sx={{ position: 'absolute', top: 12, right: 12, fontWeight: 600 }}
+                        />
+                      )}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          bgcolor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          px: 2,
+                          py: 1
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="caption">Tiến độ</Typography>
+                          <Typography variant="caption" fontWeight={600}>
+                            {course.progress}%
+                          </Typography>
+                        </Stack>
+                        <LinearProgress
+                          variant="determinate"
+                          value={course.progress}
+                          sx={{
+                            mt: 0.5,
+                            height: 6,
+                            borderRadius: 3,
+                            bgcolor: 'rgba(255,255,255,0.3)',
+                            '& .MuiLinearProgress-bar': {
+                              bgcolor: course.isCompleted ? 'success.main' : 'primary.main'
+                            }
+                          }}
+                        />
+                      </Box>
+                    </Box>
+
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" gutterBottom noWrap>
+                        {course.courseTitle}
+                      </Typography>
+
+                      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                        <Chip
+                          size="small"
+                          icon={<BookIcon />}
+                          label={`${course.completedLessons}/${course.totalLessons} bài`}
+                          variant="outlined"
+                        />
+                      </Stack>
+
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Đăng ký: {new Date(course.enrolledAt).toLocaleDateString('vi-VN')}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Hoạt động: {new Date(course.lastActivityAt).toLocaleDateString('vi-VN')}
+                      </Typography>
+                    </CardContent>
+
+                    <Box sx={{ p: 2, pt: 0 }}>
+                      <Button
+                        component={Link}
+                        to={`/learning/${course.courseId}`}
+                        variant="contained"
+                        startIcon={<PlayArrowIcon />}
+                        fullWidth
+                      >
+                        {course.isCompleted ? 'Xem lại' : 'Tiếp tục học'}
+                      </Button>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </CardContent>
       </Card>
 
       {/* Certificates Section */}
@@ -400,16 +536,14 @@ const Progress: React.FC = () => {
                             {certificate.courseTitle}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Phát hành: {formatDate(certificate.issuedAt)}
+                            Issued: {formatDate(certificate.issuedAt)}
                           </Typography>
-                          {certificate.grade && (
-                            <Chip
-                              label={`Điểm: ${certificate.grade}`}
-                              color={getGradeColor(certificate.grade)}
-                              size="small"
-                              icon={<StarIcon />}
-                            />
-                          )}
+                          <Chip
+                            label={certificate.certificateNumber}
+                            color="primary"
+                            size="small"
+                            variant="outlined"
+                          />
                         </Box>
                       </Stack>
 
@@ -451,45 +585,57 @@ const Progress: React.FC = () => {
             </Typography>
           </Box>
 
-          <List>
-            {recentActivities.map((activity, index) => (
-              <React.Fragment key={index}>
-                <ListItem
-                  sx={{
-                    py: 2,
-                    transition: 'background-color 0.3s ease',
-                    '&:hover': {
-                      backgroundColor: 'action.hover'
-                    }
-                  }}
-                >
-                  <ListItemIcon>
-                    <Avatar sx={{ bgcolor: `${activity.color}.light`, width: 40, height: 40 }}>
-                      {activity.icon}
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        {activity.title}
-                      </Typography>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {activity.subtitle}
+          {recentActivities.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <BookIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Chưa có hoạt động nào
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Bắt đầu học để xem hoạt động của bạn
+              </Typography>
+            </Box>
+          ) : (
+            <List>
+              {recentActivities.map((activity, index) => (
+                <React.Fragment key={index}>
+                  <ListItem
+                    sx={{
+                      py: 2,
+                      transition: 'background-color 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: `${activity.color}.light`, width: 40, height: 40 }}>
+                        {activity.icon}
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          {activity.title}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {activity.time}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-                {index < recentActivities.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            {activity.subtitle}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {activity.time}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  {index < recentActivities.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
+          )}
         </CardContent>
       </Card>
     </Container>

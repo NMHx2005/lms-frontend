@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+import { paymentService, Bill, PaymentStats } from '@/services/client/payment.service';
 import {
   Container,
   Grid,
@@ -28,97 +30,48 @@ import {
   Pending as PendingIcon,
   Cancel as CancelIcon,
   Refresh as RefreshIcon,
-  Visibility as VisibilityIcon,
-  Payment as PaymentIcon,
   Receipt as ReceiptIcon,
   Redo as RedoIcon
 } from '@mui/icons-material';
 
-interface Bill {
-  _id: string;
-  studentId: string;
-  courseId: string;
-  amount: number;
-  currency: string;
-  paymentMethod: string;
-  status: 'completed' | 'pending' | 'failed' | 'refunded';
-  transactionId: string;
-  purpose: string;
-  paidAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 const Bills: React.FC = () => {
   const [billsData, setBillsData] = useState<Bill[]>([]);
+  const [stats, setStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'completed' | 'failed' | 'refunded'>('all');
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockData: Bill[] = [
-        {
-          _id: 'bill_001',
-          studentId: 'student_001',
-          courseId: 'course_001',
-          amount: 500000,
-          currency: 'VND',
-          paymentMethod: 'stripe',
-          status: 'completed',
-          transactionId: 'txn_123456789',
-          purpose: 'course_purchase',
-          paidAt: '2025-01-15T10:30:00Z',
-          createdAt: '2025-01-15T10:25:00Z',
-          updatedAt: '2025-01-15T10:30:00Z'
-        },
-        {
-          _id: 'bill_002',
-          studentId: 'student_001',
-          courseId: 'course_002',
-          amount: 800000,
-          currency: 'VND',
-          paymentMethod: 'momo',
-          status: 'pending',
-          transactionId: 'txn_123456790',
-          paidAt: '2025-01-15T10:30:00Z',
-          purpose: 'course_purchase',
-          createdAt: '2025-01-14T14:20:00Z',
-          updatedAt: '2025-01-14T14:20:00Z'
-        },
-        {
-          _id: 'bill_003',
-          studentId: 'student_001',
-          courseId: 'course_003',
-          amount: 600000,
-          currency: 'VND',
-          paymentMethod: 'zalopay',
-          status: 'failed',
-          paidAt: '2025-01-15T10:30:00Z',
-          transactionId: 'txn_123456791',
-          purpose: 'course_purchase',
-          createdAt: '2025-01-13T09:15:00Z',
-          updatedAt: '2025-01-13T09:20:00Z'
-        },
-        {
-          _id: 'bill_004',
-          studentId: 'student_001',
-          courseId: 'course_004',
-          amount: 700000,
-          currency: 'VND',
-          paymentMethod: 'bank_transfer',
-          status: 'refunded',
-          transactionId: 'txn_123456792',
-          purpose: 'refund',
-          paidAt: '2025-01-12T08:10:00Z',
-          createdAt: '2025-01-12T08:10:00Z',
-          updatedAt: '2025-01-20T10:00:00Z'
-        }
-      ];
-      setBillsData(mockData);
-      setLoading(false);
-    }, 1000);
+    fetchBillsData();
   }, []);
+
+  const fetchBillsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch bills and stats in parallel
+      const [billsResponse, statsResponse] = await Promise.all([
+        paymentService.getPaymentHistory({ limit: 100 }),
+        paymentService.getPaymentStats()
+      ]);
+
+      if (billsResponse.success) {
+        setBillsData(billsResponse.data || []);
+      }
+
+      if (statsResponse.success) {
+        setStats(statsResponse.data);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.error || 'Failed to load bills data';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error fetching bills:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatPrice = useCallback((amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -168,17 +121,19 @@ const Bills: React.FC = () => {
   }, []);
 
   const getPaymentMethodLabel = useCallback((method: string) => {
-    switch (method) {
+    switch (method?.toLowerCase()) {
       case 'stripe':
         return 'Thẻ tín dụng (Stripe)';
       case 'momo':
         return 'Ví MoMo';
       case 'zalopay':
         return 'Ví ZaloPay';
+      case 'vnpay':
+        return 'VNPay';
       case 'bank_transfer':
         return 'Chuyển khoản ngân hàng';
       default:
-        return method;
+        return method ? method.toUpperCase() : 'N/A';
     }
   }, []);
 
@@ -192,6 +147,53 @@ const Bills: React.FC = () => {
         return 'Hoàn tiền';
       default:
         return purpose;
+    }
+  }, []);
+
+  // Retry failed payment
+  const handleRetryPayment = useCallback(async (billId: string) => {
+    try {
+      const loadingToast = toast.loading('Đang khởi tạo thanh toán...');
+      const response = await paymentService.retryPayment(billId);
+
+      toast.dismiss(loadingToast);
+
+      if (response.success && response.data.paymentUrl) {
+        toast.success('Chuyển đến trang thanh toán...');
+        // Redirect to payment URL
+        window.location.href = response.data.paymentUrl;
+      } else {
+        toast.error('Không thể khởi tạo thanh toán');
+      }
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err?.response?.data?.error || 'Retry payment failed');
+      console.error('Error retrying payment:', err);
+    }
+  }, []);
+
+  // Download invoice
+  const handleDownloadInvoice = useCallback(async (billId: string, courseName: string) => {
+    try {
+      const loadingToast = toast.loading('Đang tải hóa đơn...');
+      const blob = await paymentService.downloadInvoice(billId);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${courseName.replace(/\s+/g, '-')}-${billId.substring(18)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(loadingToast);
+      toast.success('Đã tải hóa đơn thành công!');
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(err?.response?.data?.error || 'Không thể tải hóa đơn');
+      console.error('Error downloading invoice:', err);
     }
   }, []);
 
@@ -212,55 +214,50 @@ const Bills: React.FC = () => {
     }
   }, [billsData, selectedFilter]);
 
-  // Tính toán stats từ billsData array
-  const stats = useMemo(() => {
-    const totalAmount = billsData.reduce((sum, bill) => sum + bill.amount, 0);
-    const completedAmount = billsData.filter(bill => bill.status === 'completed').reduce((sum, bill) => sum + bill.amount, 0);
-    const pendingAmount = billsData.filter(bill => bill.status === 'pending').reduce((sum, bill) => sum + bill.amount, 0);
-    const failedAmount = billsData.filter(bill => bill.status === 'failed').reduce((sum, bill) => sum + bill.amount, 0);
-    const refundedAmount = billsData.filter(bill => bill.status === 'refunded').reduce((sum, bill) => sum + bill.amount, 0);
-
-    return {
-      totalAmount,
-      completedAmount,
-      pendingAmount,
-      failedAmount,
-      refundedAmount
-    };
-  }, [billsData]);
-
-  const statsCards = useMemo(() => [
-    {
-      icon: <MoneyIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: 'Tổng giao dịch',
-      value: formatPrice(stats.totalAmount),
-      color: 'primary'
-    },
-    {
-      icon: <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />,
-      title: 'Đã hoàn thành',
-      value: formatPrice(stats.completedAmount),
-      color: 'success'
-    },
-    {
-      icon: <PendingIcon sx={{ fontSize: 40, color: 'warning.main' }} />,
-      title: 'Đang xử lý',
-      value: formatPrice(stats.pendingAmount),
-      color: 'warning'
-    },
-    {
-      icon: <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />,
-      title: 'Thất bại',
-      value: formatPrice(stats.failedAmount),
-      color: 'error'
-    },
-    {
-      icon: <RefreshIcon sx={{ fontSize: 40, color: 'info.main' }} />,
-      title: 'Đã hoàn tiền',
-      value: formatPrice(stats.refundedAmount),
-      color: 'info'
+  const statsCards = useMemo(() => {
+    if (!stats) {
+      return [
+        { icon: <MoneyIcon sx={{ fontSize: 40, color: 'primary.main' }} />, title: 'Tổng chi tiêu', value: '0₫', color: 'primary' },
+        { icon: <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />, title: 'Đã hoàn thành', value: '0', color: 'success' },
+        { icon: <PendingIcon sx={{ fontSize: 40, color: 'warning.main' }} />, title: 'Đang xử lý', value: '0', color: 'warning' },
+        { icon: <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />, title: 'Thất bại', value: '0', color: 'error' },
+        { icon: <ReceiptIcon sx={{ fontSize: 40, color: 'info.main' }} />, title: 'Tổng hóa đơn', value: '0', color: 'info' }
+      ];
     }
-  ], [stats, formatPrice]);
+
+    return [
+      {
+        icon: <MoneyIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
+        title: 'Tổng chi tiêu',
+        value: formatPrice(stats.totalSpent),
+        color: 'primary'
+      },
+      {
+        icon: <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />,
+        title: 'Đã hoàn thành',
+        value: stats.completedPayments.toString(),
+        color: 'success'
+      },
+      {
+        icon: <PendingIcon sx={{ fontSize: 40, color: 'warning.main' }} />,
+        title: 'Đang xử lý',
+        value: stats.pendingPayments.toString(),
+        color: 'warning'
+      },
+      {
+        icon: <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />,
+        title: 'Thất bại',
+        value: stats.failedPayments.toString(),
+        color: 'error'
+      },
+      {
+        icon: <ReceiptIcon sx={{ fontSize: 40, color: 'info.main' }} />,
+        title: 'Tổng hóa đơn',
+        value: stats.totalBills.toString(),
+        color: 'info'
+      }
+    ];
+  }, [stats, formatPrice]);
 
   if (loading) {
     return (
@@ -288,7 +285,7 @@ const Bills: React.FC = () => {
     );
   }
 
-  if (!billsData) {
+  if (error) {
     return (
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {/* Header */}
@@ -304,8 +301,12 @@ const Bills: React.FC = () => {
         {/* Error State */}
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="h6">Không thể tải dữ liệu</Typography>
-          <Typography>Vui lòng thử lại sau</Typography>
+          <Typography>{error}</Typography>
         </Alert>
+
+        <Button variant="contained" onClick={fetchBillsData} startIcon={<RefreshIcon />}>
+          🔄 Thử lại
+        </Button>
       </Container>
     );
   }
@@ -435,17 +436,26 @@ const Bills: React.FC = () => {
                         }}
                       >
                         <TableCell>
-                          <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              Giao dịch #{bill.transactionId}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {getPurposeLabel(bill.purpose)}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatDate(bill.createdAt)}
-                            </Typography>
-                          </Box>
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            {typeof bill.courseId === 'object' && bill.courseId.thumbnail && (
+                              <Avatar
+                                src={bill.courseId.thumbnail}
+                                variant="rounded"
+                                sx={{ width: 60, height: 60 }}
+                              />
+                            )}
+                            <Box>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {typeof bill.courseId === 'object' ? bill.courseId.title : `Giao dịch #${bill.transactionId || bill._id.substring(18)}`}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {getPurposeLabel(bill.purpose)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatDate(bill.createdAt)}
+                              </Typography>
+                            </Box>
+                          </Stack>
                         </TableCell>
 
                         <TableCell>
@@ -475,30 +485,13 @@ const Bills: React.FC = () => {
 
                         <TableCell>
                           <Stack direction="row" spacing={1}>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<VisibilityIcon />}
-                            >
-                              Chi tiết
-                            </Button>
-
-                            {bill.status === 'pending' && (
+                            {bill.status === 'failed' && (
                               <Button
                                 variant="contained"
                                 size="small"
-                                startIcon={<PaymentIcon />}
-                              >
-                                Thanh toán
-                              </Button>
-                            )}
-
-                            {bill.status === 'failed' && (
-                              <Button
-                                variant="outlined"
-                                size="small"
                                 startIcon={<RedoIcon />}
                                 color="warning"
+                                onClick={() => handleRetryPayment(bill._id)}
                               >
                                 Thử lại
                               </Button>
@@ -506,9 +499,13 @@ const Bills: React.FC = () => {
 
                             {bill.status === 'completed' && (
                               <Button
-                                variant="outlined"
+                                variant="contained"
                                 size="small"
                                 startIcon={<ReceiptIcon />}
+                                onClick={() => handleDownloadInvoice(
+                                  bill._id,
+                                  typeof bill.courseId === 'object' ? bill.courseId.title : 'course'
+                                )}
                               >
                                 Tải hóa đơn
                               </Button>
