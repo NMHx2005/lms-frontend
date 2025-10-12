@@ -10,13 +10,14 @@ import Newsletter from "@/components/Client/Home/Newsletter/Newsletter";
 import "@/styles/home.css"
 import Header from "@/components/Layout/client/Header";
 import Footer from "@/components/Layout/client/Footer";
+import { ChatBot } from "@/components/ChatBot";
 
 const Home = () => {
     return (
         <>
             <TopBar />
             <Header />
-            
+
             <main>
                 <Hero />
                 <Partners />
@@ -28,6 +29,9 @@ const Home = () => {
                 <Newsletter />
             </main>
             <Footer />
+
+            {/* AI ChatBot */}
+            <ChatBot context={{ currentPage: 'home' }} />
         </>
     );
 }

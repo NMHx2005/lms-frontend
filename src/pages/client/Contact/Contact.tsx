@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Contact.css';
 import Footer from '@/components/Layout/client/Footer';
 import TopBar from '@/components/Client/Home/TopBar/TopBar';
 import Header from '@/components/Layout/client/Header';
+import { clientSystemSettingsService } from '@/services/client/system-settings.service';
+import type { SystemSettingsData } from '@/services/admin/system-settings.service';
 
 interface ContactForm {
   name: string;
@@ -22,29 +24,81 @@ const Contact: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [settings, setSettings] = useState<SystemSettingsData | null>(null);
 
-  const contactInfo = [
-    {
-      icon: '📍',
-      title: 'Địa chỉ',
-      content: '123 Đường ABC, Quận 1, TP.HCM, Việt Nam'
-    },
-    {
-      icon: '📧',
-      title: 'Email',
-      content: 'contact@lmsplatform.com'
-    },
-    {
-      icon: '📞',
-      title: 'Điện thoại',
-      content: '+84 28 1234 5678'
-    },
-    {
+  // Fetch system settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await clientSystemSettingsService.getPublicSettings();
+        if (response.success) {
+          setSettings(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch system settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const getContactInfo = () => {
+    if (!settings) {
+      return [
+        { icon: '📍', title: 'Địa chỉ', content: '123 Đường ABC, Quận 1, TP.HCM, Việt Nam' },
+        { icon: '📧', title: 'Email', content: 'contact@lmsplatform.com' },
+        { icon: '📞', title: 'Điện thoại', content: '+84 28 1234 5678' },
+        { icon: '⏰', title: 'Giờ làm việc', content: 'Thứ 2 - Thứ 6: 8:00 - 18:00' }
+      ];
+    }
+
+    const contactInfo = [];
+
+    // Address
+    if (settings.contactInfo.address) {
+      const fullAddress = [
+        settings.contactInfo.address,
+        settings.contactInfo.city,
+        settings.contactInfo.country
+      ].filter(Boolean).join(', ');
+
+      if (fullAddress) {
+        contactInfo.push({
+          icon: '📍',
+          title: 'Địa chỉ',
+          content: fullAddress
+        });
+      }
+    }
+
+    // Email
+    if (settings.contactInfo.email) {
+      contactInfo.push({
+        icon: '📧',
+        title: 'Email',
+        content: settings.contactInfo.email
+      });
+    }
+
+    // Phone
+    if (settings.contactInfo.phone) {
+      contactInfo.push({
+        icon: '📞',
+        title: 'Điện thoại',
+        content: settings.contactInfo.phone
+      });
+    }
+
+    // Working hours (default)
+    contactInfo.push({
       icon: '⏰',
       title: 'Giờ làm việc',
       content: 'Thứ 2 - Thứ 6: 8:00 - 18:00'
-    }
-  ];
+    });
+
+    return contactInfo;
+  };
+
+  const contactInfo = getContactInfo();
 
   const faqs = [
     {
@@ -76,7 +130,7 @@ const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setLoading(false);
@@ -98,7 +152,7 @@ const Contact: React.FC = () => {
           <div className="success-icon">✅</div>
           <h1>Gửi tin nhắn thành công!</h1>
           <p>Cảm ơn bạn đã liên hệ với chúng tôi. Chúng tôi sẽ phản hồi trong thời gian sớm nhất.</p>
-          <button 
+          <button
             onClick={() => setSubmitted(false)}
             className="send-another-btn"
           >
@@ -111,14 +165,14 @@ const Contact: React.FC = () => {
 
   return (
     <>
-    <TopBar />
-    <Header />
+      <TopBar />
+      <Header />
       <div className="contact-page">
         {/* Hero Section */}
         <section className="hero-section">
           <div className="hero-content">
-            <h1>Liên hệ với chúng tôi</h1>
-            <p>Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn. Hãy để lại tin nhắn và chúng tôi sẽ phản hồi sớm nhất có thể.</p>
+            <h1>Liên hệ với {settings?.siteName || 'chúng tôi'}</h1>
+            <p>{settings?.siteTagline || 'Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn. Hãy để lại tin nhắn và chúng tôi sẽ phản hồi sớm nhất có thể.'}</p>
           </div>
         </section>
 
@@ -224,16 +278,79 @@ const Contact: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="social-links">
-                  <h3>Theo dõi chúng tôi</h3>
-                  <div className="social-icons">
-                    <a href="#" className="social-icon facebook">📘</a>
-                    <a href="#" className="social-icon twitter">🐦</a>
-                    <a href="#" className="social-icon linkedin">💼</a>
-                    <a href="#" className="social-icon youtube">📺</a>
-                    <a href="#" className="social-icon instagram">📷</a>
+                {(settings?.socialMedia && Object.values(settings.socialMedia).some(v => v)) && (
+                  <div className="social-links">
+                    <h3>Theo dõi chúng tôi</h3>
+                    <div className="social-icons">
+                      {settings.socialMedia.facebook && (
+                        <a
+                          href={settings.socialMedia.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon facebook"
+                          aria-label="Facebook"
+                        >
+                          📘
+                        </a>
+                      )}
+                      {settings.socialMedia.twitter && (
+                        <a
+                          href={settings.socialMedia.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon twitter"
+                          aria-label="Twitter"
+                        >
+                          🐦
+                        </a>
+                      )}
+                      {settings.socialMedia.linkedin && (
+                        <a
+                          href={settings.socialMedia.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon linkedin"
+                          aria-label="LinkedIn"
+                        >
+                          💼
+                        </a>
+                      )}
+                      {settings.socialMedia.youtube && (
+                        <a
+                          href={settings.socialMedia.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon youtube"
+                          aria-label="YouTube"
+                        >
+                          📺
+                        </a>
+                      )}
+                      {settings.socialMedia.instagram && (
+                        <a
+                          href={settings.socialMedia.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon instagram"
+                          aria-label="Instagram"
+                        >
+                          📷
+                        </a>
+                      )}
+                      {settings.socialMedia.github && (
+                        <a
+                          href={settings.socialMedia.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon github"
+                          aria-label="GitHub"
+                        >
+                          💻
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -251,18 +368,25 @@ const Contact: React.FC = () => {
             </section>
 
             {/* Map Section */}
-            <section className="map-section">
-              <h2>Vị trí của chúng tôi</h2>
-              <div className="map-container">
-                <div className="map-placeholder">
-                  <div className="map-icon">🗺️</div>
-                  <p>Bản đồ sẽ được hiển thị tại đây</p>
-                  <p className="map-address">
-                    <strong>Địa chỉ:</strong> 123 Đường ABC, Quận 1, TP.HCM, Việt Nam
-                  </p>
+            {settings?.contactInfo.address && (
+              <section className="map-section">
+                <h2>Vị trí của chúng tôi</h2>
+                <div className="map-container">
+                  <div className="map-placeholder">
+                    <div className="map-icon">🗺️</div>
+                    <p>Bản đồ sẽ được hiển thị tại đây</p>
+                    <p className="map-address">
+                      <strong>Địa chỉ:</strong> {[
+                        settings.contactInfo.address,
+                        settings.contactInfo.city,
+                        settings.contactInfo.country,
+                        settings.contactInfo.zipCode
+                      ].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
           </div>
         </div>
       </div>

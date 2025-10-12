@@ -86,7 +86,6 @@ const CourseStructure = lazy(() => import('./pages/client/Teacher/CourseStructur
 const PackagePlans = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlans.tsx'));
 const TeacherProfileManage = lazy(() => import('./pages/client/Teacher/Advanced/TeacherProfileManage.tsx'));
 const PackagePlanDetail = lazy(() => import('./pages/client/Teacher/Advanced/PackagePlanDetail'));
-const SearchResults = lazy(() => import('./pages/client/SearchResults/SearchResults.tsx'));
 const NotFound = lazy(() => import('./pages/client/NotFound/NotFound.tsx'));
 
 // Additional Client Pages
@@ -146,7 +145,6 @@ function AppContent() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path='/search' element={<SearchResults />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/checkout/:courseId" element={<Checkout />} />

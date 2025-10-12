@@ -620,11 +620,11 @@ const Progress: React.FC = () => {
                         </Typography>
                       }
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box component="span" sx={{ display: 'block' }}>
+                          <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block' }}>
                             {activity.subtitle}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography component="span" variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                             {activity.time}
                           </Typography>
                         </Box>

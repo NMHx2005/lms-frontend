@@ -122,6 +122,11 @@
 .footer-section__info-row { display: flex; align-items: flex-start; gap: 12px; }
 .footer-section__info-icon { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
 .footer-section__info-text { font-size: 14px; line-height: 1.5; color: #d1d5db; }
+.footer-section__link-item { display: block; color: #d1d5db; text-decoration: none; font-size: 14px; line-height: 1.8; transition: color 0.3s ease; }
+.footer-section__link-item:hover { color: #fff; text-decoration: underline; }
+.footer-section__social-links { display: flex; flex-direction: column; gap: 8px; }
+.footer-section__social-link-text { color: #d1d5db; text-decoration: none; font-size: 14px; line-height: 1.8; transition: color 0.3s ease; }
+.footer-section__social-link-text:hover { color: #fff; text-decoration: underline; }
 .footer-section__divider { height: 1px; background-color: #374151; margin: 40px 0 20px; }
 .footer-section__bottom { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 0 20px; max-width: 100%; overflow-x: hidden; }
 @media (min-width: 768px) { .footer-section__bottom { padding: 0 40px; } }

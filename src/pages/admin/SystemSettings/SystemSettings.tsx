@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// import './SystemSettings.css';
+import { toast } from 'react-hot-toast';
+import { systemSettingsService, SystemSettingsData } from '../../../services/admin/system-settings.service';
 import {
   Box,
   Card,
@@ -11,185 +12,253 @@ import {
   Switch,
   FormControlLabel,
   Button,
-  Chip,
   CircularProgress,
   Tabs,
   Tab,
-  Paper,
-  Alert,
-  Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
+  Divider,
+  Avatar,
+  Chip
 } from '@mui/material';
 import {
+  Save as SaveIcon,
   Refresh as RefreshIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Visibility as VisibilityIcon,
-  Backup as BackupIcon
+  CloudUpload as UploadIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
-import systemService, { type SystemSettings as SystemSettingsType, SystemOverview, Refund, SystemLog, BackupStatus } from '../../../services/admin/systemService';
-
-// Remove SystemConfig interface as we're using SystemSettings from service
 
 const SystemSettings: React.FC = () => {
-  const [config, setConfig] = useState<SystemSettingsType | null>(null);
+  const [settings, setSettings] = useState<SystemSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(0);
   const [hasChanges, setHasChanges] = useState(false);
-  const [originalConfig, setOriginalConfig] = useState<SystemSettingsType | null>(null);
+  const [originalSettings, setOriginalSettings] = useState<SystemSettingsData | null>(null);
 
-  // New states for additional features
-  const [overview, setOverview] = useState<SystemOverview | null>(null);
-  const [refunds, setRefunds] = useState<Refund[]>([]);
-  const [logs, setLogs] = useState<SystemLog[]>([]);
-  const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' | 'warning' }>({
-    open: false,
-    message: '',
-    severity: 'info'
-  });
-  const [refundDialog, setRefundDialog] = useState<{ open: boolean; refund: Refund | null }>({
-    open: false,
-    refund: null
-  });
-  const [refundPage, setRefundPage] = useState(0);
-  const [refundRowsPerPage, setRefundRowsPerPage] = useState(10);
-  const [refundTotal, setRefundTotal] = useState(0);
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
-  // Load data from API
-  const loadData = async () => {
+  useEffect(() => {
+    if (settings && originalSettings) {
+      setHasChanges(JSON.stringify(settings) !== JSON.stringify(originalSettings));
+    }
+  }, [settings, originalSettings]);
+
+  const loadSettings = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Loading system data...');
+      const response = await systemSettingsService.getSettings();
+      if (response.success) {
+        // Ensure all nested objects exist with defaults
+        const settingsData: SystemSettingsData = {
+          ...response.data,
+          contactInfo: response.data.contactInfo || {
+            email: '',
+            phone: '',
+            address: '',
+            city: '',
+            country: '',
+            zipCode: ''
+          },
+          socialMedia: response.data.socialMedia || {},
+          seo: response.data.seo || {
+            metaTitle: '',
+            metaDescription: '',
+            metaKeywords: [],
+            ogImage: ''
+          },
+          features: response.data.features || {
+            enableRegistration: true,
+            enableCourseEnrollment: true,
+            enablePayments: true,
+            enableRefunds: true,
+            enableRatings: true,
+            enableCertificates: true,
+            enableDiscussions: false,
+            enableAI: false
+          },
+          email: response.data.email || {
+            enabled: true,
+            fromName: '',
+            fromEmail: '',
+            enableSSL: true
+          },
+          storage: response.data.storage || {
+            provider: 'cloudinary',
+            maxFileSize: 10485760,
+            allowedFileTypes: []
+          },
+          payment: response.data.payment || {
+            enabled: true,
+            currency: 'VND',
+            vnpay: { enabled: false },
+            momo: { enabled: false }
+          },
+          maintenance: response.data.maintenance || {
+            enabled: false,
+            message: '',
+            allowedIPs: []
+          },
+          security: response.data.security || {
+            enableTwoFactor: false,
+            sessionTimeout: 60,
+            maxLoginAttempts: 5,
+            lockoutDuration: 30,
+            requireEmailVerification: true,
+            passwordMinLength: 8,
+            passwordRequireSpecialChar: true
+          },
+          performance: response.data.performance || {
+            enableCaching: true,
+            cacheExpiry: 3600,
+            enableCompression: true,
+            maxConcurrentUsers: 1000
+          },
+          moderation: response.data.moderation || {
+            enableAutoModeration: false,
+            requireCourseApproval: true,
+            requireReviewApproval: false,
+            profanityFilter: true
+          },
+          legal: response.data.legal || {
+            termsOfServiceUrl: '/terms',
+            privacyPolicyUrl: '/privacy',
+            refundPolicyUrl: '/refund-policy',
+            copyrightText: '© 2025 LMS Platform. All rights reserved.'
+          }
+        };
 
-      const [settingsData, overviewData, refundsData, logsData, backupData] = await Promise.all([
-        systemService.getSystemSettings(),
-        systemService.getSystemOverview(),
-        systemService.getRefunds({ page: 1, limit: 10 }),
-        systemService.getSystemLogs({ page: 1, limit: 10 }),
-        systemService.getBackupStatus()
-      ]);
-
-      console.log('📊 System Settings:', settingsData);
-      console.log('📈 System Overview:', overviewData);
-      console.log('💰 Refunds:', refundsData);
-      console.log('📝 Logs:', logsData);
-      console.log('💾 Backup Status:', backupData);
-
-      setConfig(settingsData);
-      setOriginalConfig(settingsData);
-      setOverview(overviewData);
-      setRefunds(refundsData.data || []);
-      setRefundTotal(refundsData.pagination?.total || 0);
-      setLogs(logsData.data || []);
-      setBackupStatus(backupData);
-    } catch (error) {
-      console.error('Error loading system data:', error);
-      showSnackbar('Lỗi khi tải dữ liệu hệ thống', 'error');
+        setSettings(settingsData);
+        setOriginalSettings(JSON.parse(JSON.stringify(settingsData)));
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || 'Không thể tải cài đặt');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (config && originalConfig) setHasChanges(JSON.stringify(config) !== JSON.stringify(originalConfig));
-  }, [config, originalConfig]);
-
-  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'info') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  const handleInputChange = (field: keyof SystemSettingsType, value: any) => {
-    if (!config) return;
-    setConfig(prev => ({
-      ...prev!,
-      [field]: value
-    }));
-  };
-
   const handleSave = async () => {
-    if (!config) return;
+    if (!settings) return;
+
     try {
       setSaving(true);
-      const updatedSettings = await systemService.updateSystemSettings(config);
-      setConfig(updatedSettings);
-      setOriginalConfig(updatedSettings);
-      setHasChanges(false);
-      showSnackbar('Cài đặt đã được lưu thành công!', 'success');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      showSnackbar('Lỗi khi lưu cài đặt', 'error');
+      const response = await systemSettingsService.updateSettings(settings);
+      if (response.success) {
+        setSettings(response.data);
+        setOriginalSettings(JSON.parse(JSON.stringify(response.data)));
+        setHasChanges(false);
+        toast.success('Cập nhật cài đặt thành công!');
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || 'Không thể lưu cài đặt');
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = () => {
-    if (originalConfig) {
-      setConfig(originalConfig);
+    if (originalSettings) {
+      setSettings(JSON.parse(JSON.stringify(originalSettings)));
       setHasChanges(false);
     }
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleProcessRefund = async (refundId: string, action: 'approve' | 'reject') => {
-    try {
-      await systemService.processRefund(refundId, { action });
-      showSnackbar(`Đã ${action === 'approve' ? 'phê duyệt' : 'từ chối'} hoàn tiền thành công`, 'success');
-      loadData(); // Reload data
-    } catch (error) {
-      console.error('Error processing refund:', error);
-      showSnackbar('Lỗi khi xử lý hoàn tiền', 'error');
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file ảnh');
+      return;
     }
+
+    try {
+      const loadingToast = toast.loading('Đang tải logo lên...');
+      const response = await systemSettingsService.uploadLogo(file);
+      toast.dismiss(loadingToast);
+
+      console.log('Logo upload response:', response);
+
+      if (response.success) {
+        // Reload settings to get updated data
+        await loadSettings();
+        toast.success('Tải logo thành công!');
+      }
+    } catch (error: any) {
+      console.error('Logo upload error:', error);
+      toast.error(error?.response?.data?.error || 'Không thể tải logo');
+    }
+
+    // Reset input
+    event.target.value = '';
   };
 
-  const handleCreateBackup = async () => {
-    try {
-      setSaving(true);
-      await systemService.createBackup();
-      showSnackbar('Tạo backup thành công!', 'success');
-      loadData(); // Reload data
-    } catch (error) {
-      console.error('Error creating backup:', error);
-      showSnackbar('Lỗi khi tạo backup', 'error');
-    } finally {
-      setSaving(false);
+  const handleFaviconUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file ảnh');
+      return;
     }
+
+    try {
+      const loadingToast = toast.loading('Đang tải favicon lên...');
+      const response = await systemSettingsService.uploadFavicon(file);
+      toast.dismiss(loadingToast);
+
+      console.log('Favicon upload response:', response);
+
+      if (response.success) {
+        // Reload settings to get updated data
+        await loadSettings();
+        toast.success('Tải favicon thành công!');
+      }
+    } catch (error: any) {
+      console.error('Favicon upload error:', error);
+      toast.error(error?.response?.data?.error || 'Không thể tải favicon');
+    }
+
+    // Reset input
+    event.target.value = '';
+  };
+
+  const updateField = (path: string, value: any) => {
+    if (!settings) return;
+    
+    const keys = path.split('.');
+    const newSettings = JSON.parse(JSON.stringify(settings));
+    let current: any = newSettings;
+    
+    // Navigate and create nested objects if they don't exist
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) {
+        current[keys[i]] = {};
+      }
+      current = current[keys[i]];
+    }
+    
+    current[keys[keys.length - 1]] = value;
+    setSettings(newSettings);
   };
 
   if (loading) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <Stack spacing={2} alignItems="center">
-          <CircularProgress />
-          <Typography variant="body2" color="text.secondary">Đang tải cài đặt hệ thống...</Typography>
+          <CircularProgress size={60} />
+          <Typography variant="h6">Đang tải cài đặt...</Typography>
         </Stack>
       </Box>
     );
   }
 
-  if (!config) {
+  if (!settings) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-        <Typography variant="h6" color="text.secondary">Không thể tải cài đặt hệ thống</Typography>
-        <Button variant="contained" onClick={loadData}>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h6" color="error">Không thể tải cài đặt hệ thống</Typography>
+        <Button variant="contained" onClick={loadSettings} sx={{ mt: 2 }}>
           Thử lại
         </Button>
       </Box>
@@ -197,525 +266,1051 @@ const SystemSettings: React.FC = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box>
       {/* Header */}
-      <Card sx={{ background: 'linear-gradient(135deg, #5b8def 0%, #8b5cf6 100%)', color: 'white', borderRadius: 2 }}>
+      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
         <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={2}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Box>
-              <Typography variant="h5" fontWeight={800}>Cài đặt hệ thống</Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>Quản lý cấu hình toàn bộ hệ thống LMS</Typography>
+              <Typography variant="h4" fontWeight={800}>Cài đặt hệ thống</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                Quản lý thông tin website, tính năng, và cấu hình hệ thống
+              </Typography>
             </Box>
-            <Stack direction="row" spacing={1}>
-              {hasChanges && (<Button variant="outlined" onClick={handleReset} disabled={saving}>Khôi phục</Button>)}
-              <Button variant="contained" onClick={handleSave} disabled={saving || !hasChanges}>{saving ? 'Đang lưu...' : 'Lưu thay đổi'}</Button>
+            <Stack direction="row" spacing={2}>
+              {hasChanges && (
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon />}
+                    onClick={handleReset}
+                    disabled={saving}
+                    sx={{ color: 'white', borderColor: 'white' }}
+                  >
+                    Khôi phục
+                  </Button>
+                  <Chip label="Có thay đổi chưa lưu" color="warning" />
+                </>
+              )}
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+                disabled={saving || !hasChanges}
+                sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' } }}
+              >
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </Button>
             </Stack>
           </Stack>
         </CardContent>
       </Card>
 
-      {/* System Overview */}
-      {overview ? (
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box sx={{ p: 1, backgroundColor: 'primary.main', borderRadius: 1, color: 'white' }}>
-                    <Typography variant="h6">👥</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>{overview.totalUsers?.toLocaleString() || '0'}</Typography>
-                    <Typography variant="body2" color="text.secondary">Tổng người dùng</Typography>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box sx={{ p: 1, backgroundColor: 'success.main', borderRadius: 1, color: 'white' }}>
-                    <Typography variant="h6">📚</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>{overview.totalCourses?.toLocaleString() || '0'}</Typography>
-                    <Typography variant="body2" color="text.secondary">Tổng khóa học</Typography>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box sx={{ p: 1, backgroundColor: 'warning.main', borderRadius: 1, color: 'white' }}>
-                    <Typography variant="h6">💰</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>{overview.totalRevenue?.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) || '0 VND'}</Typography>
-                    <Typography variant="body2" color="text.secondary">Tổng doanh thu</Typography>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box sx={{ p: 1, backgroundColor: 'success.main', borderRadius: 1, color: 'white' }}>
-                    <Typography variant="h6">⚡</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>Tốt</Typography>
-                    <Typography variant="body2" color="text.secondary">Trạng thái hệ thống</Typography>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      ) : (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" color="text.secondary" textAlign="center">
-              Đang tải thông tin hệ thống...
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Tabs */}
-      <Paper variant="outlined">
-        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="scrollable" scrollButtons allowScrollButtonsMobile>
-          <Tab value="general" label="Chung" />
-          <Tab value="storage" label="Lưu trữ" />
-          <Tab value="refunds" label="Hoàn tiền" />
-          <Tab value="logs" label="Logs" />
-          <Tab value="backup" label="Backup" />
-        </Tabs>
-      </Paper>
-
-      {/* General */}
-      {activeTab === 'general' && (
-        <Card><CardContent>
-          <Typography variant="subtitle1" fontWeight={700} mb={2}>Cài đặt chung</Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Tên website"
-                value={config.siteName || ''}
-                onChange={(e) => handleInputChange('siteName', e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={config.maintenanceMode || false}
-                    onChange={(e) => handleInputChange('maintenanceMode', e.target.checked)}
-                  />
-                }
-                label="Chế độ bảo trì"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={config.emailNotifications || false}
-                    onChange={(e) => handleInputChange('emailNotifications', e.target.checked)}
-                  />
-                }
-                label="Bật thông báo email"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={config.paymentEnabled || false}
-                    onChange={(e) => handleInputChange('paymentEnabled', e.target.checked)}
-                  />
-                }
-                label="Bật thanh toán"
-              />
-            </Grid>
-          </Grid>
-        </CardContent></Card>
-      )}
-
-
-      {/* Storage */}
-      {activeTab === 'storage' && (
-        <Card><CardContent>
-          <Typography variant="subtitle1" fontWeight={700} mb={2}>Cài đặt lưu trữ</Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Kích thước file tối đa (bytes)"
-                inputProps={{ min: 1024, max: 104857600 }}
-                value={config.maxFileSize || 10485760}
-                onChange={(e) => handleInputChange('maxFileSize', parseInt(e.target.value))}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Loại file được phép"
-                helperText="Phân cách bằng dấu phẩy"
-                value={config.allowedFileTypes?.join(', ') || ''}
-                onChange={(e) => handleInputChange('allowedFileTypes', e.target.value.split(',').map(t => t.trim()))}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body2" color="text.secondary">
-                Kích thước file hiện tại: {(config.maxFileSize / 1024 / 1024).toFixed(2)} MB
-              </Typography>
-            </Grid>
-          </Grid>
-        </CardContent></Card>
-      )}
-
-      {/* Refunds Tab */}
-      {activeTab === 'refunds' && (
-        <Card>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" mb={2}>
-              <Typography variant="subtitle1" fontWeight={700}>Quản lý hoàn tiền</Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="caption" color="text.secondary">
-                  Tổng: {refundTotal} | Đã tải: {refunds.length}
-                </Typography>
-                <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadData}>
-                  Làm mới
-                </Button>
-              </Stack>
-            </Stack>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Người dùng</TableCell>
-                    <TableCell>Khóa học</TableCell>
-                    <TableCell>Số tiền</TableCell>
-                    <TableCell>Lý do</TableCell>
-                    <TableCell>Trạng thái</TableCell>
-                    <TableCell>Ngày yêu cầu</TableCell>
-                    <TableCell>Hành động</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {refunds.length > 0 ? (
-                    refunds.map((refund) => (
-                      <TableRow key={refund._id}>
-                        <TableCell>
-                          <Stack>
-                            <Typography variant="body2" fontWeight={600}>{refund.user?.name || 'N/A'}</Typography>
-                            <Typography variant="caption" color="text.secondary">{refund.user?.email || 'N/A'}</Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell>{refund.course?.title || 'N/A'}</TableCell>
-                        <TableCell>{refund.amount?.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) || '0 VND'}</TableCell>
-                        <TableCell>{refund.reason || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={refund.status === 'pending' ? 'Chờ xử lý' : refund.status === 'approved' ? 'Đã phê duyệt' : refund.status === 'rejected' ? 'Đã từ chối' : 'Không xác định'}
-                            color={refund.status === 'pending' ? 'warning' : refund.status === 'approved' ? 'success' : refund.status === 'rejected' ? 'error' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>{refund.requestedAt ? new Date(refund.requestedAt).toLocaleDateString('vi-VN') : '-'}</TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1}>
-                            <Tooltip title="Xem chi tiết">
-                              <IconButton size="small" onClick={() => setRefundDialog({ open: true, refund })}>
-                                <VisibilityIcon />
-                              </IconButton>
-                            </Tooltip>
-                            {refund.status === 'pending' && (
-                              <>
-                                <Tooltip title="Phê duyệt">
-                                  <IconButton size="small" color="success" onClick={() => handleProcessRefund(refund._id, 'approve')}>
-                                    <CheckCircleIcon />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Từ chối">
-                                  <IconButton size="small" color="error" onClick={() => handleProcessRefund(refund._id, 'reject')}>
-                                    <CancelIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </>
-                            )}
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                        <Stack spacing={2} alignItems="center">
-                          <Typography variant="body2" color="text.secondary">
-                            Không có dữ liệu hoàn tiền
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Có thể database chưa có dữ liệu hoặc API chưa hoạt động
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              component="div"
-              count={refundTotal}
-              page={refundPage}
-              onPageChange={(_, newPage) => setRefundPage(newPage)}
-              rowsPerPage={refundRowsPerPage}
-              onRowsPerPageChange={(e) => setRefundRowsPerPage(parseInt(e.target.value, 10))}
-              rowsPerPageOptions={[5, 10, 25]}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Logs Tab */}
-      {activeTab === 'logs' && (
-        <Card>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" mb={2}>
-              <Typography variant="subtitle1" fontWeight={700}>System Logs</Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="caption" color="text.secondary">
-                  Đã tải: {logs.length} logs
-                </Typography>
-                <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadData}>
-                  Làm mới
-                </Button>
-              </Stack>
-            </Stack>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Action</TableCell>
-                    <TableCell>Resource</TableCell>
-                    <TableCell>User ID</TableCell>
-                    <TableCell>IP Address</TableCell>
-                    <TableCell>Severity</TableCell>
-                    <TableCell>Category</TableCell>
-                    <TableCell>Time</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {logs.length > 0 ? (
-                    logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>{log.action}</TableCell>
-                        <TableCell>{log.resource}</TableCell>
-                        <TableCell>{log.userId}</TableCell>
-                        <TableCell>{log.ipAddress}</TableCell>
-                        <TableCell>
-                          <Chip
-                            size="small"
-                            label={log.severity}
-                            color={log.severity === 'high' ? 'error' : log.severity === 'medium' ? 'warning' : 'success'}
-                          />
-                        </TableCell>
-                        <TableCell>{log.category}</TableCell>
-                        <TableCell>{new Date(log.createdAt).toLocaleString('vi-VN')}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                        <Stack spacing={2} alignItems="center">
-                          <Typography variant="body2" color="text.secondary">
-                            Không có dữ liệu logs
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Có thể database chưa có dữ liệu hoặc API chưa hoạt động
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Backup Tab */}
-      {activeTab === 'backup' && (
-        <Card>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" mb={2}>
-              <Typography variant="subtitle1" fontWeight={700}>Quản lý Backup</Typography>
-              <Stack direction="row" spacing={1}>
-                <Button variant="outlined" startIcon={<RefreshIcon />} onClick={loadData}>
-                  Làm mới
-                </Button>
-                <Button variant="contained" startIcon={<BackupIcon />} onClick={handleCreateBackup} disabled={saving}>
-                  Tạo Backup
-                </Button>
-              </Stack>
-            </Stack>
-            {backupStatus ? (
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>Thông tin Backup</Typography>
-                      <Stack spacing={1}>
-                        <Box>
-                          <Typography variant="body2" component="span">
-                            <strong>Lần backup cuối:</strong> {backupStatus.lastBackup ? new Date(backupStatus.lastBackup).toLocaleString('vi-VN') : 'Chưa có'}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" component="span">
-                            <strong>Lần backup tiếp theo:</strong> {backupStatus.nextBackup ? new Date(backupStatus.nextBackup).toLocaleString('vi-VN') : 'Chưa có'}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" component="span">
-                            <strong>Trạng thái:</strong>
-                          </Typography>
-                          <Chip
-                            label={backupStatus.status === 'scheduled' ? 'Đã lên lịch' : backupStatus.status === 'success' ? 'Thành công' : backupStatus.status === 'failed' ? 'Thất bại' : backupStatus.status === 'in_progress' ? 'Đang xử lý' : 'Không xác định'}
-                            color={backupStatus.status === 'scheduled' ? 'info' : backupStatus.status === 'success' ? 'success' : backupStatus.status === 'failed' ? 'error' : backupStatus.status === 'in_progress' ? 'warning' : 'default'}
-                            size="small"
-                          />
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" component="span">
-                            <strong>Kích thước:</strong> {backupStatus.size || '0'}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" component="span">
-                            <strong>Loại:</strong> {backupStatus.type || 'N/A'}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            ) : (
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" color="text.secondary" textAlign="center">
-                    Đang tải thông tin backup...
-                  </Typography>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Refund Detail Dialog */}
-      <Dialog open={refundDialog.open} onClose={() => setRefundDialog({ open: false, refund: null })} maxWidth="md" fullWidth>
-        <DialogTitle>Chi tiết yêu cầu hoàn tiền</DialogTitle>
-        <DialogContent>
-          {refundDialog.refund && (
-            <Stack spacing={2}>
-              <Box>
-                <Typography variant="body2" component="span">
-                  <strong>Người dùng:</strong> {refundDialog.refund.user?.name || 'N/A'} ({refundDialog.refund.user?.email || 'N/A'})
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" component="span">
-                  <strong>Khóa học:</strong> {refundDialog.refund.course?.title || 'N/A'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" component="span">
-                  <strong>Số tiền:</strong> {refundDialog.refund.amount?.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) || '0 VND'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" component="span">
-                  <strong>Lý do:</strong> {refundDialog.refund.reason || 'N/A'}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" component="span">
-                  <strong>Trạng thái:</strong>
-                </Typography>
-                <Chip
-                  label={refundDialog.refund.status === 'pending' ? 'Chờ xử lý' : refundDialog.refund.status === 'approved' ? 'Đã phê duyệt' : refundDialog.refund.status === 'rejected' ? 'Đã từ chối' : 'Không xác định'}
-                  color={refundDialog.refund.status === 'pending' ? 'warning' : refundDialog.refund.status === 'approved' ? 'success' : refundDialog.refund.status === 'rejected' ? 'error' : 'default'}
-                  size="small"
-                />
-              </Box>
-              <Box>
-                <Typography variant="body2" component="span">
-                  <strong>Ngày yêu cầu:</strong> {refundDialog.refund.requestedAt ? new Date(refundDialog.refund.requestedAt).toLocaleString('vi-VN') : '-'}
-                </Typography>
-              </Box>
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRefundDialog({ open: false, refund: null })}>Đóng</Button>
-          {refundDialog.refund?.status === 'pending' && (
-            <>
-              <Button color="error" onClick={() => {
-                handleProcessRefund(refundDialog.refund!._id, 'reject');
-                setRefundDialog({ open: false, refund: null });
-              }}>
-                Từ chối
-              </Button>
-              <Button color="success" onClick={() => {
-                handleProcessRefund(refundDialog.refund!._id, 'approve');
-                setRefundDialog({ open: false, refund: null });
-              }}>
-                Phê duyệt
-              </Button>
-            </>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      {/* Save Status */}
-      {hasChanges && (
-        <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={1} alignItems="center"><Chip label="Có thay đổi chưa lưu" color="warning" variant="outlined" /></Stack>
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" onClick={handleReset} disabled={saving}>Khôi phục</Button>
-            <Button variant="contained" onClick={handleSave} disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu thay đổi'}</Button>
-          </Stack>
-        </Paper>
-      )}
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+      <Card sx={{ mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <Tab label="🏢 Thông tin Website" />
+          <Tab label="📞 Liên hệ" />
+          <Tab label="📱 Mạng xã hội" />
+          <Tab label="🔍 SEO" />
+          <Tab label="⚙️ Tính năng" />
+          <Tab label="✉️ Email" />
+          <Tab label="💾 Lưu trữ" />
+          <Tab label="💳 Thanh toán" />
+          <Tab label="🔒 Bảo mật" />
+          <Tab label="⚡ Hiệu suất" />
+          <Tab label="🛡️ Kiểm duyệt" />
+          <Tab label="⚖️ Pháp lý" />
+        </Tabs>
+      </Card>
+
+      {/* Tab 0: Website Info */}
+      {activeTab === 0 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Thông tin Website
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              {/* Logo Upload */}
+              <Grid item xs={12} md={6}>
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2" fontWeight={600}>Logo Website</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar
+                      src={settings.siteLogo}
+                      variant="rounded"
+                      sx={{ width: 80, height: 80 }}
+                    />
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={<UploadIcon />}
+                    >
+                      Tải logo lên
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                      />
+                    </Button>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              {/* Favicon Upload */}
+              <Grid item xs={12} md={6}>
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2" fontWeight={600}>Favicon</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar
+                      src={settings.siteFavicon}
+                      variant="square"
+                      sx={{ width: 32, height: 32 }}
+                    />
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={<UploadIcon />}
+                    >
+                      Tải favicon lên
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={handleFaviconUpload}
+                      />
+                    </Button>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Tên Website"
+                  value={settings.siteName}
+                  onChange={(e) => updateField('siteName', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Tagline"
+                  value={settings.siteTagline}
+                  onChange={(e) => updateField('siteTagline', e.target.value)}
+                  helperText="Slogan ngắn gọn của website"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Mô tả Website"
+                  value={settings.siteDescription}
+                  onChange={(e) => updateField('siteDescription', e.target.value)}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 1: Contact Info */}
+      {activeTab === 1 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Thông tin liên hệ
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Email liên hệ"
+                  type="email"
+                  value={settings.contactInfo?.email || ''}
+                  onChange={(e) => updateField('contactInfo.email', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Số điện thoại"
+                  value={settings.contactInfo?.phone || ''}
+                  onChange={(e) => updateField('contactInfo.phone', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Địa chỉ"
+                  value={settings.contactInfo?.address}
+                  onChange={(e) => updateField('contactInfo.address', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Thành phố"
+                  value={settings.contactInfo?.city}
+                  onChange={(e) => updateField('contactInfo.city', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Quốc gia"
+                  value={settings.contactInfo?.country}
+                  onChange={(e) => updateField('contactInfo.country', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Mã ZIP"
+                  value={settings.contactInfo?.zipCode}
+                  onChange={(e) => updateField('contactInfo.zipCode', e.target.value)}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 2: Social Media */}
+      {activeTab === 2 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Mạng xã hội
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Facebook"
+                  placeholder="https://facebook.com/yourpage"
+                  value={settings.socialMedia?.facebook || ''}
+                  onChange={(e) => updateField('socialMedia.facebook', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Twitter"
+                  placeholder="https://twitter.com/yourhandle"
+                  value={settings.socialMedia?.twitter || ''}
+                  onChange={(e) => updateField('socialMedia.twitter', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Instagram"
+                  placeholder="https://instagram.com/yourhandle"
+                  value={settings.socialMedia?.instagram || ''}
+                  onChange={(e) => updateField('socialMedia.instagram', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="LinkedIn"
+                  placeholder="https://linkedin.com/company/yourcompany"
+                  value={settings.socialMedia?.linkedin || ''}
+                  onChange={(e) => updateField('socialMedia.linkedin', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="YouTube"
+                  placeholder="https://youtube.com/c/yourchannel"
+                  value={settings.socialMedia?.youtube || ''}
+                  onChange={(e) => updateField('socialMedia.youtube', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="GitHub"
+                  placeholder="https://github.com/yourorganization"
+                  value={settings.socialMedia?.github || ''}
+                  onChange={(e) => updateField('socialMedia.github', e.target.value)}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 3: SEO */}
+      {activeTab === 3 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Cài đặt SEO
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Meta Title"
+                  value={settings.seo?.metaTitle}
+                  onChange={(e) => updateField('seo.metaTitle', e.target.value)}
+                  helperText="Tiêu đề hiển thị trên Google Search"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Meta Description"
+                  value={settings.seo?.metaDescription}
+                  onChange={(e) => updateField('seo.metaDescription', e.target.value)}
+                  helperText="Mô tả hiển thị trên Google Search (max 160 chars)"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Meta Keywords"
+                  value={settings.seo?.metaKeywords?.join(', ') || ''}
+                  onChange={(e) => updateField('seo.metaKeywords', e.target.value.split(',').map(k => k.trim()))}
+                  helperText="Từ khóa phân cách bằng dấu phẩy"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="OG Image URL"
+                  value={settings.seo?.ogImage}
+                  onChange={(e) => updateField('seo.ogImage', e.target.value)}
+                  helperText="Ảnh hiển thị khi share trên social media"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Google Analytics ID"
+                  placeholder="G-XXXXXXXXXX"
+                  value={settings.seo?.googleAnalyticsId || ''}
+                  onChange={(e) => updateField('seo.googleAnalyticsId', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Facebook Pixel ID"
+                  placeholder="123456789012345"
+                  value={settings.seo?.facebookPixelId || ''}
+                  onChange={(e) => updateField('seo.facebookPixelId', e.target.value)}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 4: Features */}
+      {activeTab === 4 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Tính năng hệ thống
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableRegistration}
+                      onChange={(e) => updateField('features.enableRegistration', e.target.checked)}
+                    />
+                  }
+                  label="Cho phép đăng ký"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableCourseEnrollment}
+                      onChange={(e) => updateField('features.enableCourseEnrollment', e.target.checked)}
+                    />
+                  }
+                  label="Cho phép đăng ký khóa học"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enablePayments}
+                      onChange={(e) => updateField('features.enablePayments', e.target.checked)}
+                    />
+                  }
+                  label="Bật thanh toán"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableRefunds}
+                      onChange={(e) => updateField('features.enableRefunds', e.target.checked)}
+                    />
+                  }
+                  label="Cho phép hoàn tiền"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableRatings}
+                      onChange={(e) => updateField('features.enableRatings', e.target.checked)}
+                    />
+                  }
+                  label="Cho phép đánh giá"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableCertificates}
+                      onChange={(e) => updateField('features.enableCertificates', e.target.checked)}
+                    />
+                  }
+                  label="Cấp chứng chỉ"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableDiscussions}
+                      onChange={(e) => updateField('features.enableDiscussions', e.target.checked)}
+                    />
+                  }
+                  label="Diễn đàn thảo luận"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.features?.enableAI}
+                      onChange={(e) => updateField('features.enableAI', e.target.checked)}
+                    />
+                  }
+                  label="Tính năng AI"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 5: Email */}
+      {activeTab === 5 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Cài đặt Email
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.email?.enabled}
+                      onChange={(e) => updateField('email.enabled', e.target.checked)}
+                    />
+                  }
+                  label="Bật gửi email"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Tên người gửi"
+                  value={settings.email?.fromName}
+                  onChange={(e) => updateField('email.fromName', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Email người gửi"
+                  type="email"
+                  value={settings.email?.fromEmail}
+                  onChange={(e) => updateField('email.fromEmail', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="SMTP Host"
+                  value={settings.email?.smtpHost || ''}
+                  onChange={(e) => updateField('email.smtpHost', e.target.value)}
+                  placeholder="smtp.gmail.com"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="SMTP Port"
+                  type="number"
+                  value={settings.email?.smtpPort || ''}
+                  onChange={(e) => updateField('email.smtpPort', parseInt(e.target.value))}
+                  placeholder="587"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="SMTP User"
+                  value={settings.email?.smtpUser || ''}
+                  onChange={(e) => updateField('email.smtpUser', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="SMTP Password"
+                  type="password"
+                  value={settings.email?.smtpPassword || ''}
+                  onChange={(e) => updateField('email.smtpPassword', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.email?.enableSSL}
+                      onChange={(e) => updateField('email.enableSSL', e.target.checked)}
+                    />
+                  }
+                  label="Bật SSL/TLS"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 6: Storage */}
+      {activeTab === 6 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Cài đặt lưu trữ
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Provider"
+                  value={settings.storage?.provider}
+                  onChange={(e) => updateField('storage.provider', e.target.value)}
+                  SelectProps={{ native: true }}
+                >
+                  <option value="cloudinary">Cloudinary</option>
+                  <option value="aws-s3">AWS S3</option>
+                  <option value="local">Local Storage</option>
+                </TextField>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Kích thước file tối đa (MB)"
+                  type="number"
+                  value={(settings.storage?.maxFileSize / 1024 / 1024).toFixed(0)}
+                  onChange={(e) => updateField('storage.maxFileSize', parseInt(e.target.value) * 1024 * 1024)}
+                  helperText={`Hiện tại: ${(settings.storage?.maxFileSize / 1024 / 1024).toFixed(2)} MB`}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Loại file cho phép"
+                  value={settings.storage?.allowedFileTypes?.join(', ') || ''}
+                  onChange={(e) => updateField('storage.allowedFileTypes', e.target.value.split(',').map(t => t.trim()))}
+                  helperText="Phân cách bằng dấu phẩy (VD: image/jpeg, image/png, application/pdf)"
+                />
+              </Grid>
+
+              {settings.storage?.provider === 'cloudinary' && (
+                <>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Cloudinary Cloud Name"
+                      value={settings.storage?.cloudinaryCloudName || ''}
+                      onChange={(e) => updateField('storage.cloudinaryCloudName', e.target.value)}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Cloudinary API Key"
+                      value={settings.storage?.cloudinaryApiKey || ''}
+                      onChange={(e) => updateField('storage.cloudinaryApiKey', e.target.value)}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Cloudinary API Secret"
+                      type="password"
+                      value={settings.storage?.cloudinaryApiSecret || ''}
+                      onChange={(e) => updateField('storage.cloudinaryApiSecret', e.target.value)}
+                    />
+                  </Grid>
+                </>
+              )}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 7: Payment */}
+      {activeTab === 7 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Cài đặt thanh toán
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.payment?.enabled}
+                      onChange={(e) => updateField('payment.enabled', e.target.checked)}
+                    />
+                  }
+                  label="Bật chức năng thanh toán"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Đơn vị tiền tệ"
+                  value={settings.payment?.currency}
+                  onChange={(e) => updateField('payment.currency', e.target.value)}
+                  helperText="VD: VND, USD, EUR"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ mt: 2 }}>
+                  VNPay
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.payment?.vnpay.enabled}
+                      onChange={(e) => updateField('payment.vnpay.enabled', e.target.checked)}
+                    />
+                  }
+                  label="Bật VNPay"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="TMN Code"
+                  value={settings.payment?.vnpay.tmnCode || ''}
+                  onChange={(e) => updateField('payment.vnpay.tmnCode', e.target.value)}
+                  disabled={!settings.payment?.vnpay.enabled}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Hash Secret"
+                  type="password"
+                  value={settings.payment?.vnpay.hashSecret || ''}
+                  onChange={(e) => updateField('payment.vnpay.hashSecret', e.target.value)}
+                  disabled={!settings.payment?.vnpay.enabled}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="VNPay URL"
+                  value={settings.payment?.vnpay.url || ''}
+                  onChange={(e) => updateField('payment.vnpay.url', e.target.value)}
+                  disabled={!settings.payment?.vnpay.enabled}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 8: Security */}
+      {activeTab === 8 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Cài đặt bảo mật
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.security?.enableTwoFactor}
+                      onChange={(e) => updateField('security.enableTwoFactor', e.target.checked)}
+                    />
+                  }
+                  label="Bật xác thực 2 yếu tố"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.security?.requireEmailVerification}
+                      onChange={(e) => updateField('security.requireEmailVerification', e.target.checked)}
+                    />
+                  }
+                  label="Yêu cầu xác thực email"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Session Timeout (phút)"
+                  type="number"
+                  value={settings.security?.sessionTimeout}
+                  onChange={(e) => updateField('security.sessionTimeout', parseInt(e.target.value))}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Max Login Attempts"
+                  type="number"
+                  value={settings.security?.maxLoginAttempts}
+                  onChange={(e) => updateField('security.maxLoginAttempts', parseInt(e.target.value))}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Lockout Duration (phút)"
+                  type="number"
+                  value={settings.security?.lockoutDuration}
+                  onChange={(e) => updateField('security.lockoutDuration', parseInt(e.target.value))}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Độ dài mật khẩu tối thiểu"
+                  type="number"
+                  value={settings.security?.passwordMinLength}
+                  onChange={(e) => updateField('security.passwordMinLength', parseInt(e.target.value))}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.security?.passwordRequireSpecialChar}
+                      onChange={(e) => updateField('security.passwordRequireSpecialChar', e.target.checked)}
+                    />
+                  }
+                  label="Yêu cầu ký tự đặc biệt trong mật khẩu"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 9: Performance */}
+      {activeTab === 9 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Cài đặt hiệu suất
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.performance?.enableCaching}
+                      onChange={(e) => updateField('performance.enableCaching', e.target.checked)}
+                    />
+                  }
+                  label="Bật caching"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.performance?.enableCompression}
+                      onChange={(e) => updateField('performance.enableCompression', e.target.checked)}
+                    />
+                  }
+                  label="Bật nén dữ liệu"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Cache Expiry (giây)"
+                  type="number"
+                  value={settings.performance?.cacheExpiry}
+                  onChange={(e) => updateField('performance.cacheExpiry', parseInt(e.target.value))}
+                  disabled={!settings.performance?.enableCaching}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Max Concurrent Users"
+                  type="number"
+                  value={settings.performance?.maxConcurrentUsers}
+                  onChange={(e) => updateField('performance.maxConcurrentUsers', parseInt(e.target.value))}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 10: Moderation */}
+      {activeTab === 10 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Kiểm duyệt nội dung
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.moderation?.enableAutoModeration}
+                      onChange={(e) => updateField('moderation.enableAutoModeration', e.target.checked)}
+                    />
+                  }
+                  label="Bật tự động kiểm duyệt"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.moderation?.requireCourseApproval}
+                      onChange={(e) => updateField('moderation.requireCourseApproval', e.target.checked)}
+                    />
+                  }
+                  label="Yêu cầu duyệt khóa học"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.moderation?.requireReviewApproval}
+                      onChange={(e) => updateField('moderation.requireReviewApproval', e.target.checked)}
+                    />
+                  }
+                  label="Yêu cầu duyệt đánh giá"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.moderation?.profanityFilter}
+                      onChange={(e) => updateField('moderation.profanityFilter', e.target.checked)}
+                    />
+                  }
+                  label="Bật lọc từ ngữ không phù hợp"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 11: Legal */}
+      {activeTab === 11 && settings && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Thông tin pháp lý
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Terms of Service URL"
+                  value={settings.legal?.termsOfServiceUrl}
+                  onChange={(e) => updateField('legal.termsOfServiceUrl', e.target.value)}
+                  placeholder="/terms"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Privacy Policy URL"
+                  value={settings.legal?.privacyPolicyUrl}
+                  onChange={(e) => updateField('legal.privacyPolicyUrl', e.target.value)}
+                  placeholder="/privacy"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Refund Policy URL"
+                  value={settings.legal?.refundPolicyUrl}
+                  onChange={(e) => updateField('legal.refundPolicyUrl', e.target.value)}
+                  placeholder="/refund-policy"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Copyright Text"
+                  value={settings.legal?.copyrightText}
+                  onChange={(e) => updateField('legal.copyrightText', e.target.value)}
+                  placeholder="© 2025 Your Company. All rights reserved."
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Floating Save Button */}
+      {hasChanges && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1000
+          }}
+        >
+          <Card sx={{ boxShadow: 6 }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <InfoIcon color="warning" />
+                <Typography variant="body2">Có thay đổi chưa lưu</Typography>
+                <Button variant="outlined" onClick={handleReset} disabled={saving}>
+                  Hủy
+                </Button>
+                <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={saving}>
+                  {saving ? 'Đang lưu...' : 'Lưu ngay'}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
     </Box>
   );
 };

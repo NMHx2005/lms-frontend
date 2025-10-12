@@ -15,7 +15,7 @@ class EnrollmentService {
     // Enroll in a course
     async enrollInCourse(courseId: string): Promise<EnrollmentResponse> {
         try {
-            const response = await api.post('/api/client/enrollment', {
+            const response = await api.post('/client/enrollments', {
                 courseId
             });
             return response.data;
@@ -34,7 +34,7 @@ class EnrollmentService {
         status?: 'active' | 'completed' | 'inactive';
     }): Promise<EnrollmentResponse> {
         try {
-            const response = await api.get('/api/client/enrollment', { params });
+            const response = await api.get('/client/enrollments', { params });
             return response.data;
         } catch (error: any) {
             return {
@@ -47,7 +47,7 @@ class EnrollmentService {
     // Get enrollment by ID
     async getEnrollmentById(enrollmentId: string): Promise<EnrollmentResponse> {
         try {
-            const response = await api.get(`/api/client/enrollment/${enrollmentId}`);
+            const response = await api.get(`/client/enrollments/${enrollmentId}`);
             return response.data;
         } catch (error: any) {
             return {
@@ -65,7 +65,7 @@ class EnrollmentService {
         timeSpent?: number;
     }): Promise<EnrollmentResponse> {
         try {
-            const response = await api.put(`/api/client/enrollment/${enrollmentId}/progress`, data);
+            const response = await api.put(`/client/enrollments/${enrollmentId}/progress`, data);
             return response.data;
         } catch (error: any) {
             return {
@@ -78,7 +78,7 @@ class EnrollmentService {
     // Cancel enrollment
     async cancelEnrollment(enrollmentId: string): Promise<EnrollmentResponse> {
         try {
-            const response = await api.delete(`/api/client/enrollment/${enrollmentId}`);
+            const response = await api.delete(`/client/enrollments/${enrollmentId}`);
             return response.data;
         } catch (error: any) {
             return {
@@ -91,7 +91,7 @@ class EnrollmentService {
     // Get enrollment statistics
     async getEnrollmentStats(): Promise<EnrollmentResponse> {
         try {
-            const response = await api.get('/api/client/enrollment/stats');
+            const response = await api.get('/client/enrollments/stats');
             return response.data;
         } catch (error: any) {
             return {

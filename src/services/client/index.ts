@@ -8,3 +8,4 @@ export { clientCertificatesService } from './certificates.service';
 export { clientAnalyticsService } from './analytics.service';
 export { clientTeacherDashboardService } from './teacher-dashboard.service';
 export { clientStudyGroupsService } from './study-groups.service';
+export { clientSystemSettingsService } from './system-settings.service';

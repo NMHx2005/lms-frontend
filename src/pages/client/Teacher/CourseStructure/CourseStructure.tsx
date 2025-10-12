@@ -95,6 +95,7 @@ const CourseStructure: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [originalSectionData, setOriginalSectionData] = useState<{ title: string; description: string } | null>(null);
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
   const [showAddLesson, setShowAddLesson] = useState<string | null>(null);
@@ -223,7 +224,7 @@ const CourseStructure: React.FC = () => {
         linkUrl: newLesson.linkUrl,
         duration: newLesson.duration,
         order: section.lessons.length + 1,
-        isPublished: false
+        isPublished: true
       };
 
       // Add quiz questions if type is quiz
@@ -270,6 +271,7 @@ const CourseStructure: React.FC = () => {
       if (response.success) {
         toast.success('Cập nhật chương thành công');
         setEditingSection(null);
+        setOriginalSectionData(null);
         await loadCourseStructure();
       }
     } catch (error: any) {
@@ -314,7 +316,8 @@ const CourseStructure: React.FC = () => {
         content: lesson.content,
         videoUrl: lesson.videoUrl,
         fileUrl: lesson.fileUrl,
-        linkUrl: lesson.linkUrl
+        linkUrl: lesson.linkUrl,
+        isPublished: true
       };
 
       // Add quiz questions if type is quiz
@@ -603,7 +606,19 @@ const CourseStructure: React.FC = () => {
                         fullWidth
                         size="small"
                         value={section.title}
-                        onChange={(e) => updateSection(section._id, { title: e.target.value })}
+                        onChange={(e) => {
+                          // Update local state immediately for responsive UI
+                          const updatedSections = course!.sections.map(s =>
+                            s._id === section._id ? { ...s, title: e.target.value } : s
+                          );
+                          setCourse({ ...course!, sections: updatedSections });
+                        }}
+                        onBlur={(e) => {
+                          // Only call API when user finishes editing (on blur) and value changed
+                          if (originalSectionData && e.target.value !== originalSectionData.title) {
+                            updateSection(section._id, { title: e.target.value });
+                          }
+                        }}
                         variant="outlined"
                         sx={{ mb: 1 }}
                       />
@@ -611,7 +626,19 @@ const CourseStructure: React.FC = () => {
                         fullWidth
                         size="small"
                         value={section.description}
-                        onChange={(e) => updateSection(section._id, { description: e.target.value })}
+                        onChange={(e) => {
+                          // Update local state immediately for responsive UI
+                          const updatedSections = course!.sections.map(s =>
+                            s._id === section._id ? { ...s, description: e.target.value } : s
+                          );
+                          setCourse({ ...course!, sections: updatedSections });
+                        }}
+                        onBlur={(e) => {
+                          // Only call API when user finishes editing (on blur) and value changed
+                          if (originalSectionData && e.target.value !== originalSectionData.description) {
+                            updateSection(section._id, { description: e.target.value });
+                          }
+                        }}
                         multiline
                         rows={2}
                         variant="outlined"
@@ -656,7 +683,17 @@ const CourseStructure: React.FC = () => {
                     size="small"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setEditingSection(editingSection === section._id ? null : section._id);
+                      if (editingSection === section._id) {
+                        setEditingSection(null);
+                        setOriginalSectionData(null);
+                      } else {
+                        setEditingSection(section._id);
+                        // Save original data for comparison
+                        setOriginalSectionData({
+                          title: section.title,
+                          description: section.description || ''
+                        });
+                      }
                     }}
                     title="Chỉnh sửa"
                   >

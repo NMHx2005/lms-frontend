@@ -5,24 +5,42 @@ import Footer from '@/components/Layout/client/Footer';
 import LearningSidebar from '@/components/Client/LearningPlayer/LearningSidebar/LearningSidebar';
 import { clientAuthService } from '@/services/client/auth.service';
 import { clientCoursesService } from '@/services/client/courses.service';
+import { courseContentService, CourseContent, SectionWithLessons, LessonContent } from '@/services/client/course-content.service';
+import { enrollmentService } from '@/services/client/enrollment.service';
+import { progressService } from '@/services/client/progress.service';
+import toast from 'react-hot-toast';
 import './LearningPlayer.css';
 
-interface Lesson {
-  id: string;
-  title: string;
-  type: 'video' | 'text' | 'file' | 'link';
-  content: string;
-  duration: string;
-  isCompleted: boolean;
-  isLocked: boolean;
-}
+// Default course thumbnail
+const DEFAULT_THUMBNAIL = '/images/Content.png';
+const DEFAULT_AVATAR = '/images/default-avatar.png';
 
-interface Section {
-  id: string;
-  title: string;
-  lessons: Lesson[];
-  isExpanded: boolean;
-}
+// Component for handling image errors
+const ImageWithFallback = ({ src, alt, className, fallbackSrc = DEFAULT_THUMBNAIL, ...props }: any) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [hasError, setHasError] = useState(false);
+
+  const handleError = () => {
+    if (!hasError) {
+      setHasError(true);
+      setImgSrc(fallbackSrc);
+    }
+  };
+
+  return (
+    <img
+      src={imgSrc}
+      alt={alt}
+      className={className}
+      onError={handleError}
+      {...props}
+    />
+  );
+};
+
+// Use interfaces from course-content.service
+type Lesson = LessonContent & { id: string }; // Add id for compatibility
+type Section = SectionWithLessons & { id: string }; // Add id for compatibility
 
 interface Course {
   id: string;
@@ -30,14 +48,27 @@ interface Course {
   instructor: string;
   image: string;
   description: string;
+  shortDescription?: string;
   domain: string;
   level: string;
   price: number;
   enrolledStudents: string[];
+  totalStudents?: number;
+  totalLessons?: number;
+  totalDuration?: number;
+  estimatedDuration?: number;
+  averageRating?: number;
+  totalRatings?: number;
+  learningObjectives?: string[];
+  prerequisites?: string[];
+  benefits?: string[];
   instructorId: {
     _id: string;
+    firstName?: string;
+    lastName?: string;
     name: string;
     avatar: string;
+    bio?: string;
   };
 }
 
@@ -46,12 +77,18 @@ const LearningPlayer: React.FC = () => {
   const navigate = useNavigate();
 
   const [course, setCourse] = useState<Course | null>(null);
+  const [courseContent, setCourseContent] = useState<CourseContent | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [enrollment, setEnrollment] = useState<any>(null);
   const [progress, setProgress] = useState(0);
+
+  // Timer states for auto-complete lesson
+  const [timeSpentInLesson, setTimeSpentInLesson] = useState(0);
+  const [lessonTimer, setLessonTimer] = useState<number | null>(null);
+  const [isLessonCompleted, setIsLessonCompleted] = useState(false);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -63,14 +100,16 @@ const LearningPlayer: React.FC = () => {
           return;
         }
 
-        // Fetch course details and enrollment data
-        const [courseResponse, enrolledCoursesResponse] = await Promise.allSettled([
+        // Fetch course details, enrollment data, and course content in parallel
+        const [courseResponse, enrolledCoursesResponse, courseContentResponse] = await Promise.allSettled([
           clientCoursesService.getCourseById(courseId),
-          clientAuthService.getEnrolledCourses({ limit: 100 })
+          clientAuthService.getEnrolledCourses({ limit: 100 }),
+          courseContentService.getCourseContent(courseId)
         ]);
 
         let courseData: Course | null = null;
         let enrollmentData: any = null;
+        let contentData: CourseContent | null = null;
 
         // Get course data
         if (courseResponse.status === 'fulfilled' && courseResponse.value.success) {
@@ -78,11 +117,14 @@ const LearningPlayer: React.FC = () => {
           courseData = {
             id: courseInfo._id,
             title: courseInfo.title,
-            instructor: courseInfo.instructorId?.name || 'N/A',
+            instructor: courseInfo.instructorId?.lastName || 'N/A',
             image: courseInfo.thumbnail,
             description: courseInfo.description,
             domain: courseInfo.domain,
             level: courseInfo.level,
+            totalStudents: courseInfo.totalStudents,
+            averageRating: courseInfo.averageRating,
+            totalRatings: courseInfo.totalRatings,
             price: courseInfo.price,
             enrolledStudents: courseInfo.enrolledStudents || [],
             instructorId: courseInfo.instructorId
@@ -92,7 +134,20 @@ const LearningPlayer: React.FC = () => {
         // Get enrollment data
         if (enrolledCoursesResponse.status === 'fulfilled' && enrolledCoursesResponse.value.success) {
           const enrollments = enrolledCoursesResponse.value.data.enrollments || enrolledCoursesResponse.value.data;
-          enrollmentData = enrollments.find((e: any) => e.courseId._id === courseId);
+          enrollmentData = enrollments.find((e: any) => e.courseId._id === courseId || e.courseId === courseId);
+
+          console.log('📚 Enrollment data loaded:', {
+            enrollmentId: enrollmentData?._id,
+            progress: enrollmentData?.progress,
+            isCompleted: enrollmentData?.isCompleted,
+            courseId: courseId,
+            enrollmentCourseId: enrollmentData?.courseId?._id || enrollmentData?.courseId
+          });
+        }
+
+        // Get course content
+        if (courseContentResponse.status === 'fulfilled' && courseContentResponse.value.success) {
+          contentData = courseContentResponse.value.data || null;
         }
 
         if (!courseData) {
@@ -105,156 +160,30 @@ const LearningPlayer: React.FC = () => {
           return;
         }
 
+        if (!contentData) {
+          setError('Không thể tải nội dung khóa học');
+          return;
+        }
+
         setCourse(courseData);
+        setCourseContent(contentData);
+        setSections(contentData.sections.map(section => ({
+          ...section,
+          id: section._id,
+          lessons: section.lessons.map(lesson => ({ ...lesson, id: lesson._id }))
+        })));
         setEnrollment(enrollmentData);
         setProgress(enrollmentData.progress || 0);
 
-        // Tạm thời sử dụng dữ liệu mock cho sections và lessons
-        // TODO: Thay thế bằng API thật khi có
-        const mockSections: Section[] = [
-          {
-            id: '1',
-            title: 'Phần 1: Giới thiệu và cài đặt môi trường',
-            isExpanded: true,
-            lessons: [
-              {
-                id: '1-1',
-                title: 'Chào mừng đến với khóa học',
-                type: 'video',
-                content: 'https://example.com/video1.mp4',
-                duration: '5 phút',
-                isCompleted: true,
-                isLocked: false
-              },
-              {
-                id: '1-2',
-                title: 'Cài đặt môi trường phát triển',
-                type: 'text',
-                content: `
-                  <h2>Cài đặt môi trường phát triển</h2>
-                  <p>Trong bài học này, chúng ta sẽ học cách cài đặt các công cụ cần thiết để bắt đầu lập trình web:</p>
-                  <h3>1. Cài đặt Node.js</h3>
-                  <ul>
-                    <li>Truy cập <a href="https://nodejs.org" target="_blank">nodejs.org</a></li>
-                    <li>Tải phiên bản LTS mới nhất</li>
-                    <li>Chạy installer và làm theo hướng dẫn</li>
-                  </ul>
-                  <h3>2. Cài đặt Code Editor</h3>
-                  <ul>
-                    <li>Visual Studio Code (khuyến nghị)</li>
-                    <li>Sublime Text</li>
-                    <li>WebStorm</li>
-                  </ul>
-                  <h3>3. Cài đặt Git</h3>
-                  <ul>
-                    <li>Tải từ <a href="https://git-scm.com" target="_blank">git-scm.com</a></li>
-                    <li>Cấu hình user name và email</li>
-                  </ul>
-                `,
-                duration: '15 phút',
-                isCompleted: false,
-                isLocked: false
-              },
-              {
-                id: '1-3',
-                title: 'Tài liệu tham khảo',
-                type: 'file',
-                content: 'environment-setup.pdf',
-                duration: '10 phút',
-                isCompleted: false,
-                isLocked: false
-              }
-            ]
-          },
-          {
-            id: '2',
-            title: 'Phần 2: HTML cơ bản',
-            isExpanded: false,
-            lessons: [
-              {
-                id: '2-1',
-                title: 'Cấu trúc HTML cơ bản',
-                type: 'video',
-                content: 'https://example.com/video2.mp4',
-                duration: '20 phút',
-                isCompleted: false,
-                isLocked: false
-              },
-              {
-                id: '2-2',
-                title: 'Các thẻ HTML phổ biến',
-                type: 'text',
-                content: `
-                  <h2>Các thẻ HTML phổ biến</h2>
-                  <p>HTML cung cấp nhiều thẻ để tạo cấu trúc và nội dung cho trang web:</p>
-                  <h3>Thẻ tiêu đề</h3>
-                  <ul>
-                    <li>&lt;h1&gt; đến &lt;h6&gt;: Tạo các cấp độ tiêu đề khác nhau</li>
-                    <li>&lt;h1&gt; là tiêu đề chính, &lt;h6&gt; là tiêu đề nhỏ nhất</li>
-                  </ul>
-                  <h3>Thẻ đoạn văn</h3>
-                  <ul>
-                    <li>&lt;p&gt;: Tạo đoạn văn bản</li>
-                    <li>&lt;br&gt;: Xuống dòng</li>
-                  </ul>
-                  <h3>Thẻ danh sách</h3>
-                  <ul>
-                    <li>&lt;ul&gt;: Danh sách không có thứ tự</li>
-                    <li>&lt;ol&gt;: Danh sách có thứ tự</li>
-                    <li>&lt;li&gt;: Phần tử trong danh sách</li>
-                  </ul>
-                `,
-                duration: '25 phút',
-                isCompleted: false,
-                isLocked: false
-              },
-              {
-                id: '2-3',
-                title: 'Tài liệu HTML',
-                type: 'link',
-                content: 'https://developer.mozilla.org/en-US/docs/Web/HTML',
-                duration: '30 phút',
-                isCompleted: false,
-                isLocked: false
-              }
-            ]
-          },
-          {
-            id: '3',
-            title: 'Phần 3: CSS cơ bản',
-            isExpanded: false,
-            lessons: [
-              {
-                id: '3-1',
-                title: 'Giới thiệu CSS',
-                type: 'video',
-                content: 'https://example.com/video3.mp4',
-                duration: '18 phút',
-                isCompleted: false,
-                isLocked: true
-              },
-              {
-                id: '3-2',
-                title: 'Selectors và Properties',
-                type: 'text',
-                content: 'Nội dung về CSS selectors và properties...',
-                duration: '22 phút',
-                isCompleted: false,
-                isLocked: true
-              }
-            ]
-          }
-        ];
-
-        setSections(mockSections);
-
         // Set first lesson as current
-        if (mockSections.length > 0 && mockSections[0].lessons.length > 0) {
-          setCurrentLessonId(mockSections[0].lessons[0].id);
+        if (contentData.sections.length > 0 && contentData.sections[0].lessons.length > 0) {
+          setCurrentLessonId(contentData.sections[0].lessons[0]._id);
         }
 
       } catch (err) {
+        console.error('Error fetching course data:', err);
         setError('Không thể tải thông tin khóa học');
+        toast.error('Lỗi khi tải dữ liệu khóa học');
       } finally {
         setLoading(false);
       }
@@ -265,8 +194,178 @@ const LearningPlayer: React.FC = () => {
     }
   }, [courseId]);
 
-  const handleLessonSelect = (lessonId: string) => {
+  // Function to recalculate progress based on completed lessons
+  const recalculateProgress = async () => {
+    const allLessons = sections.flatMap(s => s.lessons);
+    const completedLessons = allLessons.filter(l => l.isCompleted);
+    const newProgress = allLessons.length > 0
+      ? Math.round((completedLessons.length / allLessons.length) * 100)
+      : 0;
+
+    setProgress(newProgress);
+
+    // Detailed debug logging
+    console.log('📊 Progress Calculation Details:');
+    console.log('Sections:', sections.length);
+    sections.forEach((section, idx) => {
+      const sectionCompleted = section.lessons.filter(l => l.isCompleted).length;
+      console.log(`  Section ${idx + 1} (${section.title}):`, {
+        total: section.lessons.length,
+        completed: sectionCompleted,
+        lessons: section.lessons.map(l => ({
+          title: l.title,
+          isCompleted: l.isCompleted
+        }))
+      });
+    });
+    console.log('Total Summary:', {
+      completedLessons: completedLessons.length,
+      totalLessons: allLessons.length,
+      percentage: newProgress,
+      completedLessonIds: completedLessons.map(l => l._id)
+    });
+
+    // Update progress in database if we have enrollment
+    if (enrollment && enrollment._id) {
+      try {
+        console.log('💾 Attempting to save progress to database:', {
+          enrollmentId: enrollment._id,
+          newProgress: newProgress,
+          enrollmentObject: enrollment
+        });
+
+        const updateResult = await enrollmentService.updateProgress(enrollment._id, {
+          progress: newProgress
+        });
+
+        console.log('💾 Update progress API response:', updateResult);
+
+        if (updateResult.success) {
+          console.log('✅ Progress saved to database successfully:', newProgress);
+
+          // Check if course is completed (100%)
+          if (newProgress === 100 && !enrollment.isCompleted) {
+            toast.success('🎉 Chúc mừng! Bạn đã hoàn thành khóa học!', { duration: 5000 });
+
+            // Update local enrollment state
+            setEnrollment({ ...enrollment, isCompleted: true, progress: newProgress });
+          } else {
+            // Update local enrollment progress
+            setEnrollment({ ...enrollment, progress: newProgress });
+          }
+        } else {
+          console.error('❌ Failed to save progress to database:', updateResult.error);
+          toast.error(`Không thể lưu tiến độ: ${updateResult.error}`);
+        }
+      } catch (error) {
+        console.error('❌ Exception when updating progress:', error);
+        toast.error('Lỗi khi cập nhật tiến độ học tập');
+      }
+    } else {
+      console.warn('⚠️ Cannot update progress: No enrollment data', {
+        hasEnrollment: !!enrollment,
+        enrollmentId: enrollment?._id
+      });
+    }
+  };
+
+  // Timer effect to track time spent in lesson and auto-complete
+  useEffect(() => {
+    const currentLesson = getCurrentLesson();
+
+    // Only start timer if we have a lesson and it's not completed yet
+    if (currentLessonId && currentLesson && !isLessonCompleted) {
+      const requiredDuration = (currentLesson.duration || currentLesson.estimatedTime || 0) * 60; // Convert minutes to seconds
+
+      console.log('⏱️ Starting timer for lesson:', {
+        lessonId: currentLessonId,
+        title: currentLesson.title,
+        requiredDuration: requiredDuration,
+        requiredMinutes: currentLesson.duration || currentLesson.estimatedTime
+      });
+
+      // Start interval to increment time
+      const timer = setInterval(() => {
+        setTimeSpentInLesson(prev => {
+          const newTime = prev + 1;
+
+          // Check if user has spent enough time
+          if (newTime >= requiredDuration && !isLessonCompleted) {
+            console.log('✅ Lesson duration completed! Auto-marking as complete...');
+            setIsLessonCompleted(true);
+
+            // Mark lesson as completed via API
+            if (courseId) {
+              courseContentService.markLessonCompleted(courseId, currentLessonId)
+                .then(() => {
+                  console.log('✅ Lesson marked as completed successfully');
+                  toast.success(`Hoàn thành bài học: ${currentLesson.title}`);
+
+                  // Update local state
+                  setSections(prev => {
+                    const updatedSections = prev.map(section => ({
+                      ...section,
+                      lessons: section.lessons.map(lesson =>
+                        ((lesson as any).id === currentLessonId || lesson._id === currentLessonId)
+                          ? { ...lesson, isCompleted: true }
+                          : lesson
+                      )
+                    }));
+
+                    // Recalculate progress with updated sections
+                    setTimeout(() => recalculateProgress(), 100);
+
+                    return updatedSections;
+                  });
+                })
+                .catch(error => {
+                  console.error('❌ Error marking lesson as completed:', error);
+                  toast.error('Không thể đánh dấu bài học hoàn thành');
+                });
+            }
+
+            // Clear the timer
+            clearInterval(timer);
+            setLessonTimer(null);
+          }
+
+          return newTime;
+        });
+      }, 1000); // Update every second
+
+      setLessonTimer(timer);
+
+      // Cleanup timer on unmount or when lesson changes
+      return () => {
+        clearInterval(timer);
+        setLessonTimer(null);
+      };
+    }
+  }, [currentLessonId, isLessonCompleted, courseId]);
+
+  const handleLessonSelect = async (lessonId: string) => {
+    // Clear previous timer when switching lessons
+    if (lessonTimer) {
+      clearInterval(lessonTimer);
+      setLessonTimer(null);
+    }
+
+    // Find the lesson to check if it's already completed
+    let lessonAlreadyCompleted = false;
+    for (const section of sections) {
+      const lesson = section.lessons.find(l => (l as any).id === lessonId || l._id === lessonId);
+      if (lesson && lesson.isCompleted) {
+        lessonAlreadyCompleted = true;
+        break;
+      }
+    }
+
+    // Reset timer and set completion status based on lesson data
+    setTimeSpentInLesson(0);
+    setIsLessonCompleted(lessonAlreadyCompleted);
     setCurrentLessonId(lessonId);
+
+    console.log('🔍 Selected lesson:', lessonId, 'Already completed:', lessonAlreadyCompleted);
   };
 
   const handleSectionToggle = (sectionId: string) => {
@@ -277,13 +376,63 @@ const LearningPlayer: React.FC = () => {
     ));
   };
 
+  const handleDownloadCertificate = async () => {
+    if (!enrollment || !enrollment._id) {
+      toast.error('Không tìm thấy thông tin đăng ký');
+      return;
+    }
+
+    try {
+      const loadingToast = toast.loading('Đang tải chứng chỉ...');
+
+      const blob = await progressService.downloadCertificate(enrollment._id);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `certificate-${course?.title.replace(/\s+/g, '-') || 'course'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(loadingToast);
+      toast.success('Đã tải chứng chỉ thành công!');
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error(error?.response?.data?.error || 'Không thể tải chứng chỉ');
+      console.error('Error downloading certificate:', error);
+    }
+  };
+
 
   const getCurrentLesson = (): Lesson | null => {
     for (const section of sections) {
-      const lesson = section.lessons.find(l => l.id === currentLessonId);
-      if (lesson) return lesson;
+      const lesson = section.lessons.find(l => (l as any).id === currentLessonId || l._id === currentLessonId);
+      if (lesson) return lesson as Lesson;
     }
     return null;
+  };
+
+  // Function to convert YouTube URL to embed URL
+  const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return '';
+
+    // Handle different YouTube URL formats
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(youtubeRegex);
+
+    if (match) {
+      return `https://www.youtube.com/embed/${match[1]}`;
+    }
+
+    return url;
+  };
+
+  // Function to check if URL is YouTube
+  const isYouTubeUrl = (url: string) => {
+    return url.includes('youtube.com') || url.includes('youtu.be');
   };
 
   if (loading) {
@@ -318,158 +467,422 @@ const LearningPlayer: React.FC = () => {
   const currentLesson = getCurrentLesson();
 
   return (
-    <div className="learning-player-page">
+    <div className="udemy-learning-page">
       <Header />
 
-      <main className="learning-player__main">
-        <div className="learning-player__container">
-          <div className="learning-player__header">
-            <div className="learning-player__course-info">
-              <img src={course.image} alt={course.title} className="learning-player__course-image" />
-              <div className="learning-player__course-details">
-                <div className="learning-player__course-header">
-                  <h1 className="learning-player__course-title">{course.title}</h1>
-                  <div className="learning-player__course-badges">
-                    <span className="learning-player__course-level">{course.level}</span>
-                    <span className="learning-player__course-domain">{course.domain}</span>
+      <main className="udemy-learning__main">
+        <div className="udemy-learning__container">
+          {/* Video Player Section */}
+          <div className="udemy-learning__video-section">
+            {currentLesson ? (
+              <>
+                {currentLesson.type === 'video' ? (
+                  <div className="udemy-learning__video-container">
+                    <div className="udemy-learning__video-player">
+                      {isYouTubeUrl(currentLesson.videoUrl || currentLesson.content || '') ? (
+                        <iframe
+                          src={getYouTubeEmbedUrl(currentLesson.videoUrl || currentLesson.content || '')}
+                          title={currentLesson.title}
+                          className="udemy-learning__video udemy-learning__video--youtube"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          controls
+                          className="udemy-learning__video"
+                          poster={course.image || DEFAULT_THUMBNAIL}
+                        >
+                          <source src={currentLesson.videoUrl || currentLesson.content || ''} type="video/mp4" />
+                          Trình duyệt của bạn không hỗ trợ video.
+                        </video>
+                      )}
+                    </div>
+                    {/* Timer Progress Bar */}
+                    {!isLessonCompleted && (
+                      <div className="udemy-learning__timer-progress">
+                        <div className="udemy-learning__timer-bar">
+                          <div
+                            className="udemy-learning__timer-fill"
+                            style={{
+                              width: `${Math.min(100, (timeSpentInLesson / ((currentLesson.duration || currentLesson.estimatedTime || 0) * 60)) * 100)}%`
+                            }}
+                          />
+                        </div>
+                        <div className="udemy-learning__timer-text">
+                          <span>Đã xem: {Math.floor(timeSpentInLesson / 60)}:{(timeSpentInLesson % 60).toString().padStart(2, '0')}</span>
+                          <span>Yêu cầu: {currentLesson.duration || currentLesson.estimatedTime || 0} phút</span>
+                        </div>
+                      </div>
+                    )}
+                    {isLessonCompleted && (
+                      <div className="udemy-learning__completed-badge">
+                        ✅ Đã hoàn thành bài học này
+                      </div>
+                    )}
                   </div>
+                ) : currentLesson.type === 'text' ? (
+                  <div className="udemy-learning__content-viewer">
+                    <div className="udemy-learning__content-header">
+                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
+                      <div className="udemy-learning__lesson-meta">
+                        <span className="udemy-learning__lesson-type">Text Lesson</span>
+                        <span className="udemy-learning__lesson-duration">
+                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
+                        </span>
+                      </div>
+                    </div>
+                    <div className="udemy-learning__content-body">
+                      <div dangerouslySetInnerHTML={{ __html: currentLesson.content || '' }} />
+                    </div>
+                  </div>
+                ) : currentLesson.type === 'quiz' ? (
+                  <div className="udemy-learning__quiz-viewer">
+                    <div className="udemy-learning__quiz-header">
+                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
+                      <div className="udemy-learning__lesson-meta">
+                        <span className="udemy-learning__lesson-type">Quiz</span>
+                        <span className="udemy-learning__lesson-duration">
+                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
+                        </span>
+                        <span className="udemy-learning__quiz-count">
+                          {currentLesson.quizQuestions?.length || 0} câu hỏi
+                        </span>
+                      </div>
+                    </div>
+                    <div className="udemy-learning__quiz-content">
+                      {currentLesson.quizQuestions && currentLesson.quizQuestions.length > 0 ? (
+                        <div className="udemy-learning__quiz-questions">
+                          {currentLesson.quizQuestions.map((question, index) => (
+                            <div key={question.id || index} className="udemy-learning__question">
+                              <div className="udemy-learning__question-header">
+                                <h3 className="udemy-learning__question-title">
+                                  Câu {index + 1}: {question.question}
+                                </h3>
+                              </div>
+                              <div className="udemy-learning__question-answers">
+                                {question.answers.map((answer, answerIndex) => (
+                                  <div key={answerIndex} className="udemy-learning__answer-option">
+                                    <input
+                                      type="radio"
+                                      id={`question-${index}-answer-${answerIndex}`}
+                                      name={`question-${index}`}
+                                      value={answerIndex}
+                                      disabled
+                                    />
+                                    <label htmlFor={`question-${index}-answer-${answerIndex}`}>
+                                      <span className="udemy-learning__answer-letter">
+                                        {String.fromCharCode(65 + answerIndex)}
+                                      </span>
+                                      <span className="udemy-learning__answer-text">{answer}</span>
+                                      {answerIndex === question.correctAnswer && (
+                                        <span className="udemy-learning__correct-badge">Đúng</span>
+                                      )}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                              {question.explanation && (
+                                <div className="udemy-learning__explanation">
+                                  <h4>Giải thích:</h4>
+                                  <p>{question.explanation}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="udemy-learning__no-questions">
+                          <p>Không có câu hỏi nào trong quiz này.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : currentLesson.type === 'file' ? (
+                  <div className="udemy-learning__file-viewer">
+                    <div className="udemy-learning__file-header">
+                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
+                      <div className="udemy-learning__lesson-meta">
+                        <span className="udemy-learning__lesson-type">Tài liệu</span>
+                        <span className="udemy-learning__lesson-duration">
+                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
+                        </span>
+                      </div>
+                    </div>
+                    <div className="udemy-learning__file-content">
+                      <div className="udemy-learning__file-info">
+                        <div className="udemy-learning__file-icon">📄</div>
+                        <div className="udemy-learning__file-details">
+                          <h3>Tài liệu bài học</h3>
+                          <p>Tải xuống tài liệu để xem nội dung chi tiết của bài học này.</p>
+                          <div className="udemy-learning__file-actions">
+                            <button
+                              className="udemy-learning__download-btn"
+                              onClick={() => {
+                                const url = currentLesson.fileUrl || currentLesson.content;
+                                if (url) window.open(url, '_blank');
+                              }}
+                            >
+                              📥 Tải xuống
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : currentLesson.type === 'link' ? (
+                  <div className="udemy-learning__link-viewer">
+                    <div className="udemy-learning__link-header">
+                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
+                      <div className="udemy-learning__lesson-meta">
+                        <span className="udemy-learning__lesson-type">Liên kết</span>
+                        <span className="udemy-learning__lesson-duration">
+                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
+                        </span>
+                      </div>
+                    </div>
+                    <div className="udemy-learning__link-content">
+                      <div className="udemy-learning__link-info">
+                        <div className="udemy-learning__link-icon">🔗</div>
+                        <div className="udemy-learning__link-details">
+                          <h3>Tài nguyên bên ngoài</h3>
+                          <p>Mở liên kết để xem nội dung bổ sung cho bài học này.</p>
+                          <div className="udemy-learning__link-actions">
+                            <button
+                              className="udemy-learning__external-btn"
+                              onClick={() => {
+                                const url = currentLesson.linkUrl || currentLesson.externalLink || currentLesson.content;
+                                if (url) window.open(url, '_blank');
+                              }}
+                            >
+                              🌐 Mở liên kết
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : currentLesson.type === 'assignment' ? (
+                  <div className="udemy-learning__assignment-viewer">
+                    <div className="udemy-learning__assignment-header">
+                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
+                      <div className="udemy-learning__lesson-meta">
+                        <span className="udemy-learning__lesson-type">Bài tập</span>
+                        <span className="udemy-learning__lesson-duration">
+                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
+                        </span>
+                      </div>
+                    </div>
+                    <div className="udemy-learning__assignment-content">
+                      <div className="udemy-learning__assignment-info">
+                        <div className="udemy-learning__assignment-icon">📝</div>
+                        <div className="udemy-learning__assignment-details">
+                          <h3>Bài tập</h3>
+                          <p>{currentLesson.content || 'Hoàn thành bài tập theo yêu cầu.'}</p>
+                          {currentLesson.assignmentDetails && (
+                            <div className="udemy-learning__assignment-requirements">
+                              <h4>Yêu cầu:</h4>
+                              <p>{currentLesson.assignmentDetails.instructions}</p>
+                              {currentLesson.assignmentDetails.dueDate && (
+                                <p><strong>Hạn nộp:</strong> {new Date(currentLesson.assignmentDetails.dueDate).toLocaleDateString('vi-VN')}</p>
+                              )}
+                              {currentLesson.assignmentDetails.maxScore && (
+                                <p><strong>Điểm tối đa:</strong> {currentLesson.assignmentDetails.maxScore}</p>
+                              )}
+                            </div>
+                          )}
+                          <div className="udemy-learning__assignment-actions">
+                            <button className="udemy-learning__submit-btn">
+                              📤 Nộp bài
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="udemy-learning__placeholder">
+                    <div className="udemy-learning__placeholder-content">
+                      <div className="udemy-learning__placeholder-icon">📚</div>
+                      <h3>Loại bài học không được hỗ trợ</h3>
+                      <p>Loại bài học "{currentLesson.type}" chưa được hỗ trợ.</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="udemy-learning__placeholder">
+                <div className="udemy-learning__placeholder-content">
+                  <div className="udemy-learning__placeholder-icon">📚</div>
+                  <h3>Chọn bài học để bắt đầu</h3>
+                  <p>Vui lòng chọn một bài học từ danh sách bên phải</p>
                 </div>
-                <p className="learning-player__course-instructor">
-                  <img src={course.instructorId?.avatar} alt={course.instructor} className="learning-player__instructor-avatar" />
-                  Giảng viên: {course.instructor}
-                </p>
-                <div className="learning-player__course-stats">
-                  <div className="learning-player__stat">
-                    <span className="learning-player__stat-icon">👥</span>
-                    <span className="learning-player__stat-text">{course.enrolledStudents?.length || 0} học viên</span>
-                  </div>
-                  <div className="learning-player__stat">
-                    <span className="learning-player__stat-icon">📊</span>
-                    <span className="learning-player__stat-text">Tiến độ: {progress}%</span>
-                  </div>
-                  <div className="learning-player__stat">
-                    <span className="learning-player__stat-icon">📅</span>
-                    <span className="learning-player__stat-text">Đăng ký: {enrollment?.enrolledAt ? new Date(enrollment.enrolledAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
-                  </div>
-                </div>
+              </div>
+            )}
 
-                {/* Thông báo về dữ liệu mock */}
-                <div className="learning-player__mock-notice">
-                  <div className="learning-player__notice-icon">ℹ️</div>
-                  <div className="learning-player__notice-content">
-                    <strong>Lưu ý:</strong> Nội dung khóa học hiện đang sử dụng dữ liệu mẫu. Nội dung thật sẽ được cập nhật sớm!
+            {/* Course Navigation */}
+            <div className="udemy-learning__navigation">
+              <div className="udemy-learning__nav-info">
+                <h3 className="udemy-learning__course-title">{course.title}</h3>
+                <div className="udemy-learning__course-meta">
+                  <span className="udemy-learning__course-level">{course.level}</span>
+                  <span className="udemy-learning__course-domain">{course.domain}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Course Tabs */}
+            <div className="udemy-learning__tabs">
+              <div className="udemy-learning__tab active">Tổng quan</div>
+              <div className="udemy-learning__tab">Q&A</div>
+              <div className="udemy-learning__tab">Ghi chú</div>
+              <div className="udemy-learning__tab">Thông báo</div>
+            </div>
+
+            {/* Course Details */}
+            <div className="udemy-learning__details">
+              <div className="udemy-learning__details-header">
+                <h2>Về khóa học này</h2>
+                <div className="udemy-learning__rating">
+                  <div className="udemy-learning__stars">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span key={i}>{i < Math.floor(course.averageRating || 0) ? '⭐' : '☆'}</span>
+                    ))}
+                  </div>
+                  <span className="udemy-learning__rating-text">
+                    {course.averageRating?.toFixed(1) || '0.0'} ({course.totalRatings || 0} đánh giá)
+                  </span>
+                </div>
+              </div>
+
+              <div className="udemy-learning__stats">
+                <div className="udemy-learning__stat">
+                  <span className="udemy-learning__stat-number">{course.totalStudents || 0}</span>
+                  <span className="udemy-learning__stat-label">Học viên</span>
+                </div>
+                <div className="udemy-learning__stat">
+                  <span className="udemy-learning__stat-number">
+                    {course.estimatedDuration ? (course.estimatedDuration / 60).toFixed(1) :
+                      courseContent ? (courseContent.totalDuration / 60).toFixed(1) : '0'}
+                  </span>
+                  <span className="udemy-learning__stat-label">Giờ</span>
+                </div>
+                <div className="udemy-learning__stat">
+                  <span className="udemy-learning__stat-number">{courseContent?.totalLessons || course.totalLessons || 0}</span>
+                  <span className="udemy-learning__stat-label">Bài học</span>
+                </div>
+                <div className="udemy-learning__stat">
+                  <span className="udemy-learning__stat-number">{progress}%</span>
+                  <span className="udemy-learning__stat-label">Hoàn thành</span>
+                </div>
+              </div>
+
+              {enrollment && (
+                <div className="udemy-learning__enrollment-info">
+                  <p><strong>Đăng ký:</strong> {enrollment.enrolledAt ? new Date(enrollment.enrolledAt).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                  <p><strong>Tiến độ:</strong> {progress}% hoàn thành</p>
+                  {progress === 100 && enrollment.isCompleted && enrollment.certificateIssued && (
+                    <div className="udemy-learning__certificate-section">
+                      <div className="udemy-learning__certificate-text">
+                        🎉 Chúc mừng! Bạn đã hoàn thành khóa học!
+                      </div>
+                      <button
+                        className="udemy-learning__certificate-btn"
+                        onClick={handleDownloadCertificate}
+                      >
+                        🏆 Tải chứng chỉ
+                      </button>
+                    </div>
+                  )}
+                  {progress === 100 && enrollment.isCompleted && !enrollment.certificateIssued && (
+                    <div className="udemy-learning__certificate-section">
+                      <div className="udemy-learning__certificate-text">
+                        🎉 Chúc mừng! Bạn đã hoàn thành khóa học!
+                      </div>
+                      <div className="udemy-learning__certificate-pending">
+                        Chứng chỉ đang được xử lý, vui lòng quay lại sau.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="udemy-learning__description">
+                <h3>Mô tả khóa học</h3>
+                <p>{course.description || course.shortDescription}</p>
+              </div>
+
+              {course.learningObjectives && course.learningObjectives.length > 0 && (
+                <div className="udemy-learning__objectives">
+                  <h3>Bạn sẽ học được gì</h3>
+                  <ul>
+                    {course.learningObjectives.map((objective, index) => (
+                      <li key={index}>{objective}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {course.prerequisites && course.prerequisites.length > 0 && (
+                <div className="udemy-learning__prerequisites">
+                  <h3>Yêu cầu</h3>
+                  <ul>
+                    {course.prerequisites.map((prerequisite, index) => (
+                      <li key={index}>{prerequisite}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {course.benefits && course.benefits.length > 0 && (
+                <div className="udemy-learning__benefits">
+                  <h3>Lợi ích</h3>
+                  <ul>
+                    {course.benefits.map((benefit, index) => (
+                      <li key={index}>{benefit}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="udemy-learning__instructor">
+                <h3>Giảng viên</h3>
+                <div className="udemy-learning__instructor-card">
+                  <ImageWithFallback
+                    src={course.instructorId?.avatar}
+                    alt={course.instructor || `${course.instructorId?.firstName} ${course.instructorId?.lastName}`}
+                    className="udemy-learning__instructor-avatar"
+                    fallbackSrc={DEFAULT_AVATAR}
+                  />
+                  <div className="udemy-learning__instructor-info">
+                    <h4>
+                      {course.instructor ||
+                        (course.instructorId?.firstName && course.instructorId?.lastName
+                          ? `${course.instructorId.firstName} ${course.instructorId.lastName}`
+                          : course.instructorId?.name || 'Instructor')}
+                    </h4>
+                    {course.instructorId?.bio && <p>{course.instructorId.bio}</p>}
+                    {!course.instructorId?.bio && <p>Chuyên gia {course.domain}</p>}
+                    <div className="udemy-learning__instructor-stats">
+                      <span>⭐ {course.averageRating?.toFixed(1) || '0.0'} Instructor Rating</span>
+                      <span>👥 {course.totalStudents || 0} Students</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="learning-player__content">
-            {/* Video Player Section */}
-            <div className="learning-player__video-section">
-              {currentLesson ? (
-                <div className="learning-player__video-container">
-                  {currentLesson.type === 'video' ? (
-                    <div className="learning-player__video-player">
-                      <video
-                        controls
-                        className="learning-player__video"
-                        poster={course.image}
-                      >
-                        <source src={currentLesson.content} type="video/mp4" />
-                        Trình duyệt của bạn không hỗ trợ video.
-                      </video>
-                    </div>
-                  ) : (
-                    <div className="learning-player__video-placeholder">
-                      <div className="learning-player__placeholder-content">
-                        <div className="learning-player__play-icon">▶️</div>
-                        <h3>{currentLesson.title}</h3>
-                        <p>{currentLesson.type === 'text' ? 'Nội dung văn bản' : 'Tài liệu học tập'}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="learning-player__video-placeholder">
-                  <div className="learning-player__placeholder-content">
-                    <div className="learning-player__play-icon">📚</div>
-                    <h3>Chọn bài học để bắt đầu</h3>
-                    <p>Vui lòng chọn một bài học từ danh sách bên phải</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Main Content Area */}
-            <div className="learning-player__main-content">
-              {/* Course Tabs */}
-              <div className="learning-player__tabs">
-                <div className="learning-player__tab active">Tổng quan</div>
-                <div className="learning-player__tab">Hỏi đáp</div>
-                <div className="learning-player__tab">Ghi chú</div>
-                <div className="learning-player__tab">Thông báo</div>
-                <div className="learning-player__tab">Đánh giá</div>
-                <div className="learning-player__tab">Công cụ học tập</div>
-              </div>
-
-              {/* Course Details */}
-              <div className="learning-player__course-details">
-                <h2 className="learning-player__course-title-main">{course.title}</h2>
-
-                <div className="learning-player__course-rating">
-                  <div className="learning-player__stars">⭐⭐⭐⭐⭐</div>
-                  <span className="learning-player__rating-text">4.9 (154 đánh giá)</span>
-                </div>
-
-                <div className="learning-player__course-meta">
-                  <div className="learning-player__meta-item">
-                    <span className="learning-player__meta-icon">👥</span>
-                    <span className="learning-player__meta-text">{course.enrolledStudents?.length || 0} Học viên</span>
-                  </div>
-                  <div className="learning-player__meta-item">
-                    <span className="learning-player__meta-icon">⏱️</span>
-                    <span className="learning-player__meta-text">14,5 giờ Tổng thời gian</span>
-                  </div>
-                  <div className="learning-player__meta-item">
-                    <span className="learning-player__meta-icon">📅</span>
-                    <span className="learning-player__meta-text">Cập nhật tháng 9/2025</span>
-                  </div>
-                  <div className="learning-player__meta-item">
-                    <span className="learning-player__meta-icon">🌐</span>
-                    <span className="learning-player__meta-text">Tiếng Việt</span>
-                  </div>
-                </div>
-
-                {/* Course Description */}
-                <div className="learning-player__description">
-                  <h3>Mô tả khóa học</h3>
-                  <p>{course.description}</p>
-                </div>
-
-                {/* Learning Objectives */}
-                <div className="learning-player__objectives">
-                  <h3>Bạn sẽ học được gì</h3>
-                  <ul>
-                    <li>Nắm vững kiến thức cơ bản về {course.domain}</li>
-                    <li>Thực hành các dự án thực tế</li>
-                    <li>Phát triển kỹ năng lập trình chuyên nghiệp</li>
-                    <li>Chuẩn bị cho các cơ hội nghề nghiệp</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="learning-player__sidebar">
-              <LearningSidebar
-                courseId={courseId || ''}
-                currentLessonId={currentLessonId}
-                onLessonSelect={handleLessonSelect}
-                sections={sections}
-                onSectionToggle={handleSectionToggle}
-              />
-            </div>
+          {/* Sidebar */}
+          <div className="udemy-learning__sidebar">
+            <LearningSidebar
+              courseId={courseId || ''}
+              currentLessonId={currentLessonId}
+              onLessonSelect={handleLessonSelect}
+              sections={sections as any}
+              onSectionToggle={handleSectionToggle}
+            />
           </div>
         </div>
       </main>
