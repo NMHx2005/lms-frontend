@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChatService, ChatMessage, ChatContext } from '../../services/chat.service';
 import { toast } from 'react-toastify';
 import './ChatBot.css';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PersonIcon from '@mui/icons-material/Person';
+import CircleIcon from '@mui/icons-material/Circle';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface ChatBotProps {
     context?: ChatContext;
@@ -152,16 +159,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, className = '' }) => {
         }
     };
 
-    const getConnectionIcon = () => {
+    const getConnectionStatus = () => {
         switch (connectionStatus) {
             case 'connected':
-                return '🟢';
+                return { text: 'Đang hoạt động', color: '#10b981' };
             case 'disconnected':
-                return '🔴';
+                return { text: 'Mất kết nối', color: '#ef4444' };
             default:
-                return '🟡';
+                return { text: 'Đang kiểm tra...', color: '#f59e0b' };
         }
     };
+
+    const status = getConnectionStatus();
 
     return (
         <div className={`chatbot-container ${className}`}>
@@ -169,15 +178,22 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, className = '' }) => {
             <button
                 className={`chatbot-toggle ${isOpen ? 'open' : ''}`}
                 onClick={toggleChat}
-                title="Mở AI Assistant"
+                title={isOpen ? 'Đóng AI Assistant' : 'Mở AI Assistant'}
+                aria-label={isOpen ? 'Đóng AI Assistant' : 'Mở AI Assistant'}
             >
                 <div className="chatbot-toggle-icon">
-                    {isOpen ? '✕' : '🤖'}
+                    {isOpen ? <CloseIcon /> : <SmartToyIcon />}
                 </div>
                 {!isOpen && (
-                    <div className="chatbot-toggle-badge">
-                        {getConnectionIcon()}
+                    <div
+                        className="chatbot-toggle-badge"
+                        style={{ backgroundColor: status.color }}
+                    >
+                        <CircleIcon sx={{ fontSize: 8 }} />
                     </div>
+                )}
+                {!isOpen && (
+                    <div className="chatbot-toggle-pulse"></div>
                 )}
             </button>
 
@@ -187,69 +203,109 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, className = '' }) => {
                     {/* Header */}
                     <div className="chatbot-header">
                         <div className="chatbot-header-info">
-                            <div className="chatbot-avatar">🤖</div>
+                            <div className="chatbot-avatar">
+                                <SmartToyIcon sx={{ fontSize: 24 }} />
+                            </div>
                             <div className="chatbot-header-text">
                                 <h3>AI Assistant</h3>
-                                <span className="chatbot-status">
-                                    {connectionStatus === 'connected' ? 'Đang hoạt động' :
-                                        connectionStatus === 'disconnected' ? 'Mất kết nối' : 'Đang kiểm tra...'}
-                                </span>
+                                <div className="chatbot-status">
+                                    <CircleIcon
+                                        sx={{ fontSize: 8 }}
+                                        style={{ color: status.color }}
+                                    />
+                                    <span>{status.text}</span>
+                                </div>
                             </div>
                         </div>
                         <div className="chatbot-header-actions">
                             <button
                                 className="chatbot-action-btn"
-                                onClick={clearChat}
-                                title="Bắt đầu cuộc trò chuyện mới"
+                                onClick={checkConnection}
+                                title="Kiểm tra kết nối"
+                                aria-label="Kiểm tra kết nối"
                             >
-                                🗑️
+                                <RefreshIcon sx={{ fontSize: 18 }} />
                             </button>
                             <button
                                 className="chatbot-action-btn"
+                                onClick={clearChat}
+                                title="Bắt đầu cuộc trò chuyện mới"
+                                aria-label="Xóa lịch sử chat"
+                            >
+                                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                            </button>
+                            <button
+                                className="chatbot-action-btn close-btn"
                                 onClick={toggleChat}
                                 title="Đóng chat"
+                                aria-label="Đóng chat"
                             >
-                                ✕
+                                <CloseIcon sx={{ fontSize: 18 }} />
                             </button>
                         </div>
                     </div>
 
                     {/* Messages */}
                     <div className="chatbot-messages">
-                        {messages.map((message, index) => (
-                            <div
-                                key={index}
-                                className={`chatbot-message ${message.role}`}
-                            >
-                                <div className="chatbot-message-avatar">
-                                    {message.role === 'user' ? '👤' : '🤖'}
+                        {messages.length === 0 ? (
+                            <div className="chatbot-empty-state">
+                                <div className="empty-state-icon">
+                                    <SmartToyIcon sx={{ fontSize: 64 }} />
                                 </div>
-                                <div className="chatbot-message-content">
-                                    <div className="chatbot-message-text">
-                                        {message.content}
-                                    </div>
-                                    <div className="chatbot-message-time">
-                                        {new Date(message.timestamp).toLocaleTimeString('vi-VN', {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </div>
-                                </div>
+                                <h4>Xin chào! 👋</h4>
+                                <p>Tôi là AI Assistant. Tôi có thể giúp bạn:</p>
+                                <ul className="empty-state-features">
+                                    <li>🔍 Tìm khóa học phù hợp</li>
+                                    <li>💡 Tư vấn lộ trình học tập</li>
+                                    <li>❓ Trả lời câu hỏi về hệ thống</li>
+                                    <li>📚 Gợi ý nội dung học</li>
+                                </ul>
+                                <p className="empty-state-cta">Hãy đặt câu hỏi để bắt đầu!</p>
                             </div>
-                        ))}
+                        ) : (
+                            <>
+                                {messages.map((message, index) => (
+                                    <div
+                                        key={index}
+                                        className={`chatbot-message ${message.role}`}
+                                    >
+                                        <div className="chatbot-message-avatar">
+                                            {message.role === 'user' ? (
+                                                <PersonIcon sx={{ fontSize: 18 }} />
+                                            ) : (
+                                                <SmartToyIcon sx={{ fontSize: 18 }} />
+                                            )}
+                                        </div>
+                                        <div className="chatbot-message-bubble">
+                                            <div className="chatbot-message-text">
+                                                {message.content}
+                                            </div>
+                                            <div className="chatbot-message-time">
+                                                {new Date(message.timestamp).toLocaleTimeString('vi-VN', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
 
-                        {/* Typing Indicator */}
-                        {isTyping && (
-                            <div className="chatbot-message assistant">
-                                <div className="chatbot-message-avatar">🤖</div>
-                                <div className="chatbot-message-content">
-                                    <div className="chatbot-typing">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
+                                {/* Typing Indicator */}
+                                {isTyping && (
+                                    <div className="chatbot-message assistant">
+                                        <div className="chatbot-message-avatar">
+                                            <SmartToyIcon sx={{ fontSize: 18 }} />
+                                        </div>
+                                        <div className="chatbot-message-bubble">
+                                            <div className="chatbot-typing">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                )}
+                            </>
                         )}
 
                         <div ref={messagesEndRef} />
@@ -265,20 +321,33 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, className = '' }) => {
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
                                 placeholder="Nhập câu hỏi của bạn..."
-                                disabled={isLoading}
+                                disabled={isLoading || connectionStatus === 'disconnected'}
                                 className="chatbot-input-field"
+                                aria-label="Nhập tin nhắn"
                             />
                             <button
                                 onClick={sendMessage}
-                                disabled={!inputMessage.trim() || isLoading}
+                                disabled={!inputMessage.trim() || isLoading || connectionStatus === 'disconnected'}
                                 className="chatbot-send-btn"
+                                title="Gửi tin nhắn"
+                                aria-label="Gửi tin nhắn"
                             >
-                                {isLoading ? '⏳' : '📤'}
+                                {isLoading ? (
+                                    <div className="btn-spinner"></div>
+                                ) : (
+                                    <SendIcon sx={{ fontSize: 20 }} />
+                                )}
                             </button>
                         </div>
-                        <div className="chatbot-input-hint">
-                            Nhấn Enter để gửi, Shift + Enter để xuống dòng
-                        </div>
+                        {connectionStatus === 'disconnected' ? (
+                            <div className="chatbot-input-hint error">
+                                ⚠️ Mất kết nối. Vui lòng thử lại sau.
+                            </div>
+                        ) : (
+                            <div className="chatbot-input-hint">
+                                Nhấn <strong>Enter</strong> để gửi • <strong>Shift + Enter</strong> để xuống dòng
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -6,6 +6,16 @@ import { AppDispatch } from '@/store';
 import { login as loginThunk, getProfile } from '@/store/authSlice';
 import { toast } from 'react-hot-toast';
 import { api } from '@/services';
+import EmailIcon from '@mui/icons-material/Email';
+import LockIcon from '@mui/icons-material/Lock';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import GoogleIcon from '@mui/icons-material/Google';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import SchoolIcon from '@mui/icons-material/School';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import GroupsIcon from '@mui/icons-material/Groups';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +25,7 @@ const Login: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
@@ -116,116 +127,200 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-background">
-        <div className="auth-background-overlay"></div>
-        <div className="auth-background-content">
-          <h2>Chào mừng bạn trở lại!</h2>
-          <p>Đăng nhập để tiếp tục học tập và phát triển kỹ năng</p>
-        </div>
+    <div className="login-container">
+      {/* Background Decorations */}
+      <div className="login-bg-decoration">
+        <div className="decoration-circle circle-1"></div>
+        <div className="decoration-circle circle-2"></div>
+        <div className="decoration-circle circle-3"></div>
       </div>
-      
-      <div className="auth-form-container">
-        <div className="auth-form-wrapper">
-          <div className="auth-header">
-            <div className="auth-logo">
-              <img src="/images/logo.png" alt="LMS Logo" />
-              <h1>LMS Platform</h1>
+
+      {/* Left Section - Branding */}
+      <div className="login-left-section">
+        <div className="login-branding">
+          <div className="brand-logo-wrapper">
+            <div className="brand-logo">
+              <SchoolIcon sx={{ fontSize: 60 }} />
             </div>
-            <h2>Đăng nhập</h2>
-            <p>Nhập thông tin đăng nhập của bạn</p>
+            <h1 className="brand-title">LMS Platform</h1>
+            <p className="brand-subtitle">Nền tảng học tập trực tuyến hàng đầu</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">
+                <AutoStoriesIcon sx={{ fontSize: 32 }} />
+              </div>
+              <h3>1000+ Khóa học</h3>
+              <p>Đa dạng lĩnh vực chuyên môn</p>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon">
+                <GroupsIcon sx={{ fontSize: 32 }} />
+              </div>
+              <h3>50k+ Học viên</h3>
+              <p>Cộng đồng học tập sôi động</p>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon">
+                <EmojiEventsIcon sx={{ fontSize: 32 }} />
+              </div>
+              <h3>Chứng chỉ uy tín</h3>
+              <p>Được công nhận rộng rãi</p>
+            </div>
+          </div>
+
+          <div className="testimonial">
+            <p className="testimonial-text">
+              "LMS đã thay đổi cách tôi học tập. Giao diện thân thiện, nội dung chất lượng!"
+            </p>
+            <div className="testimonial-author">
+              <div className="author-avatar">NT</div>
+              <div className="author-info">
+                <strong>Nguyễn Thị A</strong>
+                <span>Học viên xuất sắc 2024</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Section - Login Form */}
+      <div className="login-right-section">
+        <div className="login-form-container">
+          {/* Back to home link */}
+          <Link to="/" className="back-home-link">
+            ← Về trang chủ
+          </Link>
+
+          <div className="login-form-header">
+            <h2>Chào mừng trở lại!</h2>
+            <p>Đăng nhập để tiếp tục hành trình học tập của bạn</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="login-form">
+            {/* Email Input */}
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <div className="input-wrapper">
-                <span className="input-icon">📧</span>
+                <EmailIcon className="input-icon" />
                 <input
                   type="email"
                   id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Nhập email của bạn"
+                  placeholder="example@email.com"
                   required
-                  autoComplete="off"
+                  autoComplete="email"
                 />
               </div>
             </div>
 
+            {/* Password Input */}
             <div className="form-group">
               <label htmlFor="password">Mật khẩu</label>
               <div className="input-wrapper">
-                <span className="input-icon">🔒</span>
+                <LockIcon className="input-icon" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Nhập mật khẩu"
+                  placeholder="Nhập mật khẩu của bạn"
                   required
-                  autoComplete="off"
+                  autoComplete="current-password"
                 />
+                <button
+                  type="button"
+                  className="toggle-password-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <VisibilityOffIcon sx={{ fontSize: 20 }} />
+                  ) : (
+                    <VisibilityIcon sx={{ fontSize: 20 }} />
+                  )}
+                </button>
               </div>
             </div>
 
+            {/* Remember Me & Forgot Password */}
             <div className="form-options">
-              <label className="checkbox-wrapper">
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="rememberMe"
                   checked={formData.rememberMe}
                   onChange={handleChange}
                 />
-                <span className="checkmark"></span>
-                Ghi nhớ đăng nhập
+                <span className="checkbox-custom"></span>
+                <span>Ghi nhớ đăng nhập</span>
               </label>
-              <Link to="/forgot-password" className="forgot-link">
+              <Link to="/forgot-password" className="forgot-password-link">
                 Quên mật khẩu?
               </Link>
             </div>
 
-            <button 
-              type="submit" 
-              className="auth-submit-btn"
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="submit-btn"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <span className="loading-spinner"></span>
-                  Đang đăng nhập...
+                  <span className="btn-spinner"></span>
+                  <span>Đang đăng nhập...</span>
                 </>
               ) : (
                 'Đăng nhập'
               )}
             </button>
 
-            <div className="auth-divider">
-              <span>hoặc</span>
+            {/* Divider */}
+            <div className="divider">
+              <span>hoặc tiếp tục với</span>
             </div>
 
-            <div className="social-login">
-              <button type="button" className="social-btn social-btn--google" onClick={handleGoogleLogin}>
-                <span className="social-icon">🔍</span>
-                Đăng nhập với Google
+            {/* Social Login Buttons */}
+            <div className="social-login-buttons">
+              <button
+                type="button"
+                className="social-login-btn google-btn"
+                onClick={handleGoogleLogin}
+                disabled={googleBusy}
+              >
+                <GoogleIcon />
+                <span>Google</span>
               </button>
-              <button type="button" className="social-btn social-btn--facebook">
-                <span className="social-icon">📘</span>
-                Đăng nhập với Facebook
+              <button
+                type="button"
+                className="social-login-btn facebook-btn"
+                disabled
+              >
+                <FacebookIcon />
+                <span>Facebook</span>
               </button>
             </div>
 
-            <div className="auth-footer">
+            {/* Sign Up Link */}
+            <div className="signup-prompt">
               <p>
                 Chưa có tài khoản?{' '}
-                <Link to="/register" className="auth-link">
+                <Link to="/register" className="signup-link">
                   Đăng ký ngay
                 </Link>
               </p>
             </div>
           </form>
+
+          {/* Footer */}
+          <div className="login-form-footer">
+            <p>© 2024 LMS Platform. All rights reserved.</p>
+          </div>
         </div>
       </div>
     </div>
