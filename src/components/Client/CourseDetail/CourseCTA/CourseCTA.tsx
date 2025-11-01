@@ -110,8 +110,48 @@ const CourseCTA: React.FC<CourseCTAProps> = ({ course }) => {
       return;
     }
 
-    // Show payment modal first
-    setShowPaymentModal(true);
+    // Direct enrollment - backend will create Bill and Enrollment together (like package subscription)
+    try {
+      setIsEnrolling(true);
+      setEnrollmentStatus('idle');
+      setErrorMessage('');
+
+      const response = await clientCoursesService.enrollInCourse(course.id, {
+        paymentMethod: 'bank_transfer', // Default payment method, info from user profile
+        agreeToTerms: true,
+        couponCode: undefined
+      });
+
+      if (response.success) {
+        // Check if user is already enrolled
+        if (response.data?.enrollment?.isActive) {
+          setIsEnrolled(true);
+          setEnrollmentStatus('success');
+          setErrorMessage('Đăng ký thành công! Đang chuyển hướng...');
+
+          // Auto-navigate to course content after a short delay
+          setTimeout(() => {
+            navigate(`/dashboard/courses/${course.id}`);
+          }, 1500);
+        } else {
+          setEnrollmentStatus('success');
+          setIsEnrolled(true);
+          // Show success message and redirect
+          setTimeout(() => {
+            navigate(`/dashboard/courses/${course.id}`);
+          }, 1500);
+        }
+      } else {
+        setEnrollmentStatus('error');
+        setErrorMessage(response.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+      }
+    } catch (error: any) {
+      setEnrollmentStatus('error');
+      setErrorMessage(error.response?.data?.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+      console.error('Enrollment error:', error);
+    } finally {
+      setIsEnrolling(false);
+    }
   };
 
   const handleVNPayPayment = async () => {

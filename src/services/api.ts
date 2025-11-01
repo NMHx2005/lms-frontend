@@ -141,8 +141,13 @@ api.interceptors.response.use(
 			}
 		}
 
+		// Check if this request should suppress error toast
+		const suppressErrorToast = error.config?.suppressErrorToast;
+
 		const message = extractErrorMessage(error);
-		if (message) toast.error(message);
+		if (message && !suppressErrorToast) {
+			toast.error(message);
+		}
 		return Promise.reject(error);
 	}
 );

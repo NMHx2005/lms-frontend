@@ -102,17 +102,26 @@ const CourseDetail = () => {
       }
       setCourse(courseResponse.data);
 
-      // Fetch course sections (public info only)
-      try {
-        const sectionsResponse = await courseContentService.getCourseContent(id!);
-        if (sectionsResponse.success && sectionsResponse.data?.sections) {
-          setSections(sectionsResponse.data.sections);
-          setIsEnrolled(true); // If we can get sections, user is enrolled
+      // First, silently try to fetch enrolled content (no error toast)
+      const enrolledContentResponse = await courseContentService.getCourseContent(id!, true);
+
+      if (enrolledContentResponse.success && enrolledContentResponse.data?.sections) {
+        // User is enrolled - show full content
+        setSections(enrolledContentResponse.data.sections);
+        setIsEnrolled(true);
+        console.log('✅ Loaded enrolled course content');
+      } else {
+        // User not enrolled - fetch public preview
+        console.log('User not enrolled, loading preview...');
+        const previewResponse = await courseContentService.getCourseContentPreview(id!);
+
+        if (previewResponse.success && previewResponse.data?.sections) {
+          setSections(previewResponse.data.sections);
+          setIsEnrolled(false);
+          console.log('✅ Loaded course preview (public)');
+        } else {
+          console.log('⚠️ Could not load course preview');
         }
-      } catch (sectionError) {
-        console.log('Could not load sections (user not enrolled):', sectionError);
-        setIsEnrolled(false);
-        // This is expected for non-enrolled users
       }
 
     } catch (error: any) {
@@ -125,12 +134,20 @@ const CourseDetail = () => {
   };
 
   const handleEnroll = async () => {
+    // Direct enrollment for both free and paid courses
+    // Backend will create Bill and Enrollment together (like package subscription)
     try {
       setEnrolling(true);
-      const response = await enrollmentService.enrollInCourse(course!._id);
+      const response = await clientCoursesService.enrollInCourse(course!._id, {
+        paymentMethod: 'bank_transfer', // Default payment method, info from user profile
+        agreeToTerms: true,
+        couponCode: undefined // Can add coupon code input later if needed
+      });
+
       if (response.success) {
         toast.success('Đăng ký khóa học thành công!');
         setIsEnrolled(true);
+
         // Reload sections after successful enrollment
         try {
           const sectionsResponse = await courseContentService.getCourseContent(course!._id);
@@ -141,26 +158,100 @@ const CourseDetail = () => {
           console.log('Could not reload sections after enrollment:', sectionError);
         }
 
-        if (course!.price === 0) {
+        // Show success message with action
+        toast.success((t) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600 }}>
+                🎉 Đăng ký thành công!
+              </div>
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                Bắt đầu học ngay
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigate(`/learning/${course!._id}`);
+              }}
+              style={{
+                background: '#10b981',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '14px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Vào học ngay →
+            </button>
+          </div>
+        ), {
+          duration: 4000
+        });
+
+        // Auto-navigate after 2 seconds
+        setTimeout(() => {
           navigate(`/learning/${course!._id}`);
-        } else {
-          navigate(`/payment/${course!._id}`);
-        }
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Error enrolling:', error);
       if (error?.response?.data?.error === 'Already enrolled in this course') {
-        toast.error('Bạn đã đăng ký khóa học này rồi!');
+        // User already enrolled - show custom toast with action button
         setIsEnrolled(true);
+
         // Try to load sections if already enrolled
         try {
-          const sectionsResponse = await courseContentService.getCourseContent(course!._id);
+          const sectionsResponse = await courseContentService.getCourseContent(course!._id, true);
           if (sectionsResponse.success && sectionsResponse.data?.sections) {
             setSections(sectionsResponse.data.sections);
           }
         } catch (sectionError) {
           console.log('Could not load sections for enrolled user:', sectionError);
         }
+
+        // Show custom toast with "Go to learning" button
+        toast((t) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+                ✅ Bạn đã đăng ký khóa học này rồi!
+              </div>
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                Bạn có thể vào học ngay bây giờ
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                handleGoToLearning();
+              }}
+              style={{
+                background: '#10b981',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '14px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Vào học ngay →
+            </button>
+          </div>
+        ), {
+          duration: 5000,
+          style: {
+            minWidth: '400px',
+            padding: '16px'
+          }
+        });
       } else {
         toast.error(error?.message || 'Lỗi khi đăng ký khóa học');
       }

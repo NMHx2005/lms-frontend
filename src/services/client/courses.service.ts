@@ -23,30 +23,20 @@ export const clientCoursesService = {
     return response.data;
   },
 
-  // Course Enrollment
+  // Course Enrollment - Direct enrollment without separate checkout (like package subscription)
   async enrollInCourse(courseId: string, data: {
-    paymentMethod: string;
+    paymentMethod?: string;
     agreeToTerms: boolean;
     couponCode?: string;
   }) {
-    // First create payment for the course
-    const paymentResponse = await api.post(`/client/payments/course/${courseId}`, {
-      paymentMethod: data.paymentMethod,
-      amount: undefined // Will use course price from backend
+    // Direct enrollment - backend will create Bill and Enrollment together
+    const enrollmentResponse = await api.post(`/client/courses/${courseId}/enroll`, {
+      paymentMethod: data.paymentMethod || 'bank_transfer',
+      couponCode: data.couponCode,
+      agreeToTerms: data.agreeToTerms
     });
 
-    if (paymentResponse.data.success) {
-      // After payment is created, enroll in the course
-      const enrollmentResponse = await api.post(`/client/courses/${courseId}/enroll`, {
-        paymentMethod: data.paymentMethod,
-        couponCode: data.couponCode,
-        agreeToTerms: data.agreeToTerms
-      });
-
-      return enrollmentResponse.data;
-    } else {
-      throw new Error(paymentResponse.data.error || 'Payment creation failed');
-    }
+    return enrollmentResponse.data;
   },
 
   // Direct enrollment (contact teacher)

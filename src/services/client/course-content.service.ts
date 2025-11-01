@@ -1,5 +1,5 @@
 import api from '../api';
-import { getSectionsByCourse } from './section.service';
+import { getSectionsByCourse, getSectionsPreview } from './section.service';
 import { getLessonsBySection } from './lesson.service';
 
 export interface CourseContent {
@@ -76,15 +76,19 @@ export interface LessonProgress {
 export const courseContentService = {
     /**
      * Get complete course content with sections and lessons
+     * @param courseId - Course ID
+     * @param silentFail - If true, will not show error toast (useful for checking enrollment status)
      */
-    async getCourseContent(courseId: string): Promise<{
+    async getCourseContent(courseId: string, silentFail: boolean = false): Promise<{
         success: boolean;
         data?: CourseContent;
         error?: string;
     }> {
         try {
             // Get sections for the course
-            const sectionsResponse = await getSectionsByCourse(courseId);
+            const sectionsResponse = silentFail
+                ? await api.get(`/client/sections/course/${courseId}`, { suppressErrorToast: true } as any).then(res => res.data).catch(() => ({ success: false }))
+                : await getSectionsByCourse(courseId);
 
             if (!sectionsResponse.success || !sectionsResponse.data) {
                 return {
@@ -266,6 +270,77 @@ export const courseContentService = {
             return {
                 success: false,
                 error: 'Lỗi khi tải tiến độ khóa học'
+            };
+        }
+    },
+
+    /**
+     * Get course content preview (public - no enrollment required)
+     * Shows course structure without sensitive content
+     */
+    async getCourseContentPreview(courseId: string): Promise<{
+        success: boolean;
+        data?: CourseContent;
+        error?: string;
+    }> {
+        try {
+            // Get sections preview (public endpoint - no enrollment required)
+            const sectionsResponse = await getSectionsPreview(courseId);
+
+            if (!sectionsResponse.success || !sectionsResponse.data) {
+                return {
+                    success: false,
+                    error: 'Không thể tải cấu trúc khóa học'
+                };
+            }
+
+            const sections: any[] = sectionsResponse.data;
+
+            // Map sections to the expected format
+            const sectionsWithLessons: SectionWithLessons[] = sections.map((section: any) => ({
+                _id: section._id,
+                title: section.title,
+                description: section.description,
+                order: section.order,
+                isPublished: true,
+                duration: section.totalDuration || 0,
+                lessons: (section.lessons || []).map((lesson: any) => ({
+                    _id: lesson._id,
+                    title: lesson.title,
+                    description: '',
+                    type: lesson.type,
+                    duration: lesson.duration || 0,
+                    estimatedTime: lesson.duration || 0,
+                    order: lesson.order,
+                    isPublished: true,
+                    isFree: lesson.isPreview || false,
+                    isRequired: false,
+                    isCompleted: false,
+                    isLocked: !lesson.isPreview, // Lock lessons that are not preview
+                    content: '',
+                    // No videoUrl, fileUrl, or linkUrl for security
+                })),
+                isExpanded: false
+            }));
+
+            // Calculate totals
+            const totalLessons = sectionsWithLessons.reduce((sum, section) => sum + section.lessons.length, 0);
+            const totalDuration = sectionsWithLessons.reduce((sum, section) => sum + (section.duration || 0), 0);
+
+            return {
+                success: true,
+                data: {
+                    courseId,
+                    sections: sectionsWithLessons,
+                    totalLessons,
+                    totalDuration
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching course content preview:', error);
+            return {
+                success: false,
+                error: 'Lỗi khi tải cấu trúc khóa học'
             };
         }
     }

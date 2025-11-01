@@ -40,10 +40,19 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Get all sections for a course
+ * Get all sections for a course (requires enrollment)
  */
 export const getSectionsByCourse = async (courseId: string): Promise<ApiResponse<Section[]>> => {
     const response = await api.get(`/client/sections/course/${courseId}`);
+    return response.data;
+};
+
+/**
+ * Get sections preview for a course (public - no enrollment required)
+ * This endpoint shows course structure but without sensitive content
+ */
+export const getSectionsPreview = async (courseId: string): Promise<ApiResponse<Section[]>> => {
+    const response = await api.get(`/client/sections/course/${courseId}/preview`);
     return response.data;
 };
 

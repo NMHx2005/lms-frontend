@@ -62,6 +62,7 @@ interface Course {
   learningObjectives?: string[];
   prerequisites?: string[];
   benefits?: string[];
+  certificate?: boolean;
   instructorId: {
     _id: string;
     firstName?: string;
@@ -127,7 +128,8 @@ const LearningPlayer: React.FC = () => {
             totalRatings: courseInfo.totalRatings,
             price: courseInfo.price,
             enrolledStudents: courseInfo.enrolledStudents || [],
-            instructorId: courseInfo.instructorId
+            instructorId: courseInfo.instructorId,
+            certificate: courseInfo.certificate || courseInfo.assessment?.hasCertification || false
           };
         }
 
@@ -178,6 +180,28 @@ const LearningPlayer: React.FC = () => {
         // Set first lesson as current
         if (contentData.sections.length > 0 && contentData.sections[0].lessons.length > 0) {
           setCurrentLessonId(contentData.sections[0].lessons[0]._id);
+        }
+
+        // Auto-check and generate certificate if course is completed but certificate not issued
+        if (enrollmentData?.isCompleted && enrollmentData?.progress === 100 && courseData?.certificate && !enrollmentData?.certificateIssued) {
+          try {
+            // Call getCertificates API to trigger auto-generation
+            await clientAuthService.getCertificates();
+
+            // Refresh enrollment data to get updated certificate status
+            const refreshedEnrollmentsResponse = await clientAuthService.getEnrolledCourses({ limit: 100 });
+            if (refreshedEnrollmentsResponse.success) {
+              const refreshedEnrollments = refreshedEnrollmentsResponse.data.enrollments || refreshedEnrollmentsResponse.data;
+              const refreshedEnrollment = refreshedEnrollments.find((e: any) => e.courseId._id === courseId || e.courseId === courseId);
+              if (refreshedEnrollment) {
+                setEnrollment(refreshedEnrollment);
+                console.log('✅ Enrollment data refreshed with certificate status:', refreshedEnrollment.certificateIssued);
+              }
+            }
+          } catch (certError) {
+            console.error('Error checking/generating certificate:', certError);
+            // Don't show error to user, just log it
+          }
         }
 
       } catch (err) {
