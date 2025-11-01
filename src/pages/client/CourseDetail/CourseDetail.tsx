@@ -4,7 +4,7 @@ import Header from "@/components/Layout/client/Header";
 import Footer from "@/components/Layout/client/Footer";
 import TopBar from '@/components/Client/Home/TopBar/TopBar';
 import { clientCoursesService } from '@/services/client/courses.service';
-import { enrollmentService } from '@/services/client/enrollment.service';
+// import { enrollmentService } from '@/services/client/enrollment.service';
 import { courseContentService } from '@/services/client/course-content.service';
 import toast from 'react-hot-toast';
 import "./CourseDetail.css";
