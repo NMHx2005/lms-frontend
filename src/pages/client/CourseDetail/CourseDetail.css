@@ -735,12 +735,14 @@
 .udemy-card__cta {
   padding: 20px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  gap: 8px;
+  align-items: stretch;
 }
 
 .udemy-btn-enroll {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: var(--udemy-primary);
   color: white;
   border: none;
@@ -750,6 +752,10 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
 }
 
 .udemy-btn-enroll:hover {
@@ -767,6 +773,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  height: 48px;
 }
 
 .udemy-btn-enroll--enrolled:hover {
@@ -786,6 +793,19 @@
   font-size: 0.875rem;
   font-weight: 600;
   margin-top: 8px;
+  width: 100%;
+}
+
+/* When enrolled, show badge below buttons */
+.udemy-card__cta--enrolled {
+  flex-direction: column;
+}
+
+.udemy-card__cta--enrolled .udemy-card__cta-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: stretch;
 }
 
 .udemy-enrolled-badge svg {
@@ -793,11 +813,13 @@
 }
 
 .udemy-btn-wishlist {
-  width: 100%;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
   background: white;
   color: var(--udemy-dark);
   border: 1px solid var(--udemy-dark);
-  padding: 12px 24px;
+  padding: 0;
   font-size: 1rem;
   font-weight: 700;
   border-radius: 4px;
@@ -805,12 +827,55 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .udemy-btn-wishlist:hover {
   background: var(--udemy-light-gray);
+  border-color: var(--udemy-purple);
+  color: var(--udemy-purple);
+}
+
+.udemy-btn-wishlist--active {
+  background: var(--udemy-purple);
+  border-color: var(--udemy-purple);
+}
+
+.udemy-btn-wishlist--active:hover {
+  background: #6b1d9c;
+  background: #6b1d9c;
+}
+
+.udemy-btn-wishlist:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.udemy-btn-wishlist svg.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.udemy-card__cta-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.udemy-card__cta-buttons .udemy-btn-enroll {
+  flex: 1;
 }
 
 /* Guarantee */

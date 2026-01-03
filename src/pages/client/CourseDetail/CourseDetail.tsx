@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Header from "@/components/Layout/client/Header";
 import Footer from "@/components/Layout/client/Footer";
 import TopBar from '@/components/Client/Home/TopBar/TopBar';
 import { clientCoursesService } from '@/services/client/courses.service';
 // import { enrollmentService } from '@/services/client/enrollment.service';
 import { courseContentService } from '@/services/client/course-content.service';
+import { wishlistService } from '@/services/client/wishlist.service';
 import toast from 'react-hot-toast';
 import "./CourseDetail.css";
 import { ChatBot } from '@/components/ChatBot';
+import { RootState } from '@/store/index';
 
 interface CourseData {
   _id: string;
@@ -68,18 +71,154 @@ interface CourseData {
 const CourseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const [course, setCourse] = useState<CourseData | null>(null);
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isCheckingWishlist, setIsCheckingWishlist] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+  const [wishlistId, setWishlistId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchCourse();
     }
   }, [id]);
+
+  // Check wishlist status when authenticated or course changes
+  useEffect(() => {
+    if (id && isAuthenticated) {
+      checkWishlistStatus();
+    } else {
+      // Reset wishlist state when not authenticated
+      setIsInWishlist(false);
+      setWishlistId(null);
+      setIsCheckingWishlist(false);
+    }
+  }, [id, isAuthenticated]);
+
+  // Re-check wishlist when enrollment status changes (to ensure wishlist persists after enrollment)
+  useEffect(() => {
+    if (isEnrolled && isAuthenticated && id) {
+      // Small delay to ensure state is stable
+      const timer = setTimeout(() => {
+        checkWishlistStatus();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isEnrolled]);
+
+  // Check if course is in wishlist
+  const checkWishlistStatus = async () => {
+    if (!id || !isAuthenticated) {
+      setIsInWishlist(false);
+      setWishlistId(null);
+      setIsCheckingWishlist(false);
+      return;
+    }
+    
+    try {
+      setIsCheckingWishlist(true);
+      const response = await wishlistService.isInWishlist(id);
+      if (response.success) {
+        const wasInWishlist = isInWishlist; // Preserve current state
+        setIsInWishlist(response.data.isInWishlist);
+        setWishlistId(response.data.wishlistId || null);
+        
+        // Log for debugging
+        if (wasInWishlist !== response.data.isInWishlist) {
+          console.log('Wishlist status changed:', {
+            was: wasInWishlist,
+            now: response.data.isInWishlist,
+            wishlistId: response.data.wishlistId
+          });
+        }
+      } else {
+        // Don't reset if we had a wishlist before - might be temporary error
+        console.warn('Wishlist check failed, keeping current state');
+      }
+    } catch (error: any) {
+      // If 401, user is not authenticated
+      if (error?.response?.status === 401) {
+        setIsInWishlist(false);
+        setWishlistId(null);
+      } else {
+        // For other errors, keep current state (don't reset wishlist)
+        console.error('Error checking wishlist status:', error);
+      }
+    } finally {
+      setIsCheckingWishlist(false);
+    }
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async () => {
+    if (!id) return;
+    
+    // Check authentication first
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng yêu thích');
+      navigate('/login', { state: { from: `/courses/${id}` } });
+      return;
+    }
+
+    try {
+      setIsTogglingWishlist(true);
+
+      if (isInWishlist && wishlistId) {
+        // Remove from wishlist
+        const response = await wishlistService.removeFromWishlist(wishlistId);
+        if (response.success) {
+          setIsInWishlist(false);
+          setWishlistId(null);
+          toast.success('Đã xóa khỏi danh sách yêu thích');
+          
+          // Verify wishlist status after removal
+          setTimeout(() => {
+            checkWishlistStatus();
+          }, 300);
+        } else {
+          toast.error(response.message || 'Không thể xóa khỏi danh sách yêu thích');
+        }
+      } else {
+        // Add to wishlist
+        const response = await wishlistService.addToWishlist({
+          courseId: id
+        });
+        if (response.success) {
+          setIsInWishlist(true);
+          // Handle both response.data._id and response.data.data._id (nested structure)
+          const wishlistItemId = response.data?._id || response.data?.data?._id || null;
+          setWishlistId(wishlistItemId ? String(wishlistItemId) : null);
+          toast.success('Đã thêm vào danh sách yêu thích');
+          
+          // Verify wishlist status after a short delay to ensure it's persisted
+          setTimeout(() => {
+            checkWishlistStatus();
+          }, 500);
+        } else {
+          toast.error(response.message || 'Không thể thêm vào danh sách yêu thích');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error toggling wishlist:', error);
+      
+      // Handle 401 - Unauthorized
+      if (error?.response?.status === 401) {
+        toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
+        navigate('/login', { state: { from: `/courses/${id}` } });
+        return;
+      }
+      
+      toast.error(error?.response?.data?.message || 'Có lỗi xảy ra');
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -134,6 +273,13 @@ const CourseDetail = () => {
   };
 
   const handleEnroll = async () => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để đăng ký khóa học');
+      navigate('/login', { state: { from: `/courses/${id}` } });
+      return;
+    }
+
     // Direct enrollment for both free and paid courses
     // Backend will create Bill and Enrollment together (like package subscription)
     try {
@@ -156,6 +302,11 @@ const CourseDetail = () => {
           }
         } catch (sectionError) {
           console.log('Could not reload sections after enrollment:', sectionError);
+        }
+
+        // Refresh wishlist status after enrollment
+        if (isAuthenticated) {
+          checkWishlistStatus();
         }
 
         // Show success message with action
@@ -704,18 +855,41 @@ const CourseDetail = () => {
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="udemy-card__cta">
+                <div className={`udemy-card__cta ${isEnrolled ? 'udemy-card__cta--enrolled' : ''}`}>
                   {isEnrolled ? (
                     <>
-                      <button
-                        className="udemy-btn-enroll udemy-btn-enroll--enrolled"
-                        onClick={handleGoToLearning}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polygon points="5,3 19,12 5,21"></polygon>
-                        </svg>
-                        Vào học ngay
-                      </button>
+                      <div className="udemy-card__cta-buttons">
+                        <button
+                          className="udemy-btn-enroll udemy-btn-enroll--enrolled"
+                          onClick={handleGoToLearning}
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polygon points="5,3 19,12 5,21"></polygon>
+                          </svg>
+                          Vào học ngay
+                        </button>
+                        {isAuthenticated && (
+                          <button
+                            className={`udemy-btn-wishlist ${isInWishlist ? 'udemy-btn-wishlist--active' : ''}`}
+                            onClick={handleWishlistToggle}
+                            disabled={isCheckingWishlist || isTogglingWishlist}
+                            title={isInWishlist ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích'}
+                          >
+                            {isCheckingWishlist || isTogglingWishlist ? (
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spinning">
+                                <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="32">
+                                  <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/>
+                                  <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite"/>
+                                </circle>
+                              </svg>
+                            ) : (
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill={isInWishlist ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                      </div>
                       <div className="udemy-enrolled-badge">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -733,12 +907,40 @@ const CourseDetail = () => {
                       >
                         {enrolling ? 'Đang xử lý...' : 'Đăng ký ngay'}
                       </button>
-                      <button className="udemy-btn-wishlist">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                        Yêu thích
-                      </button>
+                      {isAuthenticated ? (
+                        <button
+                          className={`udemy-btn-wishlist ${isInWishlist ? 'udemy-btn-wishlist--active' : ''}`}
+                          onClick={handleWishlistToggle}
+                          disabled={isCheckingWishlist || isTogglingWishlist}
+                          title={isInWishlist ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích'}
+                        >
+                          {isCheckingWishlist || isTogglingWishlist ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spinning">
+                              <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="32">
+                                <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/>
+                                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite"/>
+                              </circle>
+                            </svg>
+                          ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill={isInWishlist ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          className="udemy-btn-wishlist"
+                          onClick={() => {
+                            toast.error('Vui lòng đăng nhập để sử dụng tính năng yêu thích');
+                            navigate('/login', { state: { from: `/courses/${id}` } });
+                          }}
+                          title="Đăng nhập để thêm vào yêu thích"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
