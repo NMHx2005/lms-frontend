@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import * as sectionService from '@/services/client/section.service';
 import * as lessonService from '@/services/client/lesson.service';
+import { videoService } from '@/services/client/video.service';
 // import { sharedUploadService } from '../../../services/shared/upload.service'; // Will be used for upload handlers
 import {
   Box,
@@ -31,7 +32,14 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  ListItemSecondaryAction
+  ListItemSecondaryAction,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  Divider,
+  FormControlLabel
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -50,8 +58,23 @@ import {
   Schedule as ScheduleIcon,
   LibraryBooks as LibraryBooksIcon,
   Quiz as QuizIcon,
-  Assignment as AssignmentIcon
+  Assignment as AssignmentIcon,
+  Analytics as AnalyticsIcon,
+  Download as DownloadIcon,
+  Upload as UploadIcon
 } from '@mui/icons-material';
+import VideoUpload from '@/components/VideoUpload/VideoUpload';
+import SubtitleManager from '@/components/SubtitleManager/SubtitleManager';
+import VideoAnalytics from '@/components/VideoAnalytics/VideoAnalytics';
+import QuestionBankManager from '@/components/QuestionBank/QuestionBankManager';
+import QuizAnalytics from '@/components/Quiz/QuizAnalytics';
+import FileUpload, { FileUploadResult } from '@/components/File/FileUpload';
+import RichTextEditor from '@/components/RichTextEditor/RichTextEditor';
+import LinkPreview from '@/components/Link/LinkPreview';
+import AssignmentEditor from '@/components/Assignment/AssignmentEditor';
+import { downloadQuizTemplate } from '@/services/client/quiz-template.service';
+import { parseQuizCSV, readCSVFile } from '@/services/client/quiz-import.service';
+import api from '@/services/api';
 
 interface Section {
   _id: string;
@@ -65,20 +88,51 @@ interface Lesson {
   _id: string;
   title: string;
   type: 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment';
-  duration: number;
+    duration?: number; // Chỉ dùng cho video lesson
   estimatedTime?: number; // Backend field name
   order: number;
   isPublished: boolean;
   content?: string;
   videoUrl?: string;
   fileUrl?: string;
+  fileSize?: number;
+  fileType?: string;
   linkUrl?: string;
+  attachments?: Array<{
+    name: string;
+    url: string;
+    size: number;
+    type: string;
+  }>;
   quizQuestions?: Array<{
     question: string;
+    type?: string;
     answers: string[];
-    correctAnswer: number;
+    correctAnswer: number | number[] | string | any;
     explanation?: string;
+    points?: number;
+    difficulty?: string;
   }>;
+  quizSettings?: {
+    timeLimit?: number;
+    timeLimitPerQuestion?: number;
+    allowPause?: boolean;
+    maxAttempts?: number;
+    scoreCalculation?: 'best' | 'average' | 'last';
+    cooldownPeriod?: number;
+    passingScore?: number;
+    negativeMarking?: boolean;
+    negativeMarkingPercentage?: number;
+    partialCredit?: boolean;
+    randomizeQuestions?: boolean;
+    randomizeAnswers?: boolean;
+    questionPool?: number;
+    immediateFeedback?: boolean;
+    showCorrectAnswers?: boolean;
+    showExplanation?: boolean;
+    showScoreBreakdown?: boolean;
+    showClassAverage?: boolean;
+  };
 }
 
 interface CourseStructure {
@@ -99,14 +153,23 @@ const CourseStructure: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
   const [showAddLesson, setShowAddLesson] = useState<string | null>(null);
+  const [showVideoUpload, setShowVideoUpload] = useState<string | null>(null);
+  const [showSubtitleManager, setShowSubtitleManager] = useState<string | null>(null);
+  const [showVideoAnalytics, setShowVideoAnalytics] = useState<string | null>(null);
+  const [showImportQuiz, setShowImportQuiz] = useState(false);
+  const [importingQuiz, setImportingQuiz] = useState(false);
+  const [showQuestionBank, setShowQuestionBank] = useState<string | null>(null);
+  const [fileUploadMode, setFileUploadMode] = useState<'upload' | 'url'>('upload'); // Track file upload mode
   const [newSection, setNewSection] = useState({ title: '', description: '' });
   const [newLesson, setNewLesson] = useState<{
     title: string;
     type: 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment';
-    duration: number;
+    duration?: number; // Chỉ dùng cho video lesson
     content: string;
     videoUrl: string;
     fileUrl: string;
+    fileSize?: number;
+    fileType?: string;
     linkUrl: string;
     quizQuestions: Array<{
       question: string;
@@ -121,6 +184,8 @@ const CourseStructure: React.FC = () => {
     content: '',
     videoUrl: '',
     fileUrl: '',
+    fileSize: undefined,
+    fileType: undefined,
     linkUrl: '',
     quizQuestions: [{
       question: '',
@@ -146,10 +211,40 @@ const CourseStructure: React.FC = () => {
           sectionsResponse.data.map(async (section: sectionService.Section) => {
             const lessonsResponse = await lessonService.getLessonsBySection(section._id);
             const lessons = lessonsResponse.success && lessonsResponse.data ?
-              lessonsResponse.data.map((lesson: any) => ({
-                ...lesson,
-                duration: lesson.estimatedTime || lesson.duration || 0 // Map estimatedTime -> duration
-              })) : [];
+              await Promise.all(
+                lessonsResponse.data.map(async (lesson: any) => {
+                  // For video lessons, try to get duration from VideoFile API if video is from Cloudinary
+                  let lessonDuration = lesson.estimatedTime || lesson.duration || 0;
+                  
+                  if (lesson.type === 'video' && lesson._id) {
+                    // Check if video is from Cloudinary (not YouTube/external link)
+                    const videoUrl = lesson.videoUrl || lesson.content || '';
+                    const isYouTube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+                    
+                    if (!isYouTube) {
+                      try {
+                        // Try to get duration from VideoFile API
+                        const videoFileResponse = await videoService.getVideoFile(lesson._id);
+                        if (videoFileResponse.success && videoFileResponse.data?.duration) {
+                          // Duration from API is in seconds, convert to minutes
+                          lessonDuration = Math.ceil(videoFileResponse.data.duration / 60);
+                          console.log(`✅ Loaded duration for lesson ${lesson._id}:`, videoFileResponse.data.duration, 'seconds =', lessonDuration, 'minutes');
+                        }
+                      } catch (error: any) {
+                        // VideoFile not found (404) - this is normal for external/YouTube videos
+                        if (error.response?.status !== 404) {
+                          console.warn('⚠️ Error loading VideoFile for lesson:', lesson._id, error);
+                        }
+                      }
+                    }
+                  }
+                  
+                  return {
+                    ...lesson,
+                    duration: lessonDuration
+                  };
+                })
+              ) : [];
             return {
               ...section,
               lessons
@@ -221,8 +316,10 @@ const CourseStructure: React.FC = () => {
         content: newLesson.content,
         videoUrl: newLesson.videoUrl,
         fileUrl: newLesson.fileUrl,
+        fileSize: newLesson.fileSize,
+        fileType: newLesson.fileType,
         linkUrl: newLesson.linkUrl,
-        duration: newLesson.duration,
+        ...(newLesson.type === 'video' && { duration: newLesson.duration }),
         order: section.lessons.length + 1,
         isPublished: true
       };
@@ -239,10 +336,12 @@ const CourseStructure: React.FC = () => {
         setNewLesson({
           title: '',
           type: 'video',
-          duration: 5,
+          duration: 5, // Default cho video
           content: '',
           videoUrl: '',
           fileUrl: '',
+          fileSize: undefined,
+          fileType: undefined,
           linkUrl: '',
           quizQuestions: [{
             question: '',
@@ -251,6 +350,7 @@ const CourseStructure: React.FC = () => {
             explanation: ''
           }]
         });
+        setFileUploadMode('upload'); // Reset to upload mode
         setShowAddLesson(null);
         // Reload course structure
         await loadCourseStructure();
@@ -312,7 +412,7 @@ const CourseStructure: React.FC = () => {
       const updates: any = {
         title: lesson.title,
         type: lesson.type,
-        duration: lesson.duration,
+        ...(lesson.type === 'video' && { duration: lesson.duration }),
         content: lesson.content,
         videoUrl: lesson.videoUrl,
         fileUrl: lesson.fileUrl,
@@ -498,7 +598,7 @@ const CourseStructure: React.FC = () => {
 
   const totalLessons = course.sections.reduce((total, s) => total + s.lessons.length, 0);
   const totalDuration = course.sections.reduce((total, s) =>
-    total + s.lessons.reduce((sum, l) => sum + l.duration, 0), 0
+    total + s.lessons.reduce((sum, l) => sum + (l.duration || 0), 0), 0
   );
 
   return (
@@ -757,7 +857,14 @@ const CourseStructure: React.FC = () => {
                             <InputLabel>Loại lesson</InputLabel>
                             <Select
                               value={newLesson.type}
-                              onChange={(e) => setNewLesson(prev => ({ ...prev, type: e.target.value as 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment' }))}
+                              onChange={(e) => {
+                                const newType = e.target.value as 'video' | 'text' | 'file' | 'link' | 'quiz' | 'assignment';
+                                setNewLesson(prev => ({ ...prev, type: newType }));
+                                // Reset file upload mode when switching to file type
+                                if (newType === 'file') {
+                                  setFileUploadMode('upload');
+                                }
+                              }}
                               label="Loại lesson"
                               MenuProps={{ disableScrollLock: true }}
                             >
@@ -770,78 +877,208 @@ const CourseStructure: React.FC = () => {
                             </Select>
                           </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={3}>
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label="Thời lượng (phút)"
-                            value={newLesson.duration}
-                            onChange={(e) => setNewLesson(prev => ({ ...prev, duration: Number(e.target.value) }))}
-                            InputProps={{ inputProps: { min: 1 } }}
-                            required
-                            variant="outlined"
-                          />
-                        </Grid>
+                        {/* Duration chỉ hiển thị cho video lesson */}
+                        {newLesson.type === 'video' && (
+                          <Grid item xs={12} md={3}>
+                            <TextField
+                              fullWidth
+                              type="number"
+                              label="Thời lượng (phút)"
+                              value={newLesson.duration}
+                              onChange={(e) => setNewLesson(prev => ({ ...prev, duration: Number(e.target.value) }))}
+                              InputProps={{ inputProps: { min: 1 } }}
+                              required
+                              variant="outlined"
+                            />
+                          </Grid>
+                        )}
                       </Grid>
 
                       {newLesson.type === 'text' && (
-                        <TextField
-                          fullWidth
-                          label="Nội dung"
-                          value={newLesson.content}
-                          onChange={(e) => setNewLesson(prev => ({ ...prev, content: e.target.value }))}
-                          placeholder="Nhập nội dung lesson"
-                          multiline
-                          rows={4}
-                          variant="outlined"
-                          sx={{ mb: 2 }}
-                        />
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                            Nội dung bài học
+                          </Typography>
+                          <RichTextEditor
+                            value={newLesson.content}
+                            onChange={(content) => setNewLesson(prev => ({ ...prev, content }))}
+                            placeholder="Nhập nội dung lesson với rich text editor..."
+                            height={400}
+                          />
+                        </Box>
                       )}
 
                       {newLesson.type === 'video' && (
-                        <TextField
-                          fullWidth
-                          label="URL Video"
-                          type="url"
-                          value={newLesson.videoUrl}
-                          onChange={(e) => setNewLesson(prev => ({ ...prev, videoUrl: e.target.value }))}
-                          placeholder="https://example.com/video.mp4"
-                          variant="outlined"
-                          sx={{ mb: 2 }}
-                        />
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                            Video Source
+                          </Typography>
+                          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                            <Button
+                              variant={showVideoUpload !== 'new' ? 'contained' : 'outlined'}
+                              onClick={() => setShowVideoUpload(null)}
+                              size="small"
+                            >
+                              URL
+                            </Button>
+                            <Button
+                              variant={showVideoUpload === 'new' ? 'contained' : 'outlined'}
+                              onClick={() => setShowVideoUpload('new')}
+                              size="small"
+                            >
+                              Upload Video
+                            </Button>
+                          </Stack>
+                          {showVideoUpload === 'new' ? (
+                            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                Upload video sau khi tạo lesson. Bạn có thể upload video từ lesson edit mode.
+                              </Typography>
+                              <Button
+                                variant="outlined"
+                                onClick={() => setShowVideoUpload(null)}
+                                size="small"
+                              >
+                                Use URL Instead
+                              </Button>
+                            </Box>
+                          ) : (
+                            <TextField
+                              fullWidth
+                              label="URL Video"
+                              type="url"
+                              value={newLesson.videoUrl}
+                              onChange={(e) => setNewLesson(prev => ({ ...prev, videoUrl: e.target.value }))}
+                              placeholder="https://example.com/video.mp4 or YouTube URL"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
                       )}
 
                       {newLesson.type === 'file' && (
-                        <TextField
-                          fullWidth
-                          label="URL File"
-                          type="url"
-                          value={newLesson.fileUrl}
-                          onChange={(e) => setNewLesson(prev => ({ ...prev, fileUrl: e.target.value }))}
-                          placeholder="https://example.com/file.pdf"
-                          variant="outlined"
-                          sx={{ mb: 2 }}
-                        />
+                        <Box>
+                          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                            <Button
+                              variant={fileUploadMode === 'upload' ? 'contained' : 'outlined'}
+                              onClick={() => {
+                                setFileUploadMode('upload');
+                                // Clear fileUrl if it was a manual URL
+                                if (newLesson.fileUrl && !newLesson.fileUrl.includes('cloudinary') && !newLesson.fileUrl.includes('res.cloudinary')) {
+                                  setNewLesson(prev => ({ ...prev, fileUrl: '', fileSize: undefined, fileType: undefined }));
+                                }
+                              }}
+                              size="small"
+                            >
+                              Upload File
+                            </Button>
+                            <Button
+                              variant={fileUploadMode === 'url' ? 'contained' : 'outlined'}
+                              onClick={() => {
+                                setFileUploadMode('url');
+                                // Clear fileUrl if it was an uploaded file (Cloudinary URL)
+                                if (newLesson.fileUrl && (newLesson.fileUrl.includes('cloudinary') || newLesson.fileUrl.includes('res.cloudinary'))) {
+                                  setNewLesson(prev => ({ ...prev, fileUrl: '', fileSize: undefined, fileType: undefined }));
+                                }
+                              }}
+                              size="small"
+                            >
+                              Use URL
+                            </Button>
+                          </Stack>
+                          {fileUploadMode === 'upload' ? (
+                            <FileUpload
+                              maxFiles={1}
+                              maxSizePerFile={50 * 1024 * 1024} // 50MB
+                              folder="lms/lesson-files"
+                              multiple={false}
+                              onUploadComplete={async (files: FileUploadResult[]) => {
+                                if (files.length > 0) {
+                                  setNewLesson(prev => ({
+                                    ...prev,
+                                    fileUrl: files[0].secureUrl,
+                                    fileSize: files[0].size,
+                                    fileType: files[0].mimeType,
+                                  }));
+                                  toast.success('File uploaded successfully');
+                                }
+                              }}
+                            />
+                          ) : (
+                            <TextField
+                              fullWidth
+                              label="URL File"
+                              type="url"
+                              value={newLesson.fileUrl}
+                              onChange={(e) => setNewLesson(prev => ({ ...prev, fileUrl: e.target.value, fileSize: undefined, fileType: undefined }))}
+                              placeholder="https://example.com/file.pdf"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
                       )}
 
                       {newLesson.type === 'link' && (
-                        <TextField
-                          fullWidth
-                          label="URL Link"
-                          type="url"
-                          value={newLesson.linkUrl}
-                          onChange={(e) => setNewLesson(prev => ({ ...prev, linkUrl: e.target.value }))}
-                          placeholder="https://example.com"
-                          variant="outlined"
-                          sx={{ mb: 2 }}
-                        />
+                        <Box sx={{ mb: 2 }}>
+                          <TextField
+                            fullWidth
+                            label="URL Link"
+                            type="url"
+                            value={newLesson.linkUrl}
+                            onChange={(e) => setNewLesson(prev => ({ ...prev, linkUrl: e.target.value }))}
+                            placeholder="https://example.com"
+                            variant="outlined"
+                            sx={{ mb: 2 }}
+                            required
+                          />
+                          <TextField
+                            fullWidth
+                            label="Mô tả (tùy chọn)"
+                            value={newLesson.content}
+                            onChange={(e) => setNewLesson(prev => ({ ...prev, content: e.target.value }))}
+                            placeholder="Mô tả về link này, tại sao nó quan trọng, học viên sẽ học được gì..."
+                            multiline
+                            rows={3}
+                            variant="outlined"
+                            sx={{ mb: 2 }}
+                          />
+                          {newLesson.linkUrl && (
+                            <LinkPreview
+                              url={newLesson.linkUrl}
+                              onUrlChange={(url) => setNewLesson(prev => ({ ...prev, linkUrl: url }))}
+                            />
+                          )}
+                        </Box>
                       )}
 
                       {newLesson.type === 'quiz' && (
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                            Câu hỏi trắc nghiệm
-                          </Typography>
+                          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                              Câu hỏi trắc nghiệm ({newLesson.quizQuestions.length})
+                            </Typography>
+                            <Stack direction="row" spacing={1}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<DownloadIcon />}
+                                onClick={() => {
+                                  downloadQuizTemplate();
+                                  toast.success('Đã tải file mẫu Excel');
+                                }}
+                              >
+                                Tải mẫu
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<UploadIcon />}
+                                onClick={() => setShowImportQuiz(true)}
+                              >
+                                Import từ Excel
+                              </Button>
+                            </Stack>
+                          </Stack>
                           {newLesson.quizQuestions.map((q, qIndex) => (
                             <Paper key={qIndex} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
                               <Stack spacing={2}>
@@ -949,24 +1186,41 @@ const CourseStructure: React.FC = () => {
                       )}
 
                       {newLesson.type === 'assignment' && (
-                        <TextField
-                          fullWidth
-                          label="Mô tả Bài tập"
-                          value={newLesson.content}
-                          onChange={(e) => setNewLesson(prev => ({ ...prev, content: e.target.value }))}
-                          placeholder="Nhập mô tả bài tập, yêu cầu, deadline..."
-                          multiline
-                          rows={4}
-                          variant="outlined"
-                          sx={{ mb: 2 }}
-                          helperText="Chi tiết bài tập và cách nộp bài"
-                        />
+                        <Box sx={{ mb: 2 }}>
+                          <AssignmentEditor
+                            initialData={{
+                              title: newLesson.title,
+                              description: newLesson.content || '',
+                              instructions: '',
+                              type: 'file',
+                              maxScore: 100,
+                              attempts: 1,
+                            }}
+                            onChange={(data) => {
+                              setNewLesson(prev => ({
+                                ...prev,
+                                title: data.title,
+                                content: data.description,
+                                assignmentDetails: {
+                                  instructions: data.instructions,
+                                  dueDate: data.dueDate || undefined,
+                                  maxScore: data.maxScore,
+                                  allowLateSubmission: data.allowLateSubmission,
+                                },
+                              }));
+                            }}
+                            lessonId={showAddLesson || undefined}
+                          />
+                        </Box>
                       )}
 
                       <Stack direction="row" spacing={2} justifyContent="flex-end">
                         <Button
                           variant="outlined"
-                          onClick={() => setShowAddLesson(null)}
+                          onClick={() => {
+                            setShowAddLesson(null);
+                            setFileUploadMode('upload'); // Reset mode when canceling
+                          }}
                         >
                           Hủy
                         </Button>
@@ -981,9 +1235,139 @@ const CourseStructure: React.FC = () => {
                   </Paper>
                 )}
 
+                {/* Question Bank Manager - hiển thị cho từng quiz lesson */}
+                {section.lessons.map((lesson) => (
+                  showQuestionBank === lesson._id && lesson.type === 'quiz' ? (
+                    <Box key={`qb-${lesson._id}`} sx={{ mt: 2, mb: 2 }}>
+                      <QuestionBankManager
+                        courseId={id || undefined}
+                        mode="select"
+                        onSelectQuestions={(selectedQuestions) => {
+                          // Add selected questions to lesson
+                          const newQuestions = [
+                            ...(lesson.quizQuestions || []),
+                            ...selectedQuestions.map(q => ({
+                              question: q.question,
+                              type: q.type,
+                              answers: q.answers,
+                              correctAnswer: q.correctAnswer,
+                              explanation: q.explanation,
+                              points: q.points,
+                              difficulty: q.difficulty
+                            }))
+                          ];
+                          updateLesson(section._id, lesson._id, { quizQuestions: newQuestions });
+                          setShowQuestionBank(null);
+                          toast.success(`Đã thêm ${selectedQuestions.length} câu hỏi từ ngân hàng`);
+                        }}
+                      />
+                    </Box>
+                  ) : null
+                ))}
+
+                {/* Import Quiz Dialog */}
+                <Dialog
+                  open={showImportQuiz}
+                  onClose={() => setShowImportQuiz(false)}
+                  maxWidth="sm"
+                  fullWidth
+                >
+                  <DialogTitle>Import Câu Hỏi từ Excel/CSV</DialogTitle>
+                  <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Chọn file Excel/CSV đã điền câu hỏi theo mẫu. Hệ thống sẽ tự động import các câu hỏi multiple-choice.
+                      </Typography>
+                      <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 1 }}>
+                          💡 Lưu ý khi mở file CSV:
+                        </Typography>
+                        <Typography variant="caption" component="div">
+                          • Nếu file hiển thị tiếng Việt bị lỗi, hãy mở Excel → Data → Get Data → From File → From Text/CSV<br/>
+                          • Chọn file → Chọn encoding "UTF-8" → Load<br/>
+                          • Hoặc mở bằng Google Sheets (tự động nhận diện UTF-8)
+                        </Typography>
+                      </Box>
+                      <input
+                        type="file"
+                        accept=".csv,.xlsx,.xls"
+                        id="quiz-import-file"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          try {
+                            setImportingQuiz(true);
+                            
+                            // Đọc file
+                            const content = await readCSVFile(file);
+                            
+                            // Parse CSV
+                            const parsedQuestions = parseQuizCSV(content);
+                            
+                            if (parsedQuestions.length === 0) {
+                              toast.error('Không tìm thấy câu hỏi hợp lệ trong file. Vui lòng kiểm tra lại format.');
+                              return;
+                            }
+
+                            // Convert sang format của hệ thống
+                            const convertedQuestions = parsedQuestions.map(q => ({
+                              question: q.question,
+                              answers: q.answers,
+                              correctAnswer: q.correctAnswer,
+                              explanation: q.explanation || ''
+                            }));
+
+                            // Thêm vào quizQuestions
+                            setNewLesson(prev => ({
+                              ...prev,
+                              quizQuestions: [
+                                ...prev.quizQuestions,
+                                ...convertedQuestions
+                              ]
+                            }));
+
+                            toast.success(`Đã import ${convertedQuestions.length} câu hỏi thành công!`);
+                            setShowImportQuiz(false);
+                          } catch (error: any) {
+                            console.error('Error importing quiz:', error);
+                            toast.error(error.message || 'Lỗi khi import file. Vui lòng kiểm tra lại format file.');
+                          } finally {
+                            setImportingQuiz(false);
+                            // Reset input
+                            const input = document.getElementById('quiz-import-file') as HTMLInputElement;
+                            if (input) input.value = '';
+                          }
+                        }}
+                      />
+                      <label htmlFor="quiz-import-file">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          fullWidth
+                          startIcon={<UploadIcon />}
+                          disabled={importingQuiz}
+                        >
+                          {importingQuiz ? 'Đang xử lý...' : 'Chọn File Excel/CSV'}
+                        </Button>
+                      </label>
+                      <Typography variant="caption" color="text.secondary">
+                        💡 Chưa có file mẫu? Click "Tải mẫu" để tải template Excel.
+                      </Typography>
+                    </Stack>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={() => setShowImportQuiz(false)}>
+                      Đóng
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+
                 {/* Lessons List */}
                 <List sx={{ p: 0 }}>
                   {section.lessons.map((lesson, lessonIndex) => (
+                    <React.Fragment key={`lesson-${lesson._id}`}>
                     <ListItem
                       key={lesson._id}
                       sx={{
@@ -1036,21 +1420,40 @@ const CourseStructure: React.FC = () => {
                                     </Select>
                                   </FormControl>
                                 </Grid>
-                                <Grid item xs={12} md={3}>
-                                  <TextField
-                                    fullWidth
-                                    size="small"
-                                    type="number"
-                                    label="Thời lượng (phút)"
-                                    value={lesson.duration}
-                                    onChange={(e) => updateLesson(section._id, lesson._id, { duration: Number(e.target.value) })}
-                                    InputProps={{ inputProps: { min: 1 } }}
-                                    variant="outlined"
-                                  />
-                                </Grid>
+                                {/* Duration chỉ hiển thị cho video lesson */}
+                                {lesson.type === 'video' && (
+                                  <Grid item xs={12} md={3}>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      type="number"
+                                      label="Thời lượng (phút)"
+                                      value={lesson.duration}
+                                      onChange={(e) => updateLesson(section._id, lesson._id, { duration: Number(e.target.value) })}
+                                      InputProps={{ inputProps: { min: 1 } }}
+                                      variant="outlined"
+                                    />
+                                  </Grid>
+                                )}
                               </Grid>
 
                               {lesson.type === 'text' && (
+                                <Box sx={{ width: '100%' }}>
+                                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                                    Nội dung bài học
+                                  </Typography>
+                                  <RichTextEditor
+                                    value={lesson.content || ''}
+                                    onChange={(content) => {
+                                      const updatedLesson = { ...lesson, content };
+                                      updateLesson(section._id, lesson._id, updatedLesson);
+                                    }}
+                                    placeholder="Nhập nội dung lesson với rich text editor..."
+                                    height={400}
+                                  />
+                                </Box>
+                              )}
+                              {lesson.type === 'text' && false && (
                                 <TextField
                                   fullWidth
                                   size="small"
@@ -1064,43 +1467,487 @@ const CourseStructure: React.FC = () => {
                               )}
 
                               {lesson.type === 'video' && (
-                                <TextField
-                                  fullWidth
-                                  size="small"
-                                  label="URL Video"
-                                  value={lesson.videoUrl || ''}
-                                  onChange={(e) => updateLesson(section._id, lesson._id, { videoUrl: e.target.value })}
-                                  variant="outlined"
-                                />
+                                <Box>
+                                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                                    <Button
+                                      variant={showVideoUpload !== lesson._id ? 'contained' : 'outlined'}
+                                      onClick={() => setShowVideoUpload(null)}
+                                      size="small"
+                                    >
+                                      URL
+                                    </Button>
+                                    <Button
+                                      variant={showVideoUpload === lesson._id ? 'contained' : 'outlined'}
+                                      onClick={() => setShowVideoUpload(showVideoUpload === lesson._id ? null : lesson._id)}
+                                      size="small"
+                                    >
+                                      Upload Video
+                                    </Button>
+                                    <Button
+                                      variant={showSubtitleManager === lesson._id ? 'contained' : 'outlined'}
+                                      onClick={() => setShowSubtitleManager(showSubtitleManager === lesson._id ? null : lesson._id)}
+                                      size="small"
+                                    >
+                                      Manage Subtitles
+                                    </Button>
+                                    <Button
+                                      variant={showVideoAnalytics === lesson._id ? 'contained' : 'outlined'}
+                                      onClick={() => setShowVideoAnalytics(showVideoAnalytics === lesson._id ? null : lesson._id)}
+                                      size="small"
+                                      startIcon={<AnalyticsIcon />}
+                                      color="secondary"
+                                    >
+                                      Analytics
+                                    </Button>
+                                  </Stack>
+                                  {showVideoUpload === lesson._id ? (
+                                    <VideoUpload
+                                      lessonId={lesson._id}
+                                      onUploadComplete={async (data) => {
+                                        // If duration is provided from video upload, update lesson automatically
+                                        if (data?.duration) {
+                                          try {
+                                            await updateLesson(section._id, lesson._id, { duration: data.duration });
+                                            toast.success(`Đã tự động cập nhật thời lượng: ${data.duration} phút`);
+                                          } catch (error) {
+                                            console.error('Error updating lesson duration:', error);
+                                          }
+                                        }
+                                        setShowVideoUpload(null);
+                                        await loadCourseStructure();
+                                      }}
+                                      onCancel={() => setShowVideoUpload(null)}
+                                    />
+                                  ) : (
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      label="URL Video"
+                                      value={lesson.videoUrl || ''}
+                                      onChange={(e) => updateLesson(section._id, lesson._id, { videoUrl: e.target.value })}
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {showSubtitleManager === lesson._id && (
+                                    <Box sx={{ mt: 2 }}>
+                                      <SubtitleManager lessonId={lesson._id} />
+                                    </Box>
+                                  )}
+                                  {showVideoAnalytics === lesson._id && (
+                                    <Box sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper' }}>
+                                      <VideoAnalytics 
+                                        lessonId={lesson._id} 
+                                        isTeacher={true} 
+                                      />
+                                    </Box>
+                                  )}
+                                </Box>
                               )}
 
                               {lesson.type === 'file' && (
-                                <TextField
-                                  fullWidth
-                                  size="small"
-                                  label="URL File"
-                                  value={lesson.fileUrl || ''}
-                                  onChange={(e) => updateLesson(section._id, lesson._id, { fileUrl: e.target.value })}
-                                  variant="outlined"
-                                />
+                                <Box>
+                                  <FileUpload
+                                    lessonId={lesson._id}
+                                    maxFiles={10}
+                                    maxSizePerFile={50 * 1024 * 1024} // 50MB
+                                    folder={`lms/lessons/${lesson._id}/files`}
+                                    multiple={true}
+                                    onUploadComplete={async (files: FileUploadResult[]) => {
+                                      try {
+                                        // Files are already uploaded to lesson via API
+                                        toast.success('Files uploaded successfully');
+                                        // Reload course structure to get updated lesson info
+                                        await loadCourseStructure();
+                                      } catch (error: any) {
+                                        toast.error(error.message || 'Failed to update lesson with files');
+                                      }
+                                    }}
+                                  />
+                                  {lesson.fileUrl && (
+                                    <Box sx={{ mt: 2 }}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Current file: <a href={lesson.fileUrl} target="_blank" rel="noopener noreferrer">{lesson.fileUrl}</a>
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                  {lesson.attachments && lesson.attachments.length > 0 && (
+                                    <Box sx={{ mt: 2 }}>
+                                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                        Attachments ({lesson.attachments.length}):
+                                      </Typography>
+                                      <Stack spacing={1}>
+                                        {lesson.attachments.map((att, idx) => (
+                                          <Chip
+                                            key={idx}
+                                            label={att.name}
+                                            onClick={() => window.open(att.url, '_blank')}
+                                            onDelete={() => {
+                                              // Remove attachment
+                                              const newAttachments = lesson.attachments?.filter((_, i) => i !== idx) || [];
+                                              updateLesson(section._id, lesson._id, { attachments: newAttachments });
+                                            }}
+                                          />
+                                        ))}
+                                      </Stack>
+                                    </Box>
+                                  )}
+                                </Box>
                               )}
 
                               {lesson.type === 'link' && (
-                                <TextField
-                                  fullWidth
-                                  size="small"
-                                  label="URL Link"
-                                  value={lesson.linkUrl || ''}
-                                  onChange={(e) => updateLesson(section._id, lesson._id, { linkUrl: e.target.value })}
-                                  variant="outlined"
-                                />
+                                <Box>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="URL Link"
+                                    value={lesson.linkUrl || ''}
+                                    onChange={(e) => updateLesson(section._id, lesson._id, { linkUrl: e.target.value })}
+                                    variant="outlined"
+                                    sx={{ mb: 2 }}
+                                  />
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Mô tả (tùy chọn)"
+                                    value={lesson.content || ''}
+                                    onChange={(e) => updateLesson(section._id, lesson._id, { content: e.target.value })}
+                                    placeholder="Mô tả về link này..."
+                                    multiline
+                                    rows={3}
+                                    variant="outlined"
+                                    sx={{ mb: 2 }}
+                                  />
+                                  {lesson.linkUrl && (
+                                    <LinkPreview
+                                      url={lesson.linkUrl}
+                                      showActions={false}
+                                    />
+                                  )}
+                                </Box>
                               )}
 
                               {lesson.type === 'quiz' && (
                                 <Box>
-                                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                                    Câu hỏi trắc nghiệm
-                                  </Typography>
+                                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                      Câu hỏi trắc nghiệm
+                                    </Typography>
+                                    <Stack direction="row" spacing={1}>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<DownloadIcon />}
+                                        onClick={() => {
+                                          downloadQuizTemplate();
+                                          toast.success('Đã tải file mẫu Excel');
+                                        }}
+                                        sx={{ fontSize: '0.75rem' }}
+                                      >
+                                        Tải mẫu
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<UploadIcon />}
+                                        onClick={() => setShowImportQuiz(true)}
+                                        sx={{ fontSize: '0.75rem' }}
+                                      >
+                                        Import
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<LibraryBooksIcon />}
+                                        onClick={() => setShowQuestionBank(showQuestionBank === lesson._id ? null : lesson._id)}
+                                        sx={{ fontSize: '0.75rem' }}
+                                      >
+                                        Ngân hàng
+                                      </Button>
+                                    </Stack>
+                                  </Stack>
+
+                                  {/* Quiz Settings */}
+                                  <Accordion sx={{ mb: 2 }}>
+                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                        Cài đặt Quiz
+                                      </Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                      <Grid container spacing={2}>
+                                        {/* Timer Settings */}
+                                        <Grid item xs={12}>
+                                          <Typography variant="subtitle2" sx={{ mb: 1 }}>⏱️ Thời gian</Typography>
+                                          <Grid container spacing={2}>
+                                            <Grid item xs={12} md={6}>
+                                              <TextField
+                                                fullWidth
+                                                size="small"
+                                                type="number"
+                                                label="Thời gian tổng (giây)"
+                                                value={lesson.quizSettings?.timeLimit || ''}
+                                                onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                  quizSettings: {
+                                                    ...lesson.quizSettings,
+                                                    timeLimit: e.target.value ? Number(e.target.value) : undefined
+                                                  }
+                                                })}
+                                                helperText="0 = không giới hạn"
+                                              />
+                                            </Grid>
+                                            <Grid item xs={12} md={6}>
+                                              <TextField
+                                                fullWidth
+                                                size="small"
+                                                type="number"
+                                                label="Thời gian mỗi câu (giây)"
+                                                value={lesson.quizSettings?.timeLimitPerQuestion || ''}
+                                                onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                  quizSettings: {
+                                                    ...lesson.quizSettings,
+                                                    timeLimitPerQuestion: e.target.value ? Number(e.target.value) : undefined
+                                                  }
+                                                })}
+                                              />
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                              <FormControlLabel
+                                                control={
+                                                  <Checkbox
+                                                    checked={lesson.quizSettings?.allowPause || false}
+                                                    onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                      quizSettings: {
+                                                        ...lesson.quizSettings,
+                                                        allowPause: e.target.checked
+                                                      }
+                                                    })}
+                                                  />
+                                                }
+                                                label="Cho phép tạm dừng"
+                                              />
+                                            </Grid>
+                                          </Grid>
+                                        </Grid>
+
+                                        <Divider sx={{ my: 2 }} />
+
+                                        {/* Attempts Settings */}
+                                        <Grid item xs={12}>
+                                          <Typography variant="subtitle2" sx={{ mb: 1 }}>🔄 Số lần làm bài</Typography>
+                                          <Grid container spacing={2}>
+                                            <Grid item xs={12} md={6}>
+                                              <TextField
+                                                fullWidth
+                                                size="small"
+                                                type="number"
+                                                label="Số lần làm tối đa"
+                                                value={lesson.quizSettings?.maxAttempts || ''}
+                                                onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                  quizSettings: {
+                                                    ...lesson.quizSettings,
+                                                    maxAttempts: e.target.value ? Number(e.target.value) : undefined
+                                                  }
+                                                })}
+                                                helperText="Để trống = không giới hạn"
+                                              />
+                                            </Grid>
+                                            <Grid item xs={12} md={6}>
+                                              <FormControl fullWidth size="small">
+                                                <InputLabel>Cách tính điểm</InputLabel>
+                                                <Select
+                                                  value={lesson.quizSettings?.scoreCalculation || 'best'}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      scoreCalculation: e.target.value as 'best' | 'average' | 'last'
+                                                    }
+                                                  })}
+                                                >
+                                                  <MenuItem value="best">Điểm cao nhất</MenuItem>
+                                                  <MenuItem value="average">Điểm trung bình</MenuItem>
+                                                  <MenuItem value="last">Điểm lần cuối</MenuItem>
+                                                </Select>
+                                              </FormControl>
+                                            </Grid>
+                                            <Grid item xs={12} md={6}>
+                                              <TextField
+                                                fullWidth
+                                                size="small"
+                                                type="number"
+                                                label="Thời gian chờ giữa các lần (giây)"
+                                                value={lesson.quizSettings?.cooldownPeriod || 0}
+                                                onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                  quizSettings: {
+                                                    ...lesson.quizSettings,
+                                                    cooldownPeriod: Number(e.target.value)
+                                                  }
+                                                })}
+                                              />
+                                            </Grid>
+                                          </Grid>
+                                        </Grid>
+
+                                        <Divider sx={{ my: 2 }} />
+
+                                        {/* Scoring Settings */}
+                                        <Grid item xs={12}>
+                                          <Typography variant="subtitle2" sx={{ mb: 1 }}>📊 Chấm điểm</Typography>
+                                          <Grid container spacing={2}>
+                                            <Grid item xs={12} md={6}>
+                                              <TextField
+                                                fullWidth
+                                                size="small"
+                                                type="number"
+                                                label="Điểm đạt (%)"
+                                                value={lesson.quizSettings?.passingScore || 60}
+                                                onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                  quizSettings: {
+                                                    ...lesson.quizSettings,
+                                                    passingScore: Number(e.target.value)
+                                                  }
+                                                })}
+                                                InputProps={{ inputProps: { min: 0, max: 100 } }}
+                                              />
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                              <FormControlLabel
+                                                control={
+                                                  <Checkbox
+                                                    checked={lesson.quizSettings?.negativeMarking || false}
+                                                    onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                      quizSettings: {
+                                                        ...lesson.quizSettings,
+                                                        negativeMarking: e.target.checked
+                                                      }
+                                                    })}
+                                                  />
+                                                }
+                                                label="Trừ điểm khi sai"
+                                              />
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                              <FormControlLabel
+                                                control={
+                                                  <Checkbox
+                                                    checked={lesson.quizSettings?.partialCredit || false}
+                                                    onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                      quizSettings: {
+                                                        ...lesson.quizSettings,
+                                                        partialCredit: e.target.checked
+                                                      }
+                                                    })}
+                                                  />
+                                                }
+                                                label="Cho điểm từng phần (multiple-select)"
+                                              />
+                                            </Grid>
+                                          </Grid>
+                                        </Grid>
+
+                                        <Divider sx={{ my: 2 }} />
+
+                                        {/* Randomization */}
+                                        <Grid item xs={12}>
+                                          <Typography variant="subtitle2" sx={{ mb: 1 }}>🔀 Xáo trộn</Typography>
+                                          <Stack spacing={1}>
+                                            <FormControlLabel
+                                              control={
+                                                <Checkbox
+                                                  checked={lesson.quizSettings?.randomizeQuestions || false}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      randomizeQuestions: e.target.checked
+                                                    }
+                                                  })}
+                                                />
+                                              }
+                                              label="Xáo trộn thứ tự câu hỏi"
+                                            />
+                                            <FormControlLabel
+                                              control={
+                                                <Checkbox
+                                                  checked={lesson.quizSettings?.randomizeAnswers || false}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      randomizeAnswers: e.target.checked
+                                                    }
+                                                  })}
+                                                />
+                                              }
+                                              label="Xáo trộn thứ tự đáp án"
+                                            />
+                                          </Stack>
+                                        </Grid>
+
+                                        <Divider sx={{ my: 2 }} />
+
+                                        {/* Feedback Settings */}
+                                        <Grid item xs={12}>
+                                          <Typography variant="subtitle2" sx={{ mb: 1 }}>💬 Phản hồi</Typography>
+                                          <Stack spacing={1}>
+                                            <FormControlLabel
+                                              control={
+                                                <Checkbox
+                                                  checked={lesson.quizSettings?.immediateFeedback || false}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      immediateFeedback: e.target.checked
+                                                    }
+                                                  })}
+                                                />
+                                              }
+                                              label="Phản hồi ngay sau mỗi câu"
+                                            />
+                                            <FormControlLabel
+                                              control={
+                                                <Checkbox
+                                                  checked={lesson.quizSettings?.showCorrectAnswers !== false}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      showCorrectAnswers: e.target.checked
+                                                    }
+                                                  })}
+                                                />
+                                              }
+                                              label="Hiển thị đáp án đúng"
+                                            />
+                                            <FormControlLabel
+                                              control={
+                                                <Checkbox
+                                                  checked={lesson.quizSettings?.showExplanation !== false}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      showExplanation: e.target.checked
+                                                    }
+                                                  })}
+                                                />
+                                              }
+                                              label="Hiển thị giải thích"
+                                            />
+                                            <FormControlLabel
+                                              control={
+                                                <Checkbox
+                                                  checked={lesson.quizSettings?.showScoreBreakdown || false}
+                                                  onChange={(e) => updateLesson(section._id, lesson._id, {
+                                                    quizSettings: {
+                                                      ...lesson.quizSettings,
+                                                      showScoreBreakdown: e.target.checked
+                                                    }
+                                                  })}
+                                                />
+                                              }
+                                              label="Hiển thị chi tiết điểm"
+                                            />
+                                          </Stack>
+                                        </Grid>
+                                      </Grid>
+                                    </AccordionDetails>
+                                  </Accordion>
                                   {(lesson.quizQuestions && lesson.quizQuestions.length > 0 ? lesson.quizQuestions : [{
                                     question: '',
                                     answers: ['', '', '', ''],
@@ -1210,16 +2057,33 @@ const CourseStructure: React.FC = () => {
                               )}
 
                               {lesson.type === 'assignment' && (
-                                <TextField
-                                  fullWidth
-                                  size="small"
-                                  label="Mô tả Bài tập"
-                                  value={lesson.content || ''}
-                                  onChange={(e) => updateLesson(section._id, lesson._id, { content: e.target.value })}
-                                  multiline
-                                  rows={4}
-                                  variant="outlined"
-                                />
+                                <Box sx={{ mb: 2 }}>
+                                  <AssignmentEditor
+                                    initialData={{
+                                      title: lesson.title,
+                                      description: lesson.content || '',
+                                      instructions: lesson.assignmentDetails?.instructions || '',
+                                      type: 'file',
+                                      dueDate: lesson.assignmentDetails?.dueDate ? new Date(lesson.assignmentDetails.dueDate) : null,
+                                      maxScore: lesson.assignmentDetails?.maxScore || 100,
+                                      attempts: 1,
+                                      allowLateSubmission: lesson.assignmentDetails?.allowLateSubmission || false,
+                                    }}
+                                    onChange={(data) => {
+                                      updateLesson(section._id, lesson._id, {
+                                        title: data.title,
+                                        content: data.description,
+                                        assignmentDetails: {
+                                          instructions: data.instructions,
+                                          dueDate: data.dueDate || undefined,
+                                          maxScore: data.maxScore,
+                                          allowLateSubmission: data.allowLateSubmission,
+                                        },
+                                      });
+                                    }}
+                                    lessonId={lesson._id}
+                                  />
+                                </Box>
                               )}
 
                               <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -1244,25 +2108,27 @@ const CourseStructure: React.FC = () => {
                               </Stack>
                             </Box>
                           ) : (
-                            <Box>
-                              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                            <Box sx={{ width: '100%', pr: 20 }}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1}
+                                sx={{ mb: 0.5 }}
+                              >
                                 {getLessonTypeIcon(lesson.type)}
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, flexGrow: 1 }}>
+                                <Typography
+                                  variant="subtitle1"
+                                  sx={{
+                                    fontWeight: 600,
+                                    flexGrow: 1,
+                                    minWidth: 0,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
                                   {lesson.title}
                                 </Typography>
-                                <Chip
-                                  label={`${lesson.duration} phút`}
-                                  size="small"
-                                  color="info"
-                                  variant="outlined"
-                                  icon={<ScheduleIcon />}
-                                />
-                                <Chip
-                                  label={lesson.isPublished ? 'Đã xuất bản' : 'Bản nháp'}
-                                  size="small"
-                                  color={lesson.isPublished ? 'success' : 'default'}
-                                  icon={lesson.isPublished ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                                />
                               </Stack>
                               <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
                                 <Chip
@@ -1328,41 +2194,121 @@ const CourseStructure: React.FC = () => {
                       />
 
                       <ListItemSecondaryAction>
-                        <Stack direction="row" spacing={0.5}>
-                          <IconButton
-                            size="small"
-                            onClick={() => moveLesson(section._id, lesson._id, 'up')}
-                            disabled={lessonIndex === 0}
-                            title="Di chuyển lên"
-                          >
-                            <KeyboardArrowUpIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => moveLesson(section._id, lesson._id, 'down')}
-                            disabled={lessonIndex === section.lessons.length - 1}
-                            title="Di chuyển xuống"
-                          >
-                            <KeyboardArrowDownIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditingLesson(editingLesson === lesson._id ? null : lesson._id)}
-                            title="Chỉnh sửa"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => deleteLesson(section._id, lesson._id)}
-                            color="error"
-                            title="Xóa"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Box sx={{ display: 'flex', gap: 0.5, mr: 1 }}>
+                            <Chip
+                              label={lesson.type === 'video' && lesson.duration ? `${lesson.duration} phút` : ''}
+                              size="small"
+                              color="info"
+                              variant="outlined"
+                              icon={<ScheduleIcon />}
+                              sx={{ height: '24px', fontSize: '0.75rem' }}
+                            />
+                            <Chip
+                              label={lesson.isPublished ? 'Đã xuất bản' : 'Bản nháp'}
+                              size="small"
+                              color={lesson.isPublished ? 'success' : 'default'}
+                              icon={lesson.isPublished ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
+                              sx={{ height: '24px', fontSize: '0.75rem' }}
+                            />
+                          </Box>
+                          <Stack direction="row" spacing={0.5}>
+                            <IconButton
+                              size="small"
+                              onClick={() => moveLesson(section._id, lesson._id, 'up')}
+                              disabled={lessonIndex === 0}
+                              title="Di chuyển lên"
+                            >
+                              <KeyboardArrowUpIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => moveLesson(section._id, lesson._id, 'down')}
+                              disabled={lessonIndex === section.lessons.length - 1}
+                              title="Di chuyển xuống"
+                            >
+                              <KeyboardArrowDownIcon />
+                            </IconButton>
+                            {lesson.type === 'video' && (
+                              <IconButton
+                                size="small"
+                                onClick={() => setShowVideoAnalytics(showVideoAnalytics === lesson._id ? null : lesson._id)}
+                                color={showVideoAnalytics === lesson._id ? 'secondary' : 'default'}
+                                title="Xem Analytics"
+                              >
+                                <AnalyticsIcon />
+                              </IconButton>
+                            )}
+                            {lesson.type === 'quiz' && (
+                              <IconButton
+                                size="small"
+                                onClick={() => setShowVideoAnalytics(showVideoAnalytics === lesson._id ? null : lesson._id)}
+                                color={showVideoAnalytics === lesson._id ? 'secondary' : 'default'}
+                                title="Xem Quiz Analytics"
+                              >
+                                <AnalyticsIcon />
+                              </IconButton>
+                            )}
+                            <IconButton
+                              size="small"
+                              onClick={() => setEditingLesson(editingLesson === lesson._id ? null : lesson._id)}
+                              title="Chỉnh sửa"
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => deleteLesson(section._id, lesson._id)}
+                              color="error"
+                              title="Xóa"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Stack>
                         </Stack>
                       </ListItemSecondaryAction>
                     </ListItem>
+                    {/* Video Analytics - hiển thị bên dưới lesson item */}
+                    {lesson.type === 'video' && showVideoAnalytics === lesson._id && (
+                      <Box sx={{ 
+                        ml: 4, 
+                        mr: 2, 
+                        mb: 2, 
+                        mt: -1,
+                        p: 2, 
+                        border: '1px solid', 
+                        borderColor: 'divider', 
+                        borderRadius: 2, 
+                        bgcolor: 'background.paper',
+                        boxShadow: 1
+                      }}>
+                        <VideoAnalytics 
+                          lessonId={lesson._id} 
+                          isTeacher={true}
+                        />
+                      </Box>
+                    )}
+                    {/* Quiz Analytics - hiển thị bên dưới lesson item */}
+                    {lesson.type === 'quiz' && showVideoAnalytics === lesson._id && (
+                      <Box sx={{ 
+                        ml: 4, 
+                        mr: 2, 
+                        mb: 2, 
+                        mt: -1,
+                        p: 2, 
+                        border: '1px solid', 
+                        borderColor: 'divider', 
+                        borderRadius: 2, 
+                        bgcolor: 'background.paper',
+                        boxShadow: 1
+                      }}>
+                        <QuizAnalytics 
+                          lessonId={lesson._id} 
+                          isTeacher={true}
+                        />
+                      </Box>
+                    )}
+                    </React.Fragment>
                   ))}
                 </List>
               </Box>

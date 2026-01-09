@@ -23,7 +23,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -253,6 +254,13 @@ const BillsPayments: React.FC = () => {
   };
 
   const generatePDFReceipt = async (bill: Bill) => {
+    // Format transaction ID for receipt
+    const formattedTransactionId = bill.transactionId 
+      ? (bill.transactionId.length > 20 
+          ? `${bill.transactionId.substring(0, 12)}...${bill.transactionId.substring(bill.transactionId.length - 8)}` 
+          : bill.transactionId)
+      : 'Chưa có';
+    
     // Create PDF content
     const receiptContent = `
       <!DOCTYPE html>
@@ -270,7 +278,7 @@ const BillsPayments: React.FC = () => {
             .section-title { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #333; }
             .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
             .info-label { font-weight: bold; }
-            .info-value { }
+            .info-value { font-family: monospace; word-break: break-all; }
             .amount { font-size: 18px; font-weight: bold; color: #1976d2; }
             .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
             .divider { border-top: 1px solid #ddd; margin: 20px 0; }
@@ -291,7 +299,7 @@ const BillsPayments: React.FC = () => {
               </div>
               <div class="info-row">
                 <span class="info-label">Transaction ID:</span>
-                <span class="info-value">${bill.transactionId || 'Chưa có'}</span>
+                <span class="info-value">${formattedTransactionId}${bill.transactionId && bill.transactionId.length > 20 ? ` (Full: ${bill.transactionId})` : ''}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Ngày tạo:</span>
@@ -378,6 +386,14 @@ const BillsPayments: React.FC = () => {
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('vi-VN');
+  
+  // Format Transaction ID to be shorter and more compact
+  const formatTransactionId = (transactionId: string | undefined): string => {
+    if (!transactionId) return 'Chưa có';
+    if (transactionId.length <= 20) return transactionId;
+    // Show first 12 chars + ... + last 8 chars
+    return `${transactionId.substring(0, 12)}...${transactionId.substring(transactionId.length - 8)}`;
+  };
 
   if (loading) {
     return (
@@ -532,7 +548,23 @@ const BillsPayments: React.FC = () => {
                   {/* Transaction Info */}
                   <Box sx={{ minWidth: 200 }}>
                     <Typography variant="subtitle2" color="text.secondary">Transaction ID</Typography>
-                    <Typography fontWeight={800} fontSize="0.9rem">{bill.transactionId || 'Chưa có'}</Typography>
+                    {bill.transactionId ? (
+                      <Tooltip title={bill.transactionId} arrow placement="top">
+                        <Typography 
+                          fontWeight={800} 
+                          fontSize="0.9rem"
+                          sx={{ 
+                            cursor: 'help',
+                            wordBreak: 'break-all',
+                            fontFamily: 'monospace'
+                          }}
+                        >
+                          {formatTransactionId(bill.transactionId)}
+                        </Typography>
+                      </Tooltip>
+                    ) : (
+                      <Typography fontWeight={800} fontSize="0.9rem">Chưa có</Typography>
+                    )}
                     <Typography variant="subtitle2" color="text.secondary" mt={1}>Bill ID</Typography>
                     <Typography fontWeight={600} fontSize="0.8rem" color="text.secondary">{bill._id}</Typography>
                   </Box>
@@ -697,7 +729,22 @@ const BillsPayments: React.FC = () => {
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">Transaction ID</Typography>
-                      <Typography fontWeight={600}>{selectedBill.transactionId || 'Chưa có'}</Typography>
+                      {selectedBill.transactionId ? (
+                        <Tooltip title={selectedBill.transactionId} arrow placement="top">
+                          <Typography 
+                            fontWeight={600}
+                            sx={{ 
+                              cursor: 'help',
+                              wordBreak: 'break-all',
+                              fontFamily: 'monospace'
+                            }}
+                          >
+                            {formatTransactionId(selectedBill.transactionId)}
+                          </Typography>
+                        </Tooltip>
+                      ) : (
+                        <Typography fontWeight={600}>Chưa có</Typography>
+                      )}
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">Ngày tạo</Typography>

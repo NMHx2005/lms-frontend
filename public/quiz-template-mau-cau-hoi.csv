@@ -1,0 +1,57 @@
+Question,Type,Answers,Correct Answer,Explanation,Points,Difficulty
+"HƯỚNG DẪN SỬ DỤNG TEMPLATE",,,,,,
+"=========================================",,,,,,
+"CỘT 1 - Question: Nội dung câu hỏi",,,,,,
+"CỘT 2 - Type: Loại câu hỏi (xem bên dưới)",,,,,,
+"CỘT 3 - Answers: Các đáp án, phân cách bằng dấu | (pipe)",,,,,,
+"CỘT 4 - Correct Answer: Đáp án đúng (xem format bên dưới)",,,,,,
+"CỘT 5 - Explanation: Giải thích (tùy chọn)",,,,,,
+"CỘT 6 - Points: Điểm số (số nguyên)",,,,,,
+"CỘT 7 - Difficulty: Độ khó (easy/medium/hard)",,,,,,
+,,,,,,
+"CÁC LOẠI CÂU HỎI HỖ TRỢ:",,,,,,
+"1. multiple-choice: Trắc nghiệm 1 đáp án đúng",,,,,,
+"   - Answers: ""Đáp án A|Đáp án B|Đáp án C|Đáp án D""",,,,,,
+"   - Correct Answer: ""0"" (index của đáp án đúng, bắt đầu từ 0)",,,,,,
+,,,,,,
+"2. true-false: Đúng/Sai",,,,,,
+"   - Answers: ""True|False""",,,,,,
+"   - Correct Answer: ""0"" (True) hoặc ""1"" (False)",,,,,,
+,,,,,,
+"3. multiple-select: Chọn nhiều đáp án đúng",,,,,,
+"   - Answers: ""Đáp án A|Đáp án B|Đáp án C|Đáp án D""",,,,,,
+"   - Correct Answer: ""0,2"" (nhiều index phân cách bằng dấu phẩy)",,,,,,
+,,,,,,
+"4. fill-blank: Điền vào chỗ trống",,,,,,
+"   - Answers: ""Từ khóa đúng"" (1 đáp án)",,,,,,
+"   - Correct Answer: ""Từ khóa đúng"" (text chính xác)",,,,,,
+,,,,,,
+"5. short-answer: Trả lời ngắn",,,,,,
+"   - Answers: """" (để trống)",,,,,,
+"   - Correct Answer: ""Đáp án mẫu"" (có thể có nhiều đáp án đúng)",,,,,,
+,,,,,,
+"6. matching: Ghép cặp",,,,,,
+"   - Answers: ""Item1|Item2|Item3|Match1|Match2|Match3""",,,,,,
+"   - Correct Answer: {""0"":""3"",""1"":""4"",""2"":""5""} (JSON object)",,,,,,
+,,,,,,
+"7. ordering: Sắp xếp thứ tự",,,,,,
+"   - Answers: ""Bước 1|Bước 2|Bước 3|Bước 4""",,,,,,
+"   - Correct Answer: ""0,1,2,3"" (thứ tự đúng, phân cách bằng dấu phẩy)",,,,,,
+,,,,,,
+"8. essay: Tự luận",,,,,,
+"   - Answers: """" (để trống)",,,,,,
+"   - Correct Answer: ""N/A"" (giáo viên chấm thủ công)",,,,,,
+,,,,,,
+"VÍ DỤ CÂU HỎI MẪU:",,,,,,
+"=========================================",,,,,,
+"Java là ngôn ngữ lập trình gì?,multiple-choice,""Lập trình hướng đối tượng|Lập trình hàm|Lập trình logic|Lập trình thủ tục"",""0"",""Java là ngôn ngữ lập trình hướng đối tượng (OOP)"",10,easy
+"Từ khóa nào dùng để khai báo class trong Java?,multiple-choice,""class|Class|CLASS|def"",""0"",""Từ khóa ""class"" (chữ thường) dùng để khai báo class trong Java"",10,easy
+"Java là ngôn ngữ biên dịch (compiled language),true-false,""True|False"",""0"",""Java được biên dịch thành bytecode, sau đó chạy trên JVM"",5,medium
+"Java hỗ trợ đa kế thừa (multiple inheritance),true-false,""True|False"",""1"",""Java chỉ hỗ trợ đơn kế thừa (single inheritance) cho class, nhưng hỗ trợ multiple inheritance cho interface"",10,medium
+"Chọn các tính năng của Java (có thể chọn nhiều):,multiple-select,""Platform independent|Garbage collection|Pointers|Reflection"",""0,1,3"",""Java có platform independent, garbage collection, và reflection. Java không có pointers như C/C++"",15,medium
+"Trong Java, từ khóa _____ dùng để kế thừa class,fill-blank,""extends"",""extends"",""Từ khóa ""extends"" dùng để kế thừa class trong Java"",10,easy
+"Phương thức _____ được gọi khi object được tạo,fill-blank,""constructor"",""constructor"",""Constructor được gọi tự động khi tạo object mới"",10,easy
+"Giải thích ngắn gọn: JVM là gì?,short-answer,"""",""Java Virtual Machine"",""JVM (Java Virtual Machine) là máy ảo chạy bytecode Java"",10,easy
+"Ghép các khái niệm với định nghĩa:,matching,""Class|Object|Method|Variable|Class là blueprint|Object là instance|Method là function|Variable là container"",""{""0"":""4"",""1"":""5"",""2"":""6"",""3"":""7""}"",""Class là blueprint, Object là instance, Method là function, Variable là container"",20,hard
+"Sắp xếp các bước compile và run Java theo thứ tự:,ordering,""Viết code|Compile với javac|Tạo .class file|Chạy với java"",""0,1,2,3"",""Thứ tự: Viết code → Compile với javac → Tạo .class file → Chạy với java"",15,medium
+"Giải thích chi tiết về tính đóng gói (Encapsulation) trong Java. Cho ví dụ minh họa.,essay,"""",""N/A"",""Encapsulation là đóng gói dữ liệu và phương thức trong một class, sử dụng access modifiers để kiểm soát truy cập"",25,hard

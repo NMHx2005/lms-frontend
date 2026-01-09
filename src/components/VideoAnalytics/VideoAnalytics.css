@@ -1,0 +1,49 @@
+.video-analytics-container {
+  padding: 24px;
+  background: #f7f9fa;
+  min-height: 100%;
+}
+
+.video-analytics-student-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.video-analytics-student-table thead {
+  background: #f7f9fa;
+}
+
+.video-analytics-student-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #1c1d1f;
+  border-bottom: 2px solid #d1d7dc;
+}
+
+.video-analytics-student-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e5e5;
+  color: #1c1d1f;
+}
+
+.video-analytics-student-table tbody tr:hover {
+  background: #f7f9fa;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .video-analytics-container {
+    padding: 16px;
+  }
+
+  .video-analytics-student-table {
+    font-size: 14px;
+  }
+
+  .video-analytics-student-table th,
+  .video-analytics-student-table td {
+    padding: 8px;
+  }
+}

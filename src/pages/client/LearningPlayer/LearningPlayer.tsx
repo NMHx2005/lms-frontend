@@ -3,11 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/client/Header';
 import Footer from '@/components/Layout/client/Footer';
 import LearningSidebar from '@/components/Client/LearningPlayer/LearningSidebar/LearningSidebar';
+import VideoPlayer from '@/components/VideoPlayer/VideoPlayer';
+import VideoNotes from '@/components/VideoNotes/VideoNotes';
+import QuizPlayer from '@/components/Quiz/QuizPlayer';
+import FileViewer from '@/components/File/FileViewer';
+import TextLessonViewer from '@/components/TextLesson/TextLessonViewer';
+import LinkLessonViewer from '@/components/Link/LinkLessonViewer';
+import AssignmentSubmission from '@/components/Assignment/AssignmentSubmission';
+import CourseQA from '@/components/Client/LearningPlayer/CourseQA/CourseQA';
 import { clientAuthService } from '@/services/client/auth.service';
 import { clientCoursesService } from '@/services/client/courses.service';
 import { courseContentService, CourseContent, SectionWithLessons, LessonContent } from '@/services/client/course-content.service';
 import { enrollmentService } from '@/services/client/enrollment.service';
 import { progressService } from '@/services/client/progress.service';
+import { videoService, VideoSubtitle, VideoNote } from '@/services/client/video.service';
+import { clientAssignmentsService } from '@/services/client/assignments.service';
 import toast from 'react-hot-toast';
 import './LearningPlayer.css';
 
@@ -90,6 +100,22 @@ const LearningPlayer: React.FC = () => {
   const [timeSpentInLesson, setTimeSpentInLesson] = useState(0);
   const [lessonTimer, setLessonTimer] = useState<number | null>(null);
   const [isLessonCompleted, setIsLessonCompleted] = useState(false);
+
+  // Video features states
+  const [subtitles, setSubtitles] = useState<VideoSubtitle[]>([]);
+  const [notes, setNotes] = useState<VideoNote[]>([]);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const [videoFileUrl, setVideoFileUrl] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null); // Duration from Cloudinary API
+
+  // Assignment states
+  const [assignmentData, setAssignmentData] = useState<any>(null);
+  const [assignmentSubmission, setAssignmentSubmission] = useState<any>(null);
+  const [loadingAssignment, setLoadingAssignment] = useState(false);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'notes'>('overview');
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -292,6 +318,144 @@ const LearningPlayer: React.FC = () => {
       });
     }
   };
+
+  // Load assignment data when assignment lesson is selected
+  useEffect(() => {
+    const currentLesson = getCurrentLesson();
+    if (currentLesson && currentLesson.type === 'assignment' && currentLessonId) {
+      const loadAssignmentData = async () => {
+        try {
+          setLoadingAssignment(true);
+          // Try to get assignment by lesson ID
+          // Note: In the current structure, assignment might be stored in lesson.assignmentDetails
+          // or we might need to fetch it separately
+          if (currentLesson.assignmentDetails) {
+            setAssignmentData({
+              _id: currentLessonId,
+              title: currentLesson.title,
+              description: currentLesson.content || '',
+              instructions: currentLesson.assignmentDetails.instructions || '',
+              type: 'file' as const, // Default to file, can be enhanced
+              dueDate: currentLesson.assignmentDetails.dueDate,
+              maxScore: currentLesson.assignmentDetails.maxScore || 100,
+              attempts: 1,
+              allowLateSubmission: (currentLesson.assignmentDetails as any)?.allowLateSubmission || false,
+              latePenalty: 0,
+            });
+          }
+
+          // Try to get existing submission
+          try {
+            const submissionsResponse = await clientAssignmentsService.getSubmissions(currentLessonId);
+            if (submissionsResponse.success && submissionsResponse.data && submissionsResponse.data.length > 0) {
+              setAssignmentSubmission(submissionsResponse.data[0]);
+            }
+          } catch (error) {
+            // No submission yet, that's okay
+            console.log('No existing submission found');
+          }
+        } catch (error) {
+          console.error('Error loading assignment data:', error);
+        } finally {
+          setLoadingAssignment(false);
+        }
+      };
+      loadAssignmentData();
+    } else {
+      setAssignmentData(null);
+      setAssignmentSubmission(null);
+    }
+  }, [currentLessonId, sections]);
+
+  // Load subtitles, notes, and video file when lesson changes
+  useEffect(() => {
+    if (!currentLessonId) {
+      setSubtitles([]);
+      setNotes([]);
+      setVideoFileUrl(null);
+      setVideoDuration(null);
+      return;
+    }
+
+    const currentLesson = getCurrentLesson();
+
+    const loadVideoData = async () => {
+      try {
+        // Load video file URL (if uploaded via VideoUpload)
+        // Only try to load if lesson type is video AND it's not a YouTube/external URL
+        if (currentLesson && currentLesson.type === 'video') {
+          const videoUrl = currentLesson.videoUrl || currentLesson.content || '';
+          const isYouTube = isYouTubeUrl(videoUrl);
+
+          // Don't call API for YouTube videos - they don't have VideoFile records
+          if (!isYouTube) {
+            try {
+              const videoFileResponse = await videoService.getVideoFile(currentLessonId);
+              if (videoFileResponse.success && videoFileResponse.data) {
+                // VideoFile has fileUrl field (Cloudinary secureUrl)
+                const url = videoFileResponse.data.fileUrl ||
+                  videoFileResponse.data.url ||
+                  videoFileResponse.data.secureUrl;
+                if (url) {
+                  setVideoFileUrl(url);
+                  console.log('✅ Video file URL loaded from VideoFile:', url);
+
+                  // Get duration from Cloudinary API response (in seconds)
+                  if (videoFileResponse.data.duration) {
+                    const durationInSeconds = videoFileResponse.data.duration;
+                    setVideoDuration(durationInSeconds);
+                    console.log('✅ Video duration loaded from Cloudinary:', durationInSeconds, 'seconds');
+                  } else {
+                    setVideoDuration(null);
+                  }
+                } else {
+                  setVideoFileUrl(null);
+                  setVideoDuration(null);
+                }
+              } else {
+                setVideoFileUrl(null);
+                setVideoDuration(null);
+              }
+            } catch (error: any) {
+              // Video file not found (404), use lesson.videoUrl instead
+              // This is normal if video was uploaded via URL instead of VideoUpload
+              if (error.response?.status === 404) {
+                console.log('ℹ️ No VideoFile record found (404), will use lesson.videoUrl if available');
+              } else {
+                console.error('❌ Error loading VideoFile:', error);
+              }
+              setVideoFileUrl(null);
+              setVideoDuration(null);
+            }
+          } else {
+            // YouTube video - don't try to load VideoFile, use videoUrl directly
+            // Duration will come from lesson.duration or estimatedTime (in minutes, convert to seconds)
+            console.log('ℹ️ YouTube video detected, skipping VideoFile API call');
+            setVideoFileUrl(null);
+            setVideoDuration(null); // Will use duration from lesson props
+          }
+        } else {
+          setVideoFileUrl(null);
+        }
+
+        // Load subtitles
+        const subtitlesResponse = await videoService.getSubtitles(currentLessonId);
+        if (subtitlesResponse.success) {
+          setSubtitles(subtitlesResponse.data || []);
+        }
+
+        // Load notes
+        const notesResponse = await videoService.getNotes(currentLessonId);
+        if (notesResponse.success) {
+          setNotes(notesResponse.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load video data:', error);
+      }
+    };
+
+    loadVideoData();
+  }, [currentLessonId, sections]); // Add sections as dependency to reload when lesson data changes
 
   // Timer effect to track time spent in lesson and auto-complete
   useEffect(() => {
@@ -502,43 +666,127 @@ const LearningPlayer: React.FC = () => {
               <>
                 {currentLesson.type === 'video' ? (
                   <div className="udemy-learning__video-container">
-                    <div className="udemy-learning__video-player">
-                      {isYouTubeUrl(currentLesson.videoUrl || currentLesson.content || '') ? (
+                    {isYouTubeUrl(currentLesson.videoUrl || currentLesson.content || '') ? (
+                      <div className="udemy-learning__video-player">
                         <iframe
                           src={getYouTubeEmbedUrl(currentLesson.videoUrl || currentLesson.content || '')}
                           title={currentLesson.title}
                           className="udemy-learning__video udemy-learning__video--youtube"
                           frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                           allowFullScreen
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            border: 'none',
+                            borderRadius: '8px'
+                          }}
                         />
-                      ) : (
-                        <video
-                          controls
-                          className="udemy-learning__video"
-                          poster={course.image || DEFAULT_THUMBNAIL}
-                        >
-                          <source src={currentLesson.videoUrl || currentLesson.content || ''} type="video/mp4" />
-                          Trình duyệt của bạn không hỗ trợ video.
-                        </video>
-                      )}
-                    </div>
-                    {/* Timer Progress Bar */}
-                    {!isLessonCompleted && (
-                      <div className="udemy-learning__timer-progress">
-                        <div className="udemy-learning__timer-bar">
-                          <div
-                            className="udemy-learning__timer-fill"
-                            style={{
-                              width: `${Math.min(100, (timeSpentInLesson / ((currentLesson.duration || currentLesson.estimatedTime || 0) * 60)) * 100)}%`
-                            }}
-                          />
-                        </div>
-                        <div className="udemy-learning__timer-text">
-                          <span>Đã xem: {Math.floor(timeSpentInLesson / 60)}:{(timeSpentInLesson % 60).toString().padStart(2, '0')}</span>
-                          <span>Yêu cầu: {currentLesson.duration || currentLesson.estimatedTime || 0} phút</span>
-                        </div>
                       </div>
+                    ) : (
+                      <>
+                        {(() => {
+                          const finalVideoUrl = videoFileUrl || currentLesson.videoUrl || currentLesson.content || '';
+
+                          if (!finalVideoUrl) {
+                            return (
+                              <div className="udemy-learning__video-placeholder">
+                                <div className="udemy-learning__video-placeholder-content">
+                                  <div className="udemy-learning__video-placeholder-icon">📹</div>
+                                  <h3>Chưa có video</h3>
+                                  <p>Video chưa được upload hoặc URL video chưa được cấu hình.</p>
+                                  <p style={{ fontSize: '12px', color: '#6a6f73', marginTop: '8px' }}>
+                                    Vui lòng upload video trong phần cấu trúc khóa học hoặc thêm URL video.
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Calculate duration: 
+                          // 1. If video is from Cloudinary, use videoDuration from API (already in seconds)
+                          // 2. If video is external/YouTube, use lesson.duration or estimatedTime (convert minutes to seconds)
+                          const finalDuration = videoDuration !== null
+                            ? videoDuration
+                            : (currentLesson.duration || currentLesson.estimatedTime || 0) * 60;
+
+                          return (
+                            <div className="udemy-learning__video-player">
+                              <VideoPlayer
+                                lessonId={currentLessonId}
+                                videoUrl={finalVideoUrl}
+                                duration={finalDuration}
+                                key={`video-${currentLessonId}-${finalVideoUrl}`} // Force re-render when videoUrl changes
+                                subtitles={subtitles}
+                                notes={notes}
+                                onTimeUpdate={(currentTime) => {
+                                  // Update currentTime for VideoNotes component
+                                  setCurrentVideoTime(currentTime);
+                                }}
+                                onProgressUpdate={(progress) => {
+                                  setVideoProgress(progress);
+                                  if (progress >= 80 && !isLessonCompleted) {
+                                    setIsLessonCompleted(true);
+                                    // Mark as completed
+                                    if (courseId) {
+                                      courseContentService.markLessonCompleted(courseId, currentLessonId)
+                                        .then(() => {
+                                          toast.success(`Hoàn thành bài học: ${currentLesson.title}`);
+                                          setSections(prev => {
+                                            const updatedSections = prev.map(section => ({
+                                              ...section,
+                                              lessons: section.lessons.map(lesson =>
+                                                ((lesson as any).id === currentLessonId || lesson._id === currentLessonId)
+                                                  ? { ...lesson, isCompleted: true }
+                                                  : lesson
+                                              )
+                                            }));
+                                            setTimeout(() => recalculateProgress(), 100);
+                                            return updatedSections;
+                                          });
+                                        })
+                                        .catch(error => {
+                                          console.error('Error marking lesson as completed:', error);
+                                        });
+                                    }
+                                  }
+                                }}
+                                onComplete={() => {
+                                  setIsLessonCompleted(true);
+                                  if (courseId) {
+                                    courseContentService.markLessonCompleted(courseId, currentLessonId)
+                                      .then(() => {
+                                        toast.success(`Hoàn thành bài học: ${currentLesson.title}`);
+                                        setSections(prev => {
+                                          const updatedSections = prev.map(section => ({
+                                            ...section,
+                                            lessons: section.lessons.map(lesson =>
+                                              ((lesson as any).id === currentLessonId || lesson._id === currentLessonId)
+                                                ? { ...lesson, isCompleted: true }
+                                                : lesson
+                                            )
+                                          }));
+                                          setTimeout(() => recalculateProgress(), 100);
+                                          return updatedSections;
+                                        });
+                                      })
+                                      .catch(error => {
+                                        console.error('Error marking lesson as completed:', error);
+                                      });
+                                  }
+                                }}
+                                onNoteClick={(timestamp) => {
+                                  setCurrentVideoTime(timestamp);
+                                }}
+                                autoResume={true}
+                              />
+                            </div>
+                          );
+                        })()}
+                      </>
                     )}
                     {isLessonCompleted && (
                       <div className="udemy-learning__completed-badge">
@@ -547,82 +795,67 @@ const LearningPlayer: React.FC = () => {
                     )}
                   </div>
                 ) : currentLesson.type === 'text' ? (
-                  <div className="udemy-learning__content-viewer">
-                    <div className="udemy-learning__content-header">
-                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
-                      <div className="udemy-learning__lesson-meta">
-                        <span className="udemy-learning__lesson-type">Text Lesson</span>
-                        <span className="udemy-learning__lesson-duration">
-                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
-                        </span>
-                      </div>
-                    </div>
-                    <div className="udemy-learning__content-body">
-                      <div dangerouslySetInnerHTML={{ __html: currentLesson.content || '' }} />
-                    </div>
-                  </div>
+                  <TextLessonViewer
+                    title={currentLesson.title}
+                    content={currentLesson.content || ''}
+                    estimatedTime={currentLesson.estimatedTime || currentLesson.duration}
+                    onComplete={() => {
+                      if (courseId && currentLessonId) {
+                        courseContentService.markLessonCompleted(courseId, currentLessonId)
+                          .then(() => {
+                            toast.success(`Hoàn thành bài học: ${currentLesson.title}`);
+                            setSections(prev => {
+                              const updatedSections = prev.map(section => ({
+                                ...section,
+                                lessons: section.lessons.map(lesson =>
+                                  lesson._id === currentLessonId
+                                    ? { ...lesson, isCompleted: true }
+                                    : lesson
+                                )
+                              }));
+                              return updatedSections;
+                            });
+                          })
+                          .catch((error) => {
+                            console.error('Error marking lesson as completed:', error);
+                            toast.error('Không thể đánh dấu bài học đã hoàn thành');
+                          });
+                      }
+                    }}
+                    onProgressUpdate={(progress) => {
+                      // Track reading progress for analytics
+                      console.log('Reading progress:', progress);
+                    }}
+                  />
                 ) : currentLesson.type === 'quiz' ? (
-                  <div className="udemy-learning__quiz-viewer">
-                    <div className="udemy-learning__quiz-header">
-                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
-                      <div className="udemy-learning__lesson-meta">
-                        <span className="udemy-learning__lesson-type">Quiz</span>
-                        <span className="udemy-learning__lesson-duration">
-                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
-                        </span>
-                        <span className="udemy-learning__quiz-count">
-                          {currentLesson.quizQuestions?.length || 0} câu hỏi
-                        </span>
-                      </div>
-                    </div>
-                    <div className="udemy-learning__quiz-content">
-                      {currentLesson.quizQuestions && currentLesson.quizQuestions.length > 0 ? (
-                        <div className="udemy-learning__quiz-questions">
-                          {currentLesson.quizQuestions.map((question, index) => (
-                            <div key={question.id || index} className="udemy-learning__question">
-                              <div className="udemy-learning__question-header">
-                                <h3 className="udemy-learning__question-title">
-                                  Câu {index + 1}: {question.question}
-                                </h3>
-                              </div>
-                              <div className="udemy-learning__question-answers">
-                                {question.answers.map((answer, answerIndex) => (
-                                  <div key={answerIndex} className="udemy-learning__answer-option">
-                                    <input
-                                      type="radio"
-                                      id={`question-${index}-answer-${answerIndex}`}
-                                      name={`question-${index}`}
-                                      value={answerIndex}
-                                      disabled
-                                    />
-                                    <label htmlFor={`question-${index}-answer-${answerIndex}`}>
-                                      <span className="udemy-learning__answer-letter">
-                                        {String.fromCharCode(65 + answerIndex)}
-                                      </span>
-                                      <span className="udemy-learning__answer-text">{answer}</span>
-                                      {answerIndex === question.correctAnswer && (
-                                        <span className="udemy-learning__correct-badge">Đúng</span>
-                                      )}
-                                    </label>
-                                  </div>
-                                ))}
-                              </div>
-                              {question.explanation && (
-                                <div className="udemy-learning__explanation">
-                                  <h4>Giải thích:</h4>
-                                  <p>{question.explanation}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="udemy-learning__no-questions">
-                          <p>Không có câu hỏi nào trong quiz này.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <QuizPlayer
+                    questions={currentLesson.quizQuestions?.map((q: any) => ({
+                      question: q.question,
+                      type: (q.type || 'multiple-choice') as any,
+                      answers: q.answers,
+                      correctAnswer: q.correctAnswer,
+                      explanation: q.explanation,
+                      points: q.points || 10,
+                      difficulty: (q.difficulty || 'medium') as any
+                    })) || []}
+                    lessonId={currentLesson._id}
+                    courseId={courseId || ''}
+                    settings={{
+                      ...(currentLesson as any).quizSettings,
+                      showProgress: true,
+                      showTimer: true,
+                      immediateFeedback: (currentLesson as any).quizSettings?.immediateFeedback || false,
+                      showCorrectAnswers: (currentLesson as any).quizSettings?.showCorrectAnswers !== false,
+                      showExplanation: (currentLesson as any).quizSettings?.showExplanation !== false
+                    }}
+                    onComplete={(results) => {
+                      console.log('Quiz completed:', results);
+                      toast.success(`Hoàn thành! Điểm số: ${results.percentage}%`);
+                    }}
+                    onExit={() => {
+                      // Handle exit
+                    }}
+                  />
                 ) : currentLesson.type === 'file' ? (
                   <div className="udemy-learning__file-viewer">
                     <div className="udemy-learning__file-header">
@@ -635,96 +868,148 @@ const LearningPlayer: React.FC = () => {
                       </div>
                     </div>
                     <div className="udemy-learning__file-content">
-                      <div className="udemy-learning__file-info">
-                        <div className="udemy-learning__file-icon">📄</div>
-                        <div className="udemy-learning__file-details">
-                          <h3>Tài liệu bài học</h3>
-                          <p>Tải xuống tài liệu để xem nội dung chi tiết của bài học này.</p>
-                          <div className="udemy-learning__file-actions">
-                            <button
-                              className="udemy-learning__download-btn"
-                              onClick={() => {
-                                const url = currentLesson.fileUrl || currentLesson.content;
-                                if (url) window.open(url, '_blank');
-                              }}
-                            >
-                              📥 Tải xuống
-                            </button>
+                      {currentLesson.fileUrl ? (
+                        <FileViewer
+                          fileUrl={currentLesson.fileUrl}
+                          fileName={currentLesson.title}
+                          fileType={currentLesson.fileType}
+                          fileSize={currentLesson.fileSize}
+                          showDownload={true}
+                          showFullscreen={true}
+                        />
+                      ) : (
+                        <div className="udemy-learning__file-info">
+                          <div className="udemy-learning__file-icon">📄</div>
+                          <div className="udemy-learning__file-details">
+                            <h3>Tài liệu bài học</h3>
+                            <p>Chưa có tài liệu cho bài học này.</p>
                           </div>
                         </div>
-                      </div>
+                      )}
+                      {currentLesson.attachments && currentLesson.attachments.length > 0 && (
+                        <div style={{ marginTop: '24px', padding: '16px', borderTop: '1px solid #e5e5e5' }}>
+                          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>Tài liệu đính kèm</h3>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {currentLesson.attachments.map((att: any, idx: number) => (
+                              <FileViewer
+                                key={idx}
+                                fileUrl={att.url}
+                                fileName={att.name}
+                                fileType={att.type}
+                                fileSize={att.size}
+                                showDownload={true}
+                                showFullscreen={true}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : currentLesson.type === 'link' ? (
-                  <div className="udemy-learning__link-viewer">
-                    <div className="udemy-learning__link-header">
-                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
-                      <div className="udemy-learning__lesson-meta">
-                        <span className="udemy-learning__lesson-type">Liên kết</span>
-                        <span className="udemy-learning__lesson-duration">
-                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
-                        </span>
-                      </div>
-                    </div>
-                    <div className="udemy-learning__link-content">
-                      <div className="udemy-learning__link-info">
-                        <div className="udemy-learning__link-icon">🔗</div>
-                        <div className="udemy-learning__link-details">
-                          <h3>Tài nguyên bên ngoài</h3>
-                          <p>Mở liên kết để xem nội dung bổ sung cho bài học này.</p>
-                          <div className="udemy-learning__link-actions">
-                            <button
-                              className="udemy-learning__external-btn"
-                              onClick={() => {
-                                const url = currentLesson.linkUrl || currentLesson.externalLink || currentLesson.content;
-                                if (url) window.open(url, '_blank');
-                              }}
-                            >
-                              🌐 Mở liên kết
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <LinkLessonViewer
+                    title={currentLesson.title}
+                    url={currentLesson.linkUrl || currentLesson.externalLink || currentLesson.content || ''}
+                    description={currentLesson.description}
+                    lessonId={currentLessonId}
+                    onComplete={() => {
+                      if (courseId && currentLessonId) {
+                        courseContentService.markLessonCompleted(courseId, currentLessonId)
+                          .then(() => {
+                            toast.success(`Hoàn thành bài học: ${currentLesson.title}`);
+                            setSections(prev => {
+                              const updatedSections = prev.map(section => ({
+                                ...section,
+                                lessons: section.lessons.map(lesson =>
+                                  lesson._id === currentLessonId
+                                    ? { ...lesson, isCompleted: true }
+                                    : lesson
+                                )
+                              }));
+                              return updatedSections;
+                            });
+                          })
+                          .catch((error) => {
+                            console.error('Error marking lesson as completed:', error);
+                            toast.error('Không thể đánh dấu bài học đã hoàn thành');
+                          });
+                      }
+                    }}
+                  />
                 ) : currentLesson.type === 'assignment' ? (
-                  <div className="udemy-learning__assignment-viewer">
-                    <div className="udemy-learning__assignment-header">
-                      <h2 className="udemy-learning__lesson-title">{currentLesson.title}</h2>
-                      <div className="udemy-learning__lesson-meta">
-                        <span className="udemy-learning__lesson-type">Bài tập</span>
-                        <span className="udemy-learning__lesson-duration">
-                          {currentLesson.duration || currentLesson.estimatedTime || 0} phút
-                        </span>
+                  loadingAssignment ? (
+                    <div className="udemy-learning__placeholder">
+                      <div className="udemy-learning__placeholder-content">
+                        <div className="udemy-learning__placeholder-icon">⏳</div>
+                        <p>Đang tải bài tập...</p>
                       </div>
                     </div>
-                    <div className="udemy-learning__assignment-content">
-                      <div className="udemy-learning__assignment-info">
-                        <div className="udemy-learning__assignment-icon">📝</div>
-                        <div className="udemy-learning__assignment-details">
-                          <h3>Bài tập</h3>
-                          <p>{currentLesson.content || 'Hoàn thành bài tập theo yêu cầu.'}</p>
-                          {currentLesson.assignmentDetails && (
-                            <div className="udemy-learning__assignment-requirements">
-                              <h4>Yêu cầu:</h4>
-                              <p>{currentLesson.assignmentDetails.instructions}</p>
-                              {currentLesson.assignmentDetails.dueDate && (
-                                <p><strong>Hạn nộp:</strong> {new Date(currentLesson.assignmentDetails.dueDate).toLocaleDateString('vi-VN')}</p>
-                              )}
-                              {currentLesson.assignmentDetails.maxScore && (
-                                <p><strong>Điểm tối đa:</strong> {currentLesson.assignmentDetails.maxScore}</p>
-                              )}
-                            </div>
-                          )}
-                          <div className="udemy-learning__assignment-actions">
-                            <button className="udemy-learning__submit-btn">
-                              📤 Nộp bài
-                            </button>
-                          </div>
-                        </div>
+                  ) : assignmentData ? (
+                    <AssignmentSubmission
+                      assignment={assignmentData}
+                      existingSubmission={assignmentSubmission}
+                      onSaveDraft={async (data) => {
+                        if (!courseId) return;
+                        try {
+                          await clientAssignmentsService.saveDraft(currentLessonId, courseId, {
+                            fileUrl: data.fileUrl,
+                            textAnswer: data.textAnswer,
+                            comment: data.comment,
+                          });
+                        } catch (error: any) {
+                          throw new Error(error.message || 'Lỗi khi lưu bản nháp');
+                        }
+                      }}
+                      onSubmit={async (data) => {
+                        if (!courseId) return;
+                        try {
+                          const result = await clientAssignmentsService.submitAssignment(
+                            currentLessonId,
+                            courseId,
+                            {
+                              fileUrl: data.fileUrl,
+                              textAnswer: data.textAnswer,
+                              comment: data.comment,
+                              isDraft: false,
+                            }
+                          );
+                          if (result.success) {
+                            setAssignmentSubmission(result.data);
+                            // Mark lesson as completed
+                            if (courseId) {
+                              courseContentService.markLessonCompleted(courseId, currentLessonId)
+                                .then(() => {
+                                  toast.success('Nộp bài thành công!');
+                                  recalculateProgress();
+                                });
+                            }
+                          }
+                        } catch (error: any) {
+                          throw new Error(error.message || 'Lỗi khi nộp bài');
+                        }
+                      }}
+                      onViewHistory={async () => {
+                        try {
+                          const submissions = await clientAssignmentsService.getSubmissions(currentLessonId);
+                          if (submissions.success && submissions.data) {
+                            // Show submission history in a dialog or navigate
+                            console.log('Submission history:', submissions.data);
+                            toast.success(`Bạn đã nộp ${submissions.data.length} lần`);
+                          }
+                        } catch (error) {
+                          console.error('Error loading submission history:', error);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="udemy-learning__placeholder">
+                      <div className="udemy-learning__placeholder-content">
+                        <div className="udemy-learning__placeholder-icon">📝</div>
+                        <h3>Không tìm thấy thông tin bài tập</h3>
+                        <p>Vui lòng thử lại sau.</p>
                       </div>
                     </div>
-                  </div>
+                  )
                 ) : (
                   <div className="udemy-learning__placeholder">
                     <div className="udemy-learning__placeholder-content">
@@ -758,14 +1043,29 @@ const LearningPlayer: React.FC = () => {
 
             {/* Course Tabs */}
             <div className="udemy-learning__tabs">
-              <div className="udemy-learning__tab active">Tổng quan</div>
-              <div className="udemy-learning__tab">Q&A</div>
-              <div className="udemy-learning__tab">Ghi chú</div>
-              <div className="udemy-learning__tab">Thông báo</div>
+              <div
+                className={`udemy-learning__tab ${activeTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                Tổng quan
+              </div>
+              <div
+                className={`udemy-learning__tab ${activeTab === 'qa' ? 'active' : ''}`}
+                onClick={() => setActiveTab('qa')}
+              >
+                Q&A
+              </div>
+              <div
+                className={`udemy-learning__tab ${activeTab === 'notes' ? 'active' : ''}`}
+                onClick={() => setActiveTab('notes')}
+              >
+                Ghi chú
+              </div>
             </div>
 
-            {/* Course Details */}
-            <div className="udemy-learning__details">
+            {/* Tab Content */}
+            {activeTab === 'overview' && (
+              <div className="udemy-learning__details">
               <div className="udemy-learning__details-header">
                 <h2>Về khóa học này</h2>
                 <div className="udemy-learning__rating">
@@ -895,7 +1195,36 @@ const LearningPlayer: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            )}
+
+            {activeTab === 'qa' && (
+              <div className="udemy-learning__tab-content">
+                <CourseQA courseId={courseId || ''} lessonId={currentLessonId || undefined} />
+              </div>
+            )}
+
+            {activeTab === 'notes' && (
+              <div className="udemy-learning__tab-content">
+                {currentLesson && currentLesson.type === 'video' && currentLessonId ? (
+                  <VideoNotes
+                    lessonId={currentLessonId}
+                    currentTime={currentVideoTime}
+                    onNoteClick={(timestamp) => {
+                      setCurrentVideoTime(timestamp);
+                    }}
+                  />
+                ) : (
+                  <div className="udemy-learning__placeholder">
+                    <div className="udemy-learning__placeholder-content">
+                      <div className="udemy-learning__placeholder-icon">📝</div>
+                      <h3>Ghi chú chỉ khả dụng cho bài học video</h3>
+                      <p>Vui lòng chọn một bài học video để xem và tạo ghi chú.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}

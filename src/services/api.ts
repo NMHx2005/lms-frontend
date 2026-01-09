@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+// Default to backend port 5000, but can be overridden by VITE_API_URL env var
+// Note: Vite proxy is configured to forward /api to localhost:5000
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000';
 const API_PREFIX = (import.meta as any).env?.VITE_API_PREFIX || '/api';
 const API_TIMEOUT = Number((import.meta as any).env?.VITE_API_TIMEOUT) || 15000;
 const API_WITH_CREDENTIALS = String((import.meta as any).env?.VITE_API_WITH_CREDENTIALS || 'false') === 'true';
@@ -63,18 +65,21 @@ const api = axios.create({
 
 api.interceptors.request.use(
 	(config) => {
-		console.log('🚀 API Request:', {
-			method: config.method?.toUpperCase(),
-			url: config.url,
-			baseURL: config.baseURL,
-			fullURL: `${config.baseURL}${config.url}`,
-			params: config.params,
-			data: config.data
-		});
+
+		// If data is FormData, remove Content-Type header to let browser set it with boundary
+		if (config.data instanceof FormData) {
+			delete config.headers['Content-Type'];
+		}
 
 		if (SHOULD_USE_BEARER) {
 			const token = localStorage.getItem('accessToken');
-			if (token) config.headers.Authorization = `Bearer ${token}`;
+			if (token) {
+				config.headers.Authorization = `Bearer ${token}`;
+			} else {
+				console.warn('⚠️ No accessToken found in localStorage');
+			}
+		} else {
+			console.log('ℹ️ Using cookie-based auth (SHOULD_USE_BEARER is false)');
 		}
 		return config;
 	},

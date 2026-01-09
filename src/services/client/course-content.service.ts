@@ -21,11 +21,14 @@ export interface SectionWithLessons {
 }
 
 export interface QuizQuestion {
-    id: string;
+    id?: string;
     question: string;
+    type?: string;
     answers: string[];
-    correctAnswer: number;
+    correctAnswer: number | number[] | string | any;
     explanation?: string;
+    points?: number;
+    difficulty?: string;
 }
 
 export interface AssignmentDetails {
@@ -33,6 +36,10 @@ export interface AssignmentDetails {
     dueDate?: string;
     maxScore?: number;
     submissionType?: 'text' | 'file' | 'both';
+    allowLateSubmission?: boolean;
+    latePenalty?: number;
+    timeLimit?: number;
+    attempts?: number;
 }
 
 export interface LessonContent {
@@ -43,6 +50,8 @@ export interface LessonContent {
     content?: string;
     videoUrl?: string;
     fileUrl?: string;
+    fileSize?: number;
+    fileType?: string;
     linkUrl?: string;
     externalLink?: string;
     duration: number;
@@ -60,6 +69,26 @@ export interface LessonContent {
         size: number;
     }>;
     quizQuestions?: QuizQuestion[];
+    quizSettings?: {
+        timeLimit?: number;
+        timeLimitPerQuestion?: number;
+        allowPause?: boolean;
+        maxAttempts?: number;
+        scoreCalculation?: 'best' | 'average' | 'last';
+        cooldownPeriod?: number;
+        passingScore?: number;
+        negativeMarking?: boolean;
+        negativeMarkingPercentage?: number;
+        partialCredit?: boolean;
+        randomizeQuestions?: boolean;
+        randomizeAnswers?: boolean;
+        questionPool?: number;
+        immediateFeedback?: boolean;
+        showCorrectAnswers?: boolean;
+        showExplanation?: boolean;
+        showScoreBreakdown?: boolean;
+        showClassAverage?: boolean;
+    };
     assignmentDetails?: AssignmentDetails;
 }
 

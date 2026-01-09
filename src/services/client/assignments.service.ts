@@ -19,14 +19,32 @@ export const clientAssignmentsService = {
   },
 
   // Assignment Submissions
-  async submitAssignment(assignmentId: string, data: {
+  async submitAssignment(assignmentId: string, courseId: string, data: {
     answers?: string[];
     fileUrl?: string;
-    notes?: string;
-    submitTime: string;
+    fileSize?: number;
+    fileType?: string;
+    textAnswer?: string;
+    isDraft?: boolean;
+    comment?: string;
   }) {
-    const response = await api.post(`/client/assignments/${assignmentId}/submit`, data);
+    const response = await api.post('/client/assignments/submit', {
+      assignmentId,
+      courseId,
+      ...data,
+    });
     return response.data;
+  },
+
+  async saveDraft(assignmentId: string, courseId: string, data: {
+    fileUrl?: string;
+    textAnswer?: string;
+    comment?: string;
+  }) {
+    return this.submitAssignment(assignmentId, courseId, {
+      ...data,
+      isDraft: true,
+    });
   },
 
   async updateSubmission(assignmentId: string, submissionId: string, data: {
@@ -62,6 +80,20 @@ export const clientAssignmentsService = {
 
   async getAssignmentDraft(assignmentId: string) {
     const response = await api.get(`/client/assignments/${assignmentId}/draft`);
+    return response.data;
+  },
+
+  // Get student submissions for an assignment
+  async getSubmissions(assignmentId: string) {
+    const response = await api.get('/client/assignments/submissions', {
+      params: { assignmentId },
+    });
+    return response.data;
+  },
+
+  // Get submission by ID
+  async getSubmissionById(submissionId: string) {
+    const response = await api.get(`/client/assignments/submissions/${submissionId}`);
     return response.data;
   },
 };
