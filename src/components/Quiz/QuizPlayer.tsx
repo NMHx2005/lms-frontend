@@ -16,9 +16,6 @@ import {
   Chip,
   Alert,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   List,
   ListItem,
   ListItemText,
@@ -93,7 +90,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   questions,
   settings = {},
   lessonId,
-  courseId,
+  courseId: _courseId,
   onComplete,
   onExit
 }) => {
@@ -107,11 +104,11 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   const [results, setResults] = useState<QuizResults | null>(null);
   const [startTime] = useState(Date.now());
   const [attemptsSummary, setAttemptsSummary] = useState<QuizAttemptsSummary | null>(null);
-  const [loadingAttempts, setLoadingAttempts] = useState(false);
+  const [_loadingAttempts, setLoadingAttempts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Shuffle questions if needed
-  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>(() => {
+  const [shuffledQuestions, _setShuffledQuestions] = useState<QuizQuestion[]>(() => {
     let shuffled = [...questions];
     if (settings.randomizeQuestions) {
       shuffled = shuffled.sort(() => Math.random() - 0.5);
@@ -675,7 +672,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                 {/* Right column - Matches */}
                 <Box>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Cột B</Typography>
-                  {currentQuestion.answers.slice(currentQuestion.answers.length / 2).map((match, index) => {
+                  {currentQuestion.answers.slice(currentQuestion.answers.length / 2).map((_match, index) => {
                     const leftIndex = index;
                     const currentAnswer = answers[currentQuestionIndex] || {};
                     const selectedMatch = currentAnswer[leftIndex];
@@ -736,11 +733,14 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                           handleAnswerChange(newOrder);
                         }}
                       >
-                        {currentQuestion.answers.map((answer, idx) => (
+                        {currentQuestion.answers.map((answer, idx) => {
+                          const currentOrder = answers[currentQuestionIndex] || currentQuestion.answers.map((_, i) => i);
+                          return (
                           <MenuItem key={idx} value={idx} disabled={currentOrder.includes(idx) && currentOrder.indexOf(idx) !== orderIndex}>
                             {answer}
                           </MenuItem>
-                        ))}
+                          );
+                        })}
                       </Select>
                     </FormControl>
                   </Paper>

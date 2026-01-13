@@ -30,12 +30,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     autoResume = true,
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const playerRef = useRef<any>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const progressSaveIntervalRef = useRef<number | null>(null);
-    const analyticsIntervalRef = useRef<number | null>(null);
+    // Video.js related refs (currently disabled - using HTML5 video instead)
+    const _playerRef = useRef<any>(null);
+    const _containerRef = useRef<HTMLDivElement>(null);
+    const _progressSaveIntervalRef = useRef<number | null>(null);
+    const _analyticsIntervalRef = useRef<number | null>(null);
 
-    const [isReady, setIsReady] = useState(false);
+    // Video.js related states (currently disabled)
+    const [_isReady, _setIsReady] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -45,14 +47,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const [selectedSubtitle, setSelectedSubtitle] = useState<VideoSubtitle | null>(null);
     const [savedProgress, setSavedProgress] = useState<VideoProgress | null>(null);
     const [watchTime, setWatchTime] = useState(0);
-    const [lastEventTime, setLastEventTime] = useState(0);
-    const [videoError, setVideoError] = useState<string | null>(null);
-    const [useFallback, setUseFallback] = useState(false);
+    const [_lastEventTime, _setLastEventTime] = useState(0);
+    const [_videoError, _setVideoError] = useState<string | null>(null);
+    const [_useFallback, _setUseFallback] = useState(false);
     const [playStartTime, setPlayStartTime] = useState<number | null>(null);
     const [previousTime, setPreviousTime] = useState(0);
 
-    // Get video MIME type from URL
-    const getVideoMimeType = (url: string): string => {
+    // Get video MIME type from URL (currently disabled - Video.js is disabled)
+    const _getVideoMimeType = (url: string): string => {
         if (!url) return 'video/mp4';
 
         const extension = url.toLowerCase().split('.').pop()?.split('?')[0];

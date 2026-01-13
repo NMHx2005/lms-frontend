@@ -97,12 +97,14 @@ const LearningPlayer: React.FC = () => {
   const [progress, setProgress] = useState(0);
 
   // Timer states for auto-complete lesson
+  const [timeSpentInLesson, setTimeSpentInLesson] = useState(0);
   const [lessonTimer, setLessonTimer] = useState<number | null>(null);
   const [isLessonCompleted, setIsLessonCompleted] = useState(false);
 
   // Video features states
   const [subtitles, setSubtitles] = useState<VideoSubtitle[]>([]);
   const [notes, setNotes] = useState<VideoNote[]>([]);
+  const [videoProgress, setVideoProgress] = useState(0);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoFileUrl, setVideoFileUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null); // Duration from Cloudinary API
@@ -472,7 +474,7 @@ const LearningPlayer: React.FC = () => {
 
       // Start interval to increment time
       const timer = setInterval(() => {
-        setTimeSpentInLesson(prev => {
+        setTimeSpentInLesson((prev: number) => {
           const newTime = prev + 1;
 
           // Check if user has spent enough time

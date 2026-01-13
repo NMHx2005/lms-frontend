@@ -58,6 +58,7 @@ const TextLessonViewer: React.FC<TextLessonViewerProps> = ({
   const [showTOC, setShowTOC] = useState(false);
   const [tocItems, setTocItems] = useState<Array<{ id: string; text: string; level: number }>>([]);
   const [wordCount, setWordCount] = useState(0);
+  const [readingSpeed] = useState(200); // words per minute
 
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<number | null>(null);

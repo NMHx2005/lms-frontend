@@ -35,7 +35,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     <Box sx={{ width: '100%' }}>
       <Editor
         apiKey={apiKey}
-        onInit={(evt: any, editor: any) => {
+        onInit={(_evt: any, editor: any) => {
           editorRef.current = editor;
         }}
         value={value}
