@@ -71,7 +71,7 @@ interface CourseData {
 const CourseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [course, setCourse] = useState<CourseData | null>(null);
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,7 +192,7 @@ const CourseDetail = () => {
         if (response.success) {
           setIsInWishlist(true);
           // Handle both response.data._id and response.data.data._id (nested structure)
-          const wishlistItemId = response.data?._id || response.data?.data?._id || null;
+          const wishlistItemId = (response.data as any)?._id || (response.data as any)?.data?._id || null;
           setWishlistId(wishlistItemId ? String(wishlistItemId) : null);
           toast.success('Đã thêm vào danh sách yêu thích');
           

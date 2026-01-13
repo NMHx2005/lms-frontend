@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import '@videojs/themes/dist/city/index.css';
 import { videoService, VideoProgress, VideoSubtitle, VideoNote } from '@/services/client/video.service';
-import { toast } from 'react-hot-toast';
 import './VideoPlayer.css';
 
 interface VideoPlayerProps {

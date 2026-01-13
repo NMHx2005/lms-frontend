@@ -15,13 +15,10 @@ import {
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Area,
   AreaChart,
@@ -200,7 +197,7 @@ const VideoAnalytics: React.FC<VideoAnalyticsProps> = ({
       <Paper sx={{ mb: 3 }}>
         <Tabs
           value={activeTab}
-          onChange={(e, newValue) => setActiveTab(newValue)}
+          onChange={(_e, newValue) => setActiveTab(newValue)}
           variant="scrollable"
           scrollButtons="auto"
         >

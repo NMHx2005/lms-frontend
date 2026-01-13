@@ -1,5 +1,4 @@
-import api from '../api';
-import { ApiResponse } from '../api';
+import api, { ApiResponse } from '../api';
 
 export interface QuestionBankItem {
   _id?: string;

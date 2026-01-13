@@ -74,7 +74,6 @@ import LinkPreview from '@/components/Link/LinkPreview';
 import AssignmentEditor from '@/components/Assignment/AssignmentEditor';
 import { downloadQuizTemplate } from '@/services/client/quiz-template.service';
 import { parseQuizCSV, readCSVFile } from '@/services/client/quiz-import.service';
-import api from '@/services/api';
 
 interface Section {
   _id: string;
@@ -155,7 +154,6 @@ const CourseStructure: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
-  const [uploadingPendingVideo, setUploadingPendingVideo] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [originalSectionData, setOriginalSectionData] = useState<{ title: string; description: string } | null>(null);
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
@@ -1652,7 +1650,7 @@ const CourseStructure: React.FC = () => {
                                       maxSizePerFile={50 * 1024 * 1024} // 50MB
                                       folder={`lms/lessons/${lesson._id}/files`}
                                       multiple={true}
-                                      onUploadComplete={async (files: FileUploadResult[]) => {
+                                      onUploadComplete={async (_files: FileUploadResult[]) => {
                                         try {
                                           // Files are already uploaded to lesson via API
                                           toast.success('Files uploaded successfully');

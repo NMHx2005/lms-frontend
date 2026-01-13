@@ -5,12 +5,10 @@ import './SubtitleManager.css';
 
 interface SubtitleManagerProps {
   lessonId: string;
-  onSubtitleChange?: (subtitle: VideoSubtitle | null) => void;
 }
 
 const SubtitleManager: React.FC<SubtitleManagerProps> = ({
   lessonId,
-  onSubtitleChange,
 }) => {
   const [subtitles, setSubtitles] = useState<VideoSubtitle[]>([]);
   const [loading, setLoading] = useState(false);
