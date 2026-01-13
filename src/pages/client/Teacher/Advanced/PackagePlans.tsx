@@ -21,6 +21,42 @@ const PackagePlans: React.FC = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
+                // Check for VNPay return params first
+                const searchParams = new URLSearchParams(window.location.search);
+                const vnpResponseCode = searchParams.get('vnp_ResponseCode');
+                const vnpTxnRef = searchParams.get('vnp_TxnRef');
+
+                if (vnpResponseCode && vnpTxnRef) {
+                    // Convert searchParams to object
+                    const params: any = {};
+                    searchParams.forEach((value, key) => {
+                        params[key] = value;
+                    });
+
+                    console.log('Verifying VNPay payment...', params);
+                    setSubscribing(true); // Reuse subscribing state for loading
+
+                    try {
+                        const verifyRes = await teacherPackagesService.verifyPayment(params);
+                        console.log('Verify response:', verifyRes);
+
+                        if (verifyRes.RspCode === '00' || verifyRes.Code === '00') {
+                            setSuccessMessage('Thanh toán thành công! Gói cước đã được kích hoạt.');
+                        } else if (verifyRes.RspCode === '02') {
+                            setSuccessMessage('Giao dịch đã được ghi nhận trước đó.');
+                        } else {
+                            setError(`Thanh toán thất bại hoặc lỗi xác thực: ${verifyRes.Message || 'Lỗi không xác định'}`);
+                        }
+                    } catch (err: any) {
+                        console.error('Verify error:', err);
+                        setError('Không thể xác thực giao dịch. Vui lòng liên hệ bộ phận hỗ trợ.');
+                    } finally {
+                        setSubscribing(false);
+                        // Clean URL
+                        window.history.replaceState({}, '', window.location.pathname);
+                    }
+                }
+
                 setLoading(true);
                 const [packagesRes, subscriptionRes] = await Promise.all([
                     teacherPackagesService.getAvailablePackages(status === 'all' ? 'all' : status),
@@ -29,7 +65,8 @@ const PackagePlans: React.FC = () => {
 
                 setPackages(packagesRes.data || []);
                 setActiveSubscriptions(subscriptionRes.data || []);
-                setError(null);
+                // Only clear error if it wasn't set by verify logic
+                if (!vnpResponseCode) setError(null);
             } catch (err: any) {
                 console.error('Error loading data:', err);
                 const errorMessage = err.response?.data?.error;
@@ -60,13 +97,20 @@ const PackagePlans: React.FC = () => {
                 paymentMethod: paymentMethod as any
             });
 
+            console.log('Subscribe response:', response); // Debug log
+
             if (response.success) {
-                if (paymentMethod === 'vnpay' && response.data.paymentUrl) {
+                // Check for paymentUrl in response.data (backend returns { success: true, data: { paymentUrl: ... } })
+                const paymentUrl = response.data?.paymentUrl;
+                const mockPayment = response.data?.mockPayment;
+
+                if (paymentMethod === 'vnpay' && paymentUrl) {
                     // Redirect to VNPay
-                    window.location.href = response.data.paymentUrl;
-                } else if (paymentMethod === 'vnpay' && response.data.mockPayment) {
+                    console.log('Redirecting to VNPay:', paymentUrl);
+                    window.location.href = paymentUrl;
+                } else if (paymentMethod === 'vnpay' && mockPayment) {
                     // Mock payment successful
-                    setSuccessMessage(response.data.message || 'Đăng ký gói thành công! (Mock Payment)');
+                    setSuccessMessage(response.data?.message || 'Đăng ký gói thành công! (Mock Payment)');
                     setSubscribeDialog({ open: false, packageId: null });
 
                     // Reload data

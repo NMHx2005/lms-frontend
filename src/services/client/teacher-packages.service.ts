@@ -110,5 +110,12 @@ export const teacherPackagesService = {
   async getPackageDetails(packageId: string) {
     const response = await api.get(`/client/teacher-packages/packages/${packageId}`);
     return response.data;
+  },
+
+  // Verify VNPay payment (Frontend triggers IPN logic manually)
+  async verifyPayment(params: any) {
+    // Send as POST to the callback URL (which acts as IPN)
+    const response = await api.post('/client/teacher-packages/vnpay/callback', params);
+    return response.data;
   }
 };

@@ -280,14 +280,50 @@ const CourseDetail = () => {
       return;
     }
 
-    // Direct enrollment for both free and paid courses
-    // Backend will create Bill and Enrollment together (like package subscription)
+    // If course has price, redirect to VNPAY payment (giống teacher package)
+    if (course!.price > 0) {
+      try {
+        setEnrolling(true);
+        const response = await clientCoursesService.enrollInCourse(course!._id, {
+          paymentMethod: 'vnpay', // Always use VNPAY for paid courses
+          agreeToTerms: true,
+          couponCode: undefined
+        });
+
+        if (response.success) {
+          // Check if response has paymentUrl (VNPAY payment)
+          if (response.data?.paymentUrl) {
+            // Redirect to VNPay payment gateway
+            window.location.href = response.data.paymentUrl;
+          } else if (response.data?.enrollment?.isActive) {
+            // Already enrolled (shouldn't happen, but handle it)
+            toast.success('Đăng ký khóa học thành công!');
+            setIsEnrolled(true);
+            setTimeout(() => {
+              navigate(`/learning/${course!._id}`);
+            }, 2000);
+          } else {
+            toast.error('Không thể tạo thanh toán VNPay. Vui lòng thử lại.');
+          }
+        } else {
+          toast.error(response.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+        }
+      } catch (error: any) {
+        console.error('Error enrolling:', error);
+        toast.error(error.response?.data?.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+      } finally {
+        setEnrolling(false);
+      }
+      return;
+    }
+
+    // Free course - direct enrollment (no payment needed)
     try {
       setEnrolling(true);
       const response = await clientCoursesService.enrollInCourse(course!._id, {
-        paymentMethod: 'bank_transfer', // Default payment method, info from user profile
+        paymentMethod: 'bank_transfer', // For free courses, any method is fine
         agreeToTerms: true,
-        couponCode: undefined // Can add coupon code input later if needed
+        couponCode: undefined
       });
 
       if (response.success) {

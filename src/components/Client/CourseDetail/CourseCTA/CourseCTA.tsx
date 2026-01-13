@@ -110,47 +110,79 @@ const CourseCTA: React.FC<CourseCTAProps> = ({ course }) => {
       return;
     }
 
-    // Direct enrollment - backend will create Bill and Enrollment together (like package subscription)
-    try {
-      setIsEnrolling(true);
-      setEnrollmentStatus('idle');
-      setErrorMessage('');
+    // If course has price, redirect to VNPAY payment (giống teacher package)
+    if (course.price > 0) {
+      // Use VNPAY payment for paid courses
+      try {
+        setIsEnrolling(true);
+        setEnrollmentStatus('idle');
+        setErrorMessage('');
 
-      const response = await clientCoursesService.enrollInCourse(course.id, {
-        paymentMethod: 'bank_transfer', // Default payment method, info from user profile
-        agreeToTerms: true,
-        couponCode: undefined
-      });
+        const response = await clientCoursesService.enrollInCourse(course.id, {
+          paymentMethod: 'vnpay', // Always use VNPAY for paid courses
+          agreeToTerms: true,
+          couponCode: undefined
+        });
 
-      if (response.success) {
-        // Check if user is already enrolled
-        if (response.data?.enrollment?.isActive) {
+        if (response.success) {
+          // Check if response has paymentUrl (VNPAY payment)
+          if (response.data?.paymentUrl) {
+            // Redirect to VNPay payment gateway
+            window.location.href = response.data.paymentUrl;
+          } else if (response.data?.enrollment?.isActive) {
+            // Already enrolled (shouldn't happen, but handle it)
+            setIsEnrolled(true);
+            setEnrollmentStatus('success');
+            setErrorMessage('Đăng ký thành công! Đang chuyển hướng...');
+            setTimeout(() => {
+              navigate(`/dashboard/courses/${course.id}`);
+            }, 1500);
+          } else {
+            setEnrollmentStatus('error');
+            setErrorMessage('Không thể tạo thanh toán VNPay. Vui lòng thử lại.');
+          }
+        } else {
+          setEnrollmentStatus('error');
+          setErrorMessage(response.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+        }
+      } catch (error: any) {
+        setEnrollmentStatus('error');
+        setErrorMessage(error.response?.data?.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+        console.error('Enrollment error:', error);
+      } finally {
+        setIsEnrolling(false);
+      }
+    } else {
+      // Free course - direct enrollment (no payment needed)
+      try {
+        setIsEnrolling(true);
+        setEnrollmentStatus('idle');
+        setErrorMessage('');
+
+        const response = await clientCoursesService.enrollInCourse(course.id, {
+          paymentMethod: 'bank_transfer', // For free courses, any method is fine
+          agreeToTerms: true,
+          couponCode: undefined
+        });
+
+        if (response.success) {
           setIsEnrolled(true);
           setEnrollmentStatus('success');
           setErrorMessage('Đăng ký thành công! Đang chuyển hướng...');
-
-          // Auto-navigate to course content after a short delay
           setTimeout(() => {
             navigate(`/dashboard/courses/${course.id}`);
           }, 1500);
         } else {
-          setEnrollmentStatus('success');
-          setIsEnrolled(true);
-          // Show success message and redirect
-          setTimeout(() => {
-            navigate(`/dashboard/courses/${course.id}`);
-          }, 1500);
+          setEnrollmentStatus('error');
+          setErrorMessage(response.error || 'Có lỗi xảy ra khi đăng ký khóa học');
         }
-      } else {
+      } catch (error: any) {
         setEnrollmentStatus('error');
-        setErrorMessage(response.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+        setErrorMessage(error.response?.data?.error || 'Có lỗi xảy ra khi đăng ký khóa học');
+        console.error('Enrollment error:', error);
+      } finally {
+        setIsEnrolling(false);
       }
-    } catch (error: any) {
-      setEnrollmentStatus('error');
-      setErrorMessage(error.response?.data?.error || 'Có lỗi xảy ra khi đăng ký khóa học');
-      console.error('Enrollment error:', error);
-    } finally {
-      setIsEnrolling(false);
     }
   };
 

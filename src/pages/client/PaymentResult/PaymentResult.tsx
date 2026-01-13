@@ -13,38 +13,65 @@ const PaymentResult = () => {
     const [paymentInfo, setPaymentInfo] = useState<any>(null);
 
     useEffect(() => {
-        // Parse VNPay return parameters
-        const vnp_ResponseCode = searchParams.get('vnp_ResponseCode');
-        const vnp_TxnRef = searchParams.get('vnp_TxnRef'); // Order ID
-        const vnp_Amount = searchParams.get('vnp_Amount');
-        const vnp_TransactionNo = searchParams.get('vnp_TransactionNo');
-        const vnp_BankCode = searchParams.get('vnp_BankCode');
+        // Parse VNPay return parameters (support both VNPAY original names and backend mapped names)
+        const vnp_ResponseCode = searchParams.get('vnp_ResponseCode') || searchParams.get('responseCode');
+        const vnp_TxnRef = searchParams.get('vnp_TxnRef') || searchParams.get('orderId'); // Order ID
+        const vnp_Amount = searchParams.get('vnp_Amount') || searchParams.get('amount');
+        const vnp_TransactionNo = searchParams.get('vnp_TransactionNo') || searchParams.get('transactionId');
+        const vnp_BankCode = searchParams.get('vnp_BankCode') || searchParams.get('bankCode');
+        const vnp_TransactionStatus = searchParams.get('vnp_TransactionStatus') || searchParams.get('transactionStatus');
         const error = searchParams.get('error');
+        const success = searchParams.get('success'); // Backend may set this
+
+        console.log('PaymentResult - Parsed params:', {
+            vnp_ResponseCode,
+            vnp_TxnRef,
+            vnp_Amount,
+            vnp_TransactionNo,
+            vnp_BankCode,
+            vnp_TransactionStatus,
+            error,
+            success
+        });
 
         // Check if there's an error from backend
         if (error) {
             setPaymentStatus('error');
             setPaymentInfo({
-                error: error === 'order_not_found' ? 'Không tìm thấy đơn hàng' : 'Lỗi xử lý thanh toán'
+                error: error === 'order_not_found' ? 'Không tìm thấy đơn hàng' : 'Lỗi xử lý thanh toán',
+                orderId: vnp_TxnRef || 'N/A'
             });
             setLoading(false);
             return;
         }
 
-        // VNPay response code "00" means success
-        if (vnp_ResponseCode === '00') {
+        // Check success flag from backend first
+        if (success === 'true') {
             setPaymentStatus('success');
             setPaymentInfo({
-                orderId: vnp_TxnRef,
-                amount: vnp_Amount ? parseInt(vnp_Amount) / 100 : 0,
-                transactionNo: vnp_TransactionNo,
-                bankCode: vnp_BankCode
+                orderId: vnp_TxnRef || 'N/A',
+                amount: vnp_Amount ? (typeof vnp_Amount === 'string' && vnp_Amount.length > 6 ? parseInt(vnp_Amount) / 100 : parseInt(vnp_Amount)) : 0,
+                transactionNo: vnp_TransactionNo || 'N/A',
+                bankCode: vnp_BankCode || 'N/A'
+            });
+            setLoading(false);
+            return;
+        }
+
+        // VNPay response code "00" means success (fallback if success flag not set)
+        if (vnp_ResponseCode === '00' || vnp_TransactionStatus === '00') {
+            setPaymentStatus('success');
+            setPaymentInfo({
+                orderId: vnp_TxnRef || 'N/A',
+                amount: vnp_Amount ? (typeof vnp_Amount === 'string' && vnp_Amount.length > 6 ? parseInt(vnp_Amount) / 100 : parseInt(vnp_Amount)) : 0,
+                transactionNo: vnp_TransactionNo || 'N/A',
+                bankCode: vnp_BankCode || 'N/A'
             });
         } else {
             setPaymentStatus('failed');
             setPaymentInfo({
-                orderId: vnp_TxnRef,
-                responseCode: vnp_ResponseCode,
+                orderId: vnp_TxnRef || 'N/A',
+                responseCode: vnp_ResponseCode || 'N/A',
                 message: getVNPayErrorMessage(vnp_ResponseCode || '')
             });
         }

@@ -101,13 +101,23 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
           console.log('✅ Video duration from uploadResult:', response.data.uploadResult.duration, 'seconds =', durationInMinutes, 'minutes');
         }
         
-        if (onUploadComplete) {
-          onUploadComplete(durationInMinutes ? { duration: durationInMinutes } : undefined);
-        }
+        // Wait a bit before resetting state to let user see 100%
+        setTimeout(() => {
+          setIsUploading(false);
+          setUploadProgress(0);
+          if (onUploadComplete) {
+             onUploadComplete(durationInMinutes ? { duration: durationInMinutes } : undefined);
+          }
+        }, 1000);
+      } else {
+        // Handle case where success is false but no error thrown
+        toast.error('Upload failed: Unknown error');
+        setIsUploading(false);
+        setUploadProgress(0);
       }
     } catch (error: any) {
+      console.error('Upload error:', error);
       toast.error(error.response?.data?.error || 'Failed to upload video');
-    } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
