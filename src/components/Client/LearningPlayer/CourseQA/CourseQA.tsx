@@ -8,8 +8,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Send as SendIcon
 } from '@mui/icons-material';
 import './CourseQA.css';
@@ -81,12 +79,12 @@ const CourseQA: React.FC<CourseQAProps> = ({ courseId, lessonId }) => {
       const comment = item.comment;
       // Map author from comment.author or comment.authorId
       const author = comment.author || comment.authorId;
-      
+
       return {
         ...comment,
         authorId: author,
-        replies: item.replies && item.replies.length > 0 
-          ? transformCommentTree(item.replies) 
+        replies: item.replies && item.replies.length > 0
+          ? transformCommentTree(item.replies)
           : []
       };
     });
@@ -191,14 +189,15 @@ const CourseQA: React.FC<CourseQAProps> = ({ courseId, lessonId }) => {
     }
   };
 
-  // Delete comment
-  const handleDeleteComment = async (commentId: string) => {
+  // Delete comment (currently unused - reserved for future use)
+  // @ts-ignore - Function is reserved for future use
+  const _handleDeleteComment = async (_commentId: string) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa câu hỏi/câu trả lời này?')) {
       return;
     }
 
     try {
-      const response = await sharedCommentsService.deleteComment(commentId, {
+      const response = await sharedCommentsService.deleteComment(_commentId, {
         reason: 'User deleted',
         softDelete: true
       });
@@ -211,6 +210,9 @@ const CourseQA: React.FC<CourseQAProps> = ({ courseId, lessonId }) => {
       toast.error(error.response?.data?.error || 'Không thể xóa');
     }
   };
+
+  // Mark function as used (reserved for future use)
+  void _handleDeleteComment;
 
   // Toggle like
   const handleToggleLike = async (commentId: string, isLiked: boolean) => {
@@ -259,14 +261,14 @@ const CourseQA: React.FC<CourseQAProps> = ({ courseId, lessonId }) => {
   // Format date
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'Không xác định';
-    
+
     const date = new Date(dateString);
-    
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'Không xác định';
     }
-    
+
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

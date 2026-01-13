@@ -154,7 +154,7 @@ const CourseStructure: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
-  const [uploadingPendingVideo, setUploadingPendingVideo] = useState(false);
+  const [_uploadingPendingVideo, setUploadingPendingVideo] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [originalSectionData, setOriginalSectionData] = useState<{ title: string; description: string } | null>(null);
   const [editingLesson, setEditingLesson] = useState<string | null>(null);

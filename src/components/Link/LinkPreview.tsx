@@ -11,13 +11,11 @@ import {
   Stack,
   Chip,
   IconButton,
-  Tooltip,
 } from '@mui/material';
 import {
   OpenInNew as OpenInNewIcon,
   Refresh as RefreshIcon,
   Link as LinkIcon,
-  Image as ImageIcon,
   ErrorOutline as ErrorIcon,
 } from '@mui/icons-material';
 import { fetchLinkMetadata, LinkMetadata, validateUrl } from '@/services/client/link-preview.service';
@@ -31,7 +29,7 @@ interface LinkPreviewProps {
 
 const LinkPreview: React.FC<LinkPreviewProps> = ({
   url,
-  onUrlChange,
+  onUrlChange: _onUrlChange,
   showActions = true,
   onOpen,
 }) => {

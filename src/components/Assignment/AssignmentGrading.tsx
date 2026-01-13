@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
@@ -25,23 +25,14 @@ import {
   Select,
   MenuItem,
   Checkbox,
-  FormControlLabel,
-  Alert,
-  LinearProgress,
-  Divider,
 } from '@mui/material';
 import {
   Grade as GradeIcon,
   Download as DownloadIcon,
-  FilterList as FilterListIcon,
   Search as SearchIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Visibility as VisibilityIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
 import RichTextEditor from '../RichTextEditor/RichTextEditor';
-import FileUpload, { FileUploadResult } from '../File/FileUpload';
 
 export interface Submission {
   _id: string;

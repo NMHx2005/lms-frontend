@@ -109,7 +109,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   folder = 'lms/lesson-files',
   multiple = true,
   disabled = false,
-  showPreview = true,
+  showPreview: _showPreview = true,
   lessonId,
 }) => {
   const [files, setFiles] = useState<FileUploadItem[]>([]);

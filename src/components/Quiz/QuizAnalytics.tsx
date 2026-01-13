@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -72,7 +71,7 @@ interface QuizAnalyticsProps {
   isTeacher?: boolean;
 }
 
-const QuizAnalytics: React.FC<QuizAnalyticsProps> = ({ lessonId, isTeacher = false }) => {
+const QuizAnalytics: React.FC<QuizAnalyticsProps> = ({ lessonId, isTeacher: _isTeacher = false }) => {
   const [analytics, setAnalytics] = useState<QuizAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -291,7 +290,7 @@ const QuizAnalytics: React.FC<QuizAnalyticsProps> = ({ lessonId, isTeacher = fal
                   fill="#8884d8"
                   dataKey="count"
                 >
-                  {analytics.timeDistribution.map((entry, index) => (
+                  {analytics.timeDistribution.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

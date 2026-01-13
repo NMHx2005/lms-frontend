@@ -117,7 +117,7 @@ const LinkLessonViewer: React.FC<LinkLessonViewerProps> = ({
 
   const handleReportBroken = () => {
     // TODO: Implement report broken link
-    toast.info('Tính năng báo cáo link bị hỏng sẽ được thêm sau');
+    toast('Tính năng báo cáo link bị hỏng sẽ được thêm sau');
   };
 
   return (

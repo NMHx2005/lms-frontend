@@ -29,8 +29,6 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
-  CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import {
@@ -54,7 +52,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({
   mode = 'manage'
 }) => {
   const [questions, setQuestions] = useState<QuestionBankItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionBankItem | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
@@ -330,7 +328,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({
           <Pagination
             count={Math.ceil(total / (filters.limit || 20))}
             page={filters.page || 1}
-            onChange={(e, page) => setFilters({ ...filters, page })}
+            onChange={(_e, page) => setFilters({ ...filters, page })}
           />
         </Box>
       )}
@@ -428,7 +426,7 @@ const QuestionBankManager: React.FC<QuestionBankManagerProps> = ({
               freeSolo
               options={[]}
               value={editingQuestion?.tags || newQuestion.tags || []}
-              onChange={(e, newValue) => {
+              onChange={(_e, newValue) => {
                 if (editingQuestion) {
                   setEditingQuestion({ ...editingQuestion, tags: newValue });
                 } else {

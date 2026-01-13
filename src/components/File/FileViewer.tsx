@@ -56,9 +56,9 @@ const FileViewer: React.FC<FileViewerProps> = ({
   const [fullscreen, setFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [pdfPage, setPdfPage] = useState(1);
-  const [pdfTotalPages, setPdfTotalPages] = useState(0);
+  const [pdfTotalPages, _setPdfTotalPages] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, _setImages] = useState<string[]>([]);
 
   useEffect(() => {
     setLoading(true);
@@ -291,7 +291,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   const renderDocumentViewer = () => {
     // For Office documents, use Google Docs Viewer or Office Online
     const googleDocsViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
-    const officeViewer = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+    // const officeViewer = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
     
     return (
       <Box sx={{ width: '100%', height: '100%' }}>

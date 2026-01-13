@@ -13,14 +13,10 @@ import {
   FormControlLabel,
   Button,
   Chip,
-  IconButton,
   Paper,
-  Divider,
-  Alert,
   InputAdornment,
 } from '@mui/material';
 import {
-  Delete as DeleteIcon,
   Add as AddIcon,
   AttachFile as AttachFileIcon,
   Link as LinkIcon,
@@ -374,9 +370,9 @@ const AssignmentEditor: React.FC<AssignmentEditorProps> = ({
           <FileUpload
             folder={lessonId ? `lms/assignments/${lessonId}/attachments` : 'lms/assignments/attachments'}
             multiple={true}
-            onUploadComplete={(result) => {
-              if (result && result.secureUrl) {
-                handleAttachmentUpload(result);
+            onUploadComplete={(files) => {
+              if (files && files.length > 0 && files[0]?.secureUrl) {
+                handleAttachmentUpload(files[0]);
               }
             }}
           />

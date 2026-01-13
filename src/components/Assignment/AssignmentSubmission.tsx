@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -8,33 +8,22 @@ import {
   TextField,
   Alert,
   Chip,
-  LinearProgress,
-  Grid,
-  Card,
-  CardContent,
-  IconButton,
   Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Checkbox,
-  FormControlLabel,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   Send as SendIcon,
-  Delete as DeleteIcon,
-  AttachFile as AttachFileIcon,
   AccessTime as AccessTimeIcon,
   History as HistoryIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
 import RichTextEditor from '../RichTextEditor/RichTextEditor';
 import FileUpload, { FileUploadResult } from '../File/FileUpload';
-import { sharedUploadService } from '@/services/shared/upload.service';
 
 export interface AssignmentSubmissionProps {
   assignment: {
@@ -82,8 +71,8 @@ const AssignmentSubmission: React.FC<AssignmentSubmissionProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [attemptCount, setAttemptCount] = useState(existingSubmission?.attemptNumber || 0);
-  const [submissionHistory, setSubmissionHistory] = useState<any[]>([]);
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [_submissionHistory, _setSubmissionHistory] = useState<any[]>([]);
+  const autoSaveIntervalRef = useRef<number | null>(null);
 
   // Calculate time remaining
   useEffect(() => {
@@ -126,7 +115,9 @@ const AssignmentSubmission: React.FC<AssignmentSubmissionProps> = ({
     return `${seconds} giây`;
   };
 
-  const handleFileUpload = async (result: FileUploadResult) => {
+  const handleFileUpload = async (files: FileUploadResult[]) => {
+    if (!files || files.length === 0) return;
+    const result = files[0];
     if (result && result.secureUrl) {
       setSubmissionData(prev => ({ ...prev, fileUrl: result.secureUrl! }));
       toast.success('Tải file thành công!');

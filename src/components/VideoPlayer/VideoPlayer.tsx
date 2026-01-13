@@ -31,9 +31,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     // Video.js related refs (currently disabled - using HTML5 video instead)
+    // These are kept for potential future use when Video.js is re-enabled
+    // @ts-ignore - Reserved for future Video.js implementation
     const _playerRef = useRef<any>(null);
+    // @ts-ignore - Reserved for future Video.js implementation
     const _containerRef = useRef<HTMLDivElement>(null);
+    // @ts-ignore - Reserved for future Video.js implementation
     const _progressSaveIntervalRef = useRef<number | null>(null);
+    // @ts-ignore - Reserved for future Video.js implementation
     const _analyticsIntervalRef = useRef<number | null>(null);
 
     // Video.js related states (currently disabled)
@@ -54,10 +59,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const [previousTime, setPreviousTime] = useState(0);
 
     // Get video MIME type from URL (currently disabled - Video.js is disabled)
-    const _getVideoMimeType = (url: string): string => {
-        if (!url) return 'video/mp4';
+    // Reserved for future Video.js implementation
+    // @ts-ignore - Reserved for future use
+    const _getVideoMimeType = (_url: string): string => {
+        if (!_url) return 'video/mp4';
 
-        const extension = url.toLowerCase().split('.').pop()?.split('?')[0];
+        const extension = _url.toLowerCase().split('.').pop()?.split('?')[0];
 
         switch (extension) {
             case 'mp4':
@@ -74,6 +81,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 return 'video/mp4'; // Default to mp4
         }
     };
+
+    // Mark Video.js variables as used (they're used in commented code that may be re-enabled)
+    void _playerRef;
+    void _containerRef;
+    void _progressSaveIntervalRef;
+    void _analyticsIntervalRef;
+    void _getVideoMimeType;
 
     // Record analytics event
     const recordAnalyticsEvent = useCallback(async (action: 'play' | 'pause' | 'seek' | 'complete' | 'exit', timeSpent?: number) => {
@@ -766,7 +780,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }}
                 onError={(e) => {
                     console.error('Video error:', e);
-                    setVideoError('Không thể phát video');
+                    _setVideoError('Không thể phát video');
                 }}
                 style={{
                     width: '100%',
