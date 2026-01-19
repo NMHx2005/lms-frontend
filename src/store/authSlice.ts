@@ -33,21 +33,27 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: { email: string; password: string; name: string; phone?: string }) => {
-    const response = await sharedAuthService.register(userData as any);
-    return response;
+  async (userData: { email: string; password: string; name: string; phone?: string }, { rejectWithValue }) => {
+    try {
+      const response = await sharedAuthService.register(userData as any);
+      return response;
+    } catch (error: any) {
+      // Trả về lỗi chi tiết từ backend
+      const errorData = error?.response?.data?.error || error?.response?.data || error;
+      return rejectWithValue(errorData);
+    }
   }
 );
 
 export const getProfile = createAsyncThunk('auth/getProfile', async (_, { getState }) => {
   const state = getState() as any;
   const accessToken = state.auth.token || localStorage.getItem('accessToken');
-  
+
   // Chỉ gọi API khi có accessToken
   if (!accessToken) {
     return null;
   }
-  
+
   const response = await sharedAuthService.getProfile();
   return response;
 });
@@ -129,7 +135,9 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Registration failed';
+        // Lỗi từ rejectWithValue nằm trong action.payload
+        const errorPayload = action.payload as any;
+        state.error = errorPayload?.message || action.error.message || 'Registration failed';
       })
       // Get Profile
       .addCase(getProfile.fulfilled, (state, action) => {
@@ -137,7 +145,7 @@ const authSlice = createSlice({
         if (!action.payload) {
           return; // Không làm gì cả, giữ nguyên state
         }
-        
+
         // Backend returns { success, data } for /auth/me
         const data = (action.payload as any)?.data ?? action.payload;
         const userData = {

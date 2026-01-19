@@ -84,8 +84,24 @@ const Register: React.FC = () => {
         })
       ).unwrap();
       navigate('/');
-    } catch (err) {
-      // Lỗi đã được interceptor toast; giữ UI responsive
+    } catch (err: any) {
+      // Hiển thị lỗi chi tiết từ backend
+      if (err?.details && Array.isArray(err.details)) {
+        // Lỗi validation với chi tiết từng field
+        err.details.forEach((detail: any) => {
+          const fieldName = detail.field === 'password' ? 'Mật khẩu' :
+            detail.field === 'email' ? 'Email' :
+              detail.field === 'phone' ? 'Số điện thoại' :
+                detail.field === 'name' ? 'Họ tên' : detail.field;
+          toast.error(`${fieldName}: ${detail.message}`);
+        });
+      } else if (err?.message) {
+        toast.error(err.message);
+      } else if (typeof err === 'string') {
+        toast.error(err);
+      } else {
+        toast.error('Đăng ký thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }
