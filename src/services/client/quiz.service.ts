@@ -2,8 +2,16 @@ import api, { ApiResponse } from '../api';
 
 export interface QuizAttempt {
   _id?: string;
-  lessonId: string;
-  courseId: string;
+  lessonId: string | {
+    _id: string;
+    title: string;
+    lessonNumber?: number;
+  };
+  courseId: string | {
+    _id: string;
+    title: string;
+    thumbnail?: string;
+  };
   studentId?: string;
   attemptNumber: number;
   answers: Array<{
@@ -21,16 +29,6 @@ export interface QuizAttempt {
   timeSpent: number;
   startedAt?: Date;
   submittedAt: Date;
-  lessonId?: {
-    _id: string;
-    title: string;
-    lessonNumber?: number;
-  };
-  courseId?: {
-    _id: string;
-    title: string;
-    thumbnail?: string;
-  };
 }
 
 export interface QuizAttemptsSummary {

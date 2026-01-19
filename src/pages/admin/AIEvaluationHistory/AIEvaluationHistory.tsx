@@ -27,7 +27,6 @@ import {
 } from '@mui/material';
 import {
   SmartToy as RobotIcon,
-  History as HistoryIcon,
   Visibility as EyeIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -157,7 +156,7 @@ const AIEvaluationHistory: React.FC = () => {
             <Select
               value={statusFilter}
               label="Trạng thái"
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(_e) => setStatusFilter(_e.target.value)}
             >
               <MenuItem value="">Tất cả</MenuItem>
               <MenuItem value="processing">Đang xử lý</MenuItem>
@@ -172,7 +171,7 @@ const AIEvaluationHistory: React.FC = () => {
             <Select
               value={decisionFilter}
               label="Quyết định"
-              onChange={(e) => setDecisionFilter(e.target.value)}
+              onChange={(_e) => setDecisionFilter(_e.target.value)}
             >
               <MenuItem value="">Tất cả</MenuItem>
               <MenuItem value="approved">Đã duyệt</MenuItem>
@@ -287,10 +286,10 @@ const AIEvaluationHistory: React.FC = () => {
           component="div"
           count={total}
           page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
+          onPageChange={(_e, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
+          onRowsPerPageChange={(_e) => {
+            setRowsPerPage(parseInt(_e.target.value, 10));
             setPage(0);
           }}
           labelRowsPerPage="Số dòng mỗi trang:"

@@ -245,7 +245,7 @@ const AIManagement: React.FC = () => {
 
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+        <Tabs value={tabValue} onChange={(_e, newValue) => setTabValue(newValue)}>
           <Tab icon={<SettingsIcon />} label="Cấu hình chung" />
           <Tab icon={<ThunderboltIcon />} label="Auto-Approval" />
         </Tabs>
@@ -396,7 +396,7 @@ const AIManagement: React.FC = () => {
               </Typography>
               <Slider
                 value={settings.autoApproval.threshold}
-                onChange={(e, value) =>
+                onChange={(_e, value) =>
                   setSettings({
                     ...settings,
                     autoApproval: { ...settings.autoApproval, threshold: value as number }

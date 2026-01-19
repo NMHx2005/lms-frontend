@@ -116,10 +116,10 @@ const QuizHistoryWidget: React.FC = () => {
                   </Avatar>
                   <Box flex={1} minWidth={0}>
                     <Typography variant="subtitle2" fontWeight={600} noWrap>
-                      {attempt.lessonId?.title || 'Quiz'}
+                      {typeof attempt.lessonId === 'object' ? attempt.lessonId.title : 'Quiz'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" noWrap>
-                      {attempt.courseId?.title || 'Khóa học'}
+                      {typeof attempt.courseId === 'object' ? attempt.courseId.title : 'Khóa học'}
                     </Typography>
                     <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} flexWrap="wrap">
                       <Chip

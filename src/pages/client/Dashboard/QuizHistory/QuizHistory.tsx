@@ -15,8 +15,6 @@ import {
   TablePagination,
   Chip,
   Stack,
-  Button,
-  TextField,
   MenuItem,
   Select,
   FormControl,
@@ -278,9 +276,9 @@ const QuizHistory: React.FC = () => {
                   <TableRow key={attempt._id} hover>
                     <TableCell>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        {attempt.lessonId?.title || 'Quiz'}
+                        {typeof attempt.lessonId === 'object' ? attempt.lessonId.title : 'Quiz'}
                       </Typography>
-                      {attempt.lessonId?.lessonNumber && (
+                      {typeof attempt.lessonId === 'object' && attempt.lessonId.lessonNumber && (
                         <Typography variant="caption" color="text.secondary">
                           Bài {attempt.lessonId.lessonNumber}
                         </Typography>
@@ -288,7 +286,7 @@ const QuizHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {attempt.courseId?.title || 'Khóa học'}
+                        {typeof attempt.courseId === 'object' ? attempt.courseId.title : 'Khóa học'}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
