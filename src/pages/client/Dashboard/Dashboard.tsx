@@ -26,6 +26,7 @@ import StarIcon from '@mui/icons-material/Star';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import QuizHistoryWidget from '@/components/Dashboard/QuizHistoryWidget';
 
 // Dashboard-specific interfaces
 interface DashboardCourse {
@@ -388,6 +389,15 @@ const Dashboard: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3}>
+        {/* Quiz History Widget */}
+        <Grid item xs={12} md={6}>
+          <QuizHistoryWidget />
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          {/* Placeholder for future widgets */}
+        </Grid>
+
         <Grid item xs={12}>
           {/* Recent Courses */}
           <Box sx={{ mb: 3 }}>

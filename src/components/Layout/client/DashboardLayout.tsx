@@ -102,6 +102,12 @@ const DashboardLayout: React.FC = () => {
       description: 'Theo dõi tiến độ học tập'
     },
     {
+      path: '/dashboard/quiz-history',
+      icon: '📝',
+      label: 'Lịch sử Quiz',
+      description: 'Xem lại các bài quiz đã làm'
+    },
+    {
       path: '/dashboard/bills',
       icon: '💰',
       label: 'Hóa đơn & Thanh toán',

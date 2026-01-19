@@ -40,7 +40,9 @@ import {
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   Notifications as NotificationsIcon,
-  Inventory as PackageIcon
+  Inventory as PackageIcon,
+  SmartToy as AIIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -76,6 +78,8 @@ const AdminLayout: React.FC = () => {
     { id: 'category-management', label: 'Quản lý danh mục', icon: <CategoryIcon />, path: '/admin/category-management' },
     { id: 'support-center', label: 'Support Center', icon: <SupportIcon />, path: '/admin/support-center' },
     { id: 'announcements', label: 'Thông báo', icon: <AnnouncementIcon />, path: '/admin/announcements' },
+    { id: 'ai-management', label: 'Quản lý AI', icon: <AIIcon />, path: '/admin/ai-management' },
+    { id: 'ai-evaluation-history', label: 'Lịch sử đánh giá AI', icon: <HistoryIcon />, path: '/admin/ai-evaluation-history' },
     { id: 'performance', label: 'Giám sát hiệu suất', icon: <PerformanceIcon />, path: '/admin/performance' },
     { id: 'backup', label: 'Backup & Restore', icon: <BackupIcon />, path: '/admin/backup' },
   ];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -94,7 +94,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   onExit
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Array<any>>(new Array(questions.length).fill(null));
+  const [answers, setAnswers] = useState<Array<any>>([]);
   const [reviewFlags, setReviewFlags] = useState<Set<number>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState<number | null>(settings.timeLimit || null);
   const [questionTimeRemaining, setQuestionTimeRemaining] = useState<number | null>(settings.timeLimitPerQuestion || null);
@@ -106,20 +106,44 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   const [_loadingAttempts, setLoadingAttempts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Shuffle questions if needed
-  const [shuffledQuestions, _setShuffledQuestions] = useState<QuizQuestion[]>(() => {
-    let shuffled = [...questions];
-    if (settings.randomizeQuestions) {
-      shuffled = shuffled.sort(() => Math.random() - 0.5);
+  // Shuffle questions using useMemo so it recalculates when settings change
+  const shuffledQuestions = useMemo(() => {
+    console.log('🔀 Shuffling questions:', {
+      randomizeQuestions: settings.randomizeQuestions,
+      randomizeAnswers: settings.randomizeAnswers,
+      questionsCount: questions.length,
+      settingsKeys: Object.keys(settings)
+    });
+
+    if (!questions || questions.length === 0) {
+      return [];
     }
-    // Shuffle answers if needed
+
+    let shuffled = [...questions];
+    
+    // Shuffle questions order if enabled
+    if (settings.randomizeQuestions) {
+      // Use Fisher-Yates shuffle for better randomization
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+    }
+    
+    // Shuffle answers if needed (applies to each question)
     if (settings.randomizeAnswers) {
       shuffled = shuffled.map(q => {
         if (q.type === 'multiple-choice' || q.type === 'true-false' || q.type === 'multiple-select') {
-          const answers = [...q.answers];
+          const answers = [...(q.answers || [])];
           const correctAnswer = q.correctAnswer;
-          // Shuffle answers array
-          const shuffledAnswers = answers.sort(() => Math.random() - 0.5);
+          
+          // Shuffle answers using Fisher-Yates
+          const shuffledAnswers = [...answers];
+          for (let i = shuffledAnswers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledAnswers[i], shuffledAnswers[j]] = [shuffledAnswers[j], shuffledAnswers[i]];
+          }
+          
           // Find new index of correct answer
           let newCorrectAnswer: any = correctAnswer;
           if (typeof correctAnswer === 'number') {
@@ -131,6 +155,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
               return shuffledAnswers.indexOf(originalAnswer);
             });
           }
+          
           return {
             ...q,
             answers: shuffledAnswers,
@@ -140,8 +165,22 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
         return q;
       });
     }
+    
+    console.log('✅ Shuffled questions result:', {
+      originalCount: questions.length,
+      shuffledCount: shuffled.length,
+      firstQuestion: shuffled[0]?.question?.substring(0, 50)
+    });
+    
     return shuffled;
-  });
+  }, [questions, settings.randomizeQuestions, settings.randomizeAnswers]);
+
+  // Reset answers array when shuffledQuestions change
+  useEffect(() => {
+    setAnswers(new Array(shuffledQuestions.length).fill(null));
+    setCurrentQuestionIndex(0);
+    setReviewFlags(new Set());
+  }, [shuffledQuestions.length]);
 
   // Load attempts on mount
   useEffect(() => {
@@ -241,7 +280,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
 
   const handleSubmit = async () => {
     const calculatedResults = calculateResults();
-    
+
     // Check attempts limit
     if (attemptsSummary && settings.maxAttempts) {
       if (attemptsSummary.attempts.length >= settings.maxAttempts) {
@@ -273,7 +312,8 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
           correct: calculatedResults.correct,
           incorrect: calculatedResults.incorrect,
           unanswered: calculatedResults.unanswered,
-          timeSpent: calculatedResults.timeSpent
+          timeSpent: calculatedResults.timeSpent,
+          startedAt: new Date(startTime)
         });
         // Reload attempts
         await loadAttempts();
@@ -488,7 +528,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
     const bestScore = attemptsSummary.bestScore;
     const remaining = attemptsSummary.remainingAttempts;
     const canRetake = attemptsSummary.canRetake;
-    
+
     if (!canRetake && remaining === 0) {
       return (
         <Box sx={{ p: 3 }}>
@@ -735,9 +775,9 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                         {currentQuestion.answers.map((answer, idx) => {
                           const currentOrder = answers[currentQuestionIndex] || currentQuestion.answers.map((_, i) => i);
                           return (
-                          <MenuItem key={idx} value={idx} disabled={currentOrder.includes(idx) && currentOrder.indexOf(idx) !== orderIndex}>
-                            {answer}
-                          </MenuItem>
+                            <MenuItem key={idx} value={idx} disabled={currentOrder.includes(idx) && currentOrder.indexOf(idx) !== orderIndex}>
+                              {answer}
+                            </MenuItem>
                           );
                         })}
                       </Select>

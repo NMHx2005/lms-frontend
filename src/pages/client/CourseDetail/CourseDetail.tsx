@@ -120,7 +120,7 @@ const CourseDetail = () => {
       setIsCheckingWishlist(false);
       return;
     }
-    
+
     try {
       setIsCheckingWishlist(true);
       const response = await wishlistService.isInWishlist(id);
@@ -128,7 +128,7 @@ const CourseDetail = () => {
         const wasInWishlist = isInWishlist; // Preserve current state
         setIsInWishlist(response.data.isInWishlist);
         setWishlistId(response.data.wishlistId || null);
-        
+
         // Log for debugging
         if (wasInWishlist !== response.data.isInWishlist) {
           console.log('Wishlist status changed:', {
@@ -158,7 +158,7 @@ const CourseDetail = () => {
   // Handle wishlist toggle
   const handleWishlistToggle = async () => {
     if (!id) return;
-    
+
     // Check authentication first
     if (!isAuthenticated) {
       toast.error('Vui lòng đăng nhập để sử dụng tính năng yêu thích');
@@ -176,7 +176,7 @@ const CourseDetail = () => {
           setIsInWishlist(false);
           setWishlistId(null);
           toast.success('Đã xóa khỏi danh sách yêu thích');
-          
+
           // Verify wishlist status after removal
           setTimeout(() => {
             checkWishlistStatus();
@@ -195,7 +195,7 @@ const CourseDetail = () => {
           const wishlistItemId = (response.data as any)?._id || (response.data as any)?.data?._id || null;
           setWishlistId(wishlistItemId ? String(wishlistItemId) : null);
           toast.success('Đã thêm vào danh sách yêu thích');
-          
+
           // Verify wishlist status after a short delay to ensure it's persisted
           setTimeout(() => {
             checkWishlistStatus();
@@ -206,14 +206,14 @@ const CourseDetail = () => {
       }
     } catch (error: any) {
       console.error('Error toggling wishlist:', error);
-      
+
       // Handle 401 - Unauthorized
       if (error?.response?.status === 401) {
         toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
         navigate('/login', { state: { from: `/courses/${id}` } });
         return;
       }
-      
+
       toast.error(error?.response?.data?.message || 'Có lỗi xảy ra');
     } finally {
       setIsTogglingWishlist(false);
@@ -449,6 +449,11 @@ const CourseDetail = () => {
 
   const handleGoToLearning = () => {
     navigate(`/learning/${course!._id}`);
+  };
+
+  // Handle try learning (preview mode)
+  const handleTryLearning = () => {
+    navigate(`/learning/${course!._id}?preview=true`);
   };
 
   const formatPrice = (price: number) => {
@@ -914,8 +919,8 @@ const CourseDetail = () => {
                             {isCheckingWishlist || isTogglingWishlist ? (
                               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spinning">
                                 <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="32">
-                                  <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/>
-                                  <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite"/>
+                                  <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite" />
+                                  <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite" />
                                 </circle>
                               </svg>
                             ) : (
@@ -936,13 +941,26 @@ const CourseDetail = () => {
                     </>
                   ) : (
                     <>
-                      <button
-                        className="udemy-btn-enroll"
-                        onClick={handleEnroll}
-                        disabled={enrolling}
-                      >
-                        {enrolling ? 'Đang xử lý...' : 'Đăng ký ngay'}
-                      </button>
+                      <div className="udemy-card__cta-buttons">
+                        <button
+                          className="udemy-btn-enroll"
+                          onClick={handleEnroll}
+                          disabled={enrolling}
+                        >
+                          {enrolling ? 'Đang xử lý...' : 'Đăng ký ngay'}
+                        </button>
+                        <button
+                          className="udemy-btn-try"
+                          onClick={handleTryLearning}
+                          title="Xem trước một số bài học miễn phí"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polygon points="10,8 16,12 10,16"></polygon>
+                          </svg>
+                          Học thử
+                        </button>
+                      </div>
                       {isAuthenticated ? (
                         <button
                           className={`udemy-btn-wishlist ${isInWishlist ? 'udemy-btn-wishlist--active' : ''}`}
@@ -953,8 +971,8 @@ const CourseDetail = () => {
                           {isCheckingWishlist || isTogglingWishlist ? (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spinning">
                               <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="32">
-                                <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/>
-                                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite"/>
+                                <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite" />
+                                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite" />
                               </circle>
                             </svg>
                           ) : (

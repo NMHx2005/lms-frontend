@@ -41,9 +41,13 @@ export interface ApiResponse<T> {
 
 /**
  * Get all sections for a course (requires enrollment)
+ * @param courseId - Course ID
+ * @param previewMode - If true, returns only preview lessons (no enrollment required)
  */
-export const getSectionsByCourse = async (courseId: string): Promise<ApiResponse<Section[]>> => {
-    const response = await api.get(`/client/sections/course/${courseId}`);
+export const getSectionsByCourse = async (courseId: string, previewMode: boolean = false): Promise<ApiResponse<Section[]>> => {
+    const response = await api.get(`/client/sections/course/${courseId}`, {
+        params: previewMode ? { preview: 'true' } : {}
+    });
     return response.data;
 };
 

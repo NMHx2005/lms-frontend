@@ -91,6 +91,7 @@ interface Lesson {
   estimatedTime?: number; // Backend field name
   order: number;
   isPublished: boolean;
+  isPreview?: boolean; // Cho phép học thử (xem trước khi đăng ký)
   content?: string;
   videoUrl?: string;
   fileUrl?: string;
@@ -178,6 +179,7 @@ const CourseStructure: React.FC = () => {
     fileSize?: number;
     fileType?: string;
     linkUrl: string;
+    isPreview?: boolean; // Cho phép học thử
     quizQuestions: Array<{
       question: string;
       answers: string[];
@@ -194,6 +196,7 @@ const CourseStructure: React.FC = () => {
     fileSize: undefined,
     fileType: undefined,
     linkUrl: '',
+    isPreview: false,
     quizQuestions: [{
       question: '',
       answers: ['', '', '', ''],
@@ -359,7 +362,8 @@ const CourseStructure: React.FC = () => {
         // If uploading, send default duration 1 min, will be updated after upload. Else use user input.
         ...(newLesson.type === 'video' && { duration: pendingVideoFile ? 1 : newLesson.duration }),
         order: section.lessons.length + 1,
-        isPublished: true
+        isPublished: true,
+        isPreview: newLesson.isPreview || false
       };
 
       // Add quiz questions if type is quiz
@@ -387,6 +391,7 @@ const CourseStructure: React.FC = () => {
           fileSize: undefined,
           fileType: undefined,
           linkUrl: '',
+          isPreview: false,
           quizQuestions: [{
             question: '',
             answers: ['', '', '', ''],
@@ -461,12 +466,14 @@ const CourseStructure: React.FC = () => {
         videoUrl: lesson.videoUrl,
         fileUrl: lesson.fileUrl,
         linkUrl: lesson.linkUrl,
-        isPublished: true
+        isPublished: true,
+        isPreview: lesson.isPreview || false // Cho phép học thử
       };
 
-      // Add quiz questions if type is quiz
+      // Add quiz questions and settings if type is quiz
       if (lesson.type === 'quiz') {
         updates.quizQuestions = lesson.quizQuestions;
+        updates.quizSettings = lesson.quizSettings;
       }
 
       const response = await lessonService.updateLesson(lessonId, updates);
@@ -1313,6 +1320,22 @@ const CourseStructure: React.FC = () => {
                         </Box>
                       )}
 
+                      {/* Preview/Free Lesson Option */}
+                      <Box sx={{ mb: 2 }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={newLesson.isPreview || false}
+                              onChange={(e) => setNewLesson(prev => ({ ...prev, isPreview: e.target.checked }))}
+                            />
+                          }
+                          label="Cho phép học thử (Preview) - Người chưa đăng ký có thể xem bài học này"
+                        />
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4, mt: 0.5 }}>
+                          Khi bật, bài học này sẽ hiển thị cho người chưa đăng ký khóa học
+                        </Typography>
+                      </Box>
+
                       <Stack direction="row" spacing={2} justifyContent="flex-end">
                         <Button
                           variant="outlined"
@@ -1534,6 +1557,29 @@ const CourseStructure: React.FC = () => {
                                       />
                                     </Grid>
                                   )}
+                                  {/* Preview checkbox - cho phép xem bài này khi chưa đăng ký */}
+                                  <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <input
+                                        type="checkbox"
+                                        id={`preview-${lesson._id}`}
+                                        checked={lesson.isPreview || false}
+                                        onChange={(e) => updateLesson(section._id, lesson._id, { isPreview: e.target.checked })}
+                                        style={{ width: 18, height: 18, cursor: 'pointer' }}
+                                      />
+                                      <label
+                                        htmlFor={`preview-${lesson._id}`}
+                                        style={{
+                                          fontSize: '0.875rem',
+                                          fontWeight: 500,
+                                          color: lesson.isPreview ? '#a435f0' : '#6a6f73',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        👁️ Học thử
+                                      </label>
+                                    </Box>
+                                  </Grid>
                                 </Grid>
 
                                 {lesson.type === 'text' && (

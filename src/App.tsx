@@ -50,6 +50,8 @@ const Announcements = lazy(() => import('./pages/admin/Announcements'));
 const PerformanceMonitoring = lazy(() => import('./pages/admin/PerformanceMonitoring'));
 const BackupRestore = lazy(() => import('./pages/admin/BackupRestore'));
 const PackageManagement = lazy(() => import('./pages/admin/PackageManagement/PackageManagement'));
+const AIManagement = lazy(() => import('./pages/admin/AIManagement'));
+const AIEvaluationHistory = lazy(() => import('./pages/admin/AIEvaluationHistory'));
 const Courses = lazy(() => import('./pages/client/Courses/Coures.tsx'));
 const ForgotPassword = lazy(() => import('./pages/client/ForgotPassword/ForgotPassword.tsx'));
 const Checkout = lazy(() => import('./pages/client/Checkout/Checkout.tsx'));
@@ -60,6 +62,7 @@ const Bills = lazy(() => import('./pages/client/Dashboard/Bills/Bills'));
 const Refunds = lazy(() => import('./pages/client/Dashboard/Refunds/Refunds'));
 const Ratings = lazy(() => import('./pages/client/Dashboard/Ratings/Ratings'));
 const ProfileDashboard = lazy(() => import('./pages/client/Dashboard/Profile/Profile'));
+const QuizHistory = lazy(() => import('./pages/client/Dashboard/QuizHistory/QuizHistory'));
 
 // New Dashboard Pages
 const Wishlist = lazy(() => import('./pages/client/Wishlist/Wishlist.tsx'));
@@ -175,6 +178,7 @@ function AppContent() {
                     <Route path="bills" element={<Bills />} />
                     <Route path="refunds" element={<Refunds />} />
                     <Route path="ratings" element={<Ratings />} />
+                    <Route path="quiz-history" element={<QuizHistory />} />
                     <Route path="profile" element={<ProfileDashboard />} />
                   </Route>
 
@@ -264,6 +268,8 @@ function AppContent() {
                     <Route path="announcements" element={<Announcements />} />
                     <Route path="performance" element={<PerformanceMonitoring />} />
                     <Route path="backup" element={<BackupRestore />} />
+                    <Route path="ai-management" element={<AIManagement />} />
+                    <Route path="ai-evaluation-history" element={<AIEvaluationHistory />} />
                   </Route>
                   <Route path='*' element={<NotFound />} />
                 </Routes>

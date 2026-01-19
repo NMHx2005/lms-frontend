@@ -878,6 +878,33 @@
   flex: 1;
 }
 
+/* Try Learning Button */
+.udemy-btn-try {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: white;
+  color: var(--udemy-primary);
+  border: 2px solid var(--udemy-primary);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.udemy-btn-try:hover {
+  background: var(--udemy-primary);
+  color: white;
+}
+
+.udemy-btn-try svg {
+  flex-shrink: 0;
+}
+
 /* Guarantee */
 .udemy-card__guarantee {
   padding: 20px;

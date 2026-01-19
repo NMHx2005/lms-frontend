@@ -29,7 +29,9 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import courseModerationService from '../../../services/admin/courseModerationService';
+import api from '../../../services/api';
 import type {
   CourseModeration,
   CourseModerationFilters,
@@ -176,6 +178,37 @@ const CourseModeration: React.FC = () => {
   const handleCloseDetailModal = () => {
     setShowDetailModal(false);
     setCourseDetail(null);
+  };
+
+  // Trigger AI evaluation for a course
+  const handleTriggerAI = async (course: CourseModeration) => {
+    if (!confirm(`Bạn có muốn đánh giá khóa học "${course.title}" bằng AI không?`)) {
+      return;
+    }
+
+    try {
+      showSnackbar(`Đang gửi khóa học "${course.title}" để AI đánh giá...`, 'info');
+      
+      const response = await api.post(`/admin/ai-management/trigger-evaluation/${course._id}`);
+      
+      if (response.data.success) {
+        showSnackbar(
+          `✅ Đã gửi AI đánh giá! Kết quả sẽ có sau vài giây. Reload trang để xem.`,
+          'success'
+        );
+        
+        // Auto-reload sau 5s
+        setTimeout(() => {
+          loadCourses(false);
+        }, 5000);
+      } else {
+        showSnackbar('AI đánh giá thất bại', 'error');
+      }
+    } catch (error: any) {
+      console.error('Error triggering AI evaluation:', error);
+      const errorMsg = error.response?.data?.error || error.message;
+      showSnackbar(`Lỗi: ${errorMsg}`, 'error');
+    }
   };
 
   const handleSubmitReview = async (action: 'approve' | 'reject') => {
@@ -526,17 +559,26 @@ const CourseModeration: React.FC = () => {
                         <Typography fontWeight={700}>{course.createdAt ? formatDate(course.createdAt) : 'N/A'}</Typography>
                       </Grid>
                     </Grid>
-                    <Stack direction="row" spacing={1.5} mt={2}>
+                    <Stack direction="row" spacing={1.5} mt={2} flexWrap="wrap">
                       {getCourseStatus(course) === 'submitted' && (
                         <>
-                          <Button variant="contained" color="success" onClick={() => handleReviewCourse(course)}>Duyệt</Button>
-                          <Button variant="outlined" color="error" onClick={() => handleReviewCourse(course)}>Từ chối</Button>
+                          <Button 
+                            variant="outlined" 
+                            color="info" 
+                            startIcon={<SmartToyIcon />}
+                            onClick={() => handleTriggerAI(course)}
+                            size="small"
+                          >
+                            AI Đánh giá
+                          </Button>
+                          <Button variant="contained" color="success" size="small" onClick={() => handleReviewCourse(course)}>Duyệt</Button>
+                          <Button variant="outlined" color="error" size="small" onClick={() => handleReviewCourse(course)}>Từ chối</Button>
                         </>
                       )}
                       {getCourseStatus(course) === 'approved' && (
-                        <Button variant="outlined" color="warning" onClick={() => handleReviewCourse(course)}>Đánh giá lại</Button>
+                        <Button variant="outlined" color="warning" size="small" onClick={() => handleReviewCourse(course)}>Đánh giá lại</Button>
                       )}
-                      <Button variant="text" onClick={() => handleViewDetail(course)}>Xem chi tiết</Button>
+                      <Button variant="text" size="small" onClick={() => handleViewDetail(course)}>Xem chi tiết</Button>
                     </Stack>
                   </Box>
                 </Stack>

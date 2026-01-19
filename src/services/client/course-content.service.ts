@@ -108,16 +108,31 @@ export const courseContentService = {
      * @param courseId - Course ID
      * @param silentFail - If true, will not show error toast (useful for checking enrollment status)
      */
-    async getCourseContent(courseId: string, silentFail: boolean = false): Promise<{
+    async getCourseContent(courseId: string, silentFail: boolean = false, previewMode: boolean = false): Promise<{
         success: boolean;
         data?: CourseContent;
         error?: string;
     }> {
         try {
+            console.log('🚀 getCourseContent called:', {
+                courseId,
+                previewMode,
+                silentFail
+            });
+            
             // Get sections for the course
             const sectionsResponse = silentFail
-                ? await api.get(`/client/sections/course/${courseId}`, { suppressErrorToast: true } as any).then(res => res.data).catch(() => ({ success: false }))
-                : await getSectionsByCourse(courseId);
+                ? await api.get(`/client/sections/course/${courseId}`, { 
+                    params: previewMode ? { preview: 'true' } : {},
+                    suppressErrorToast: true 
+                  } as any).then(res => res.data).catch(() => ({ success: false }))
+                : await getSectionsByCourse(courseId, previewMode);
+            
+            console.log('📦 Sections response:', {
+                success: sectionsResponse.success,
+                sectionsCount: sectionsResponse.data?.length || 0,
+                previewMode
+            });
 
             if (!sectionsResponse.success || !sectionsResponse.data) {
                 return {
@@ -129,44 +144,155 @@ export const courseContentService = {
             const sections = sectionsResponse.data;
             const sectionsWithLessons: SectionWithLessons[] = [];
 
+            console.log('🔍 getCourseContent debug:', {
+                previewMode,
+                sectionsCount: sections.length,
+                firstSection: sections[0] ? {
+                    id: sections[0]._id,
+                    title: sections[0].title,
+                    hasLessons: !!sections[0].lessons,
+                    lessonsCount: sections[0].lessons?.length || 0,
+                    lessons: sections[0].lessons?.map((l: any) => ({
+                        id: l._id,
+                        title: l.title,
+                        isPreview: l.isPreview
+                    })) || []
+                } : null
+            });
+
             // Get lessons for each section
+            // In preview mode, use lessons already populated in sections (don't call getLessonsBySection which requires enrollment)
+            // In normal mode, call getLessonsBySection to get full lesson details
             for (const section of sections) {
-                const lessonsResponse = await getLessonsBySection(section._id);
+                let lessons: LessonContent[] = [];
 
-                if (lessonsResponse.success && lessonsResponse.data) {
-                    const lessons: LessonContent[] = lessonsResponse.data.map((lesson: any) => ({
-                        _id: lesson._id,
-                        title: lesson.title,
-                        description: lesson.description,
-                        type: lesson.type,
-                        content: lesson.content,
-                        videoUrl: lesson.videoUrl,
-                        fileUrl: lesson.fileUrl,
-                        linkUrl: lesson.linkUrl,
-                        externalLink: lesson.externalLink,
-                        duration: lesson.duration,
-                        estimatedTime: lesson.estimatedTime,
-                        order: lesson.order,
-                        isPublished: lesson.isPublished,
-                        isFree: lesson.isFree,
-                        isRequired: lesson.isRequired,
-                        isCompleted: lesson.progress?.isCompleted || false, // Get from API progress data
-                        isLocked: false, // Will be updated based on course structure
-                        attachments: lesson.attachments,
-                        quizQuestions: lesson.quizQuestions,
-                        assignmentDetails: lesson.assignmentDetails
-                    }));
+                if (previewMode) {
+                    // In preview mode, use lessons from populated sections
+                    // These lessons have limited fields (no content, videoUrl for security)
+                    console.log('👁️ Preview mode - section:', {
+                        sectionId: section._id,
+                        sectionTitle: section.title,
+                        hasLessons: !!section.lessons,
+                        lessonsCount: section.lessons?.length || 0,
+                        allLessons: section.lessons?.map((l: any) => ({
+                            id: l._id,
+                            title: l.title,
+                            isPreview: l.isPreview
+                        })) || []
+                    });
+                    
+                    // IMPORTANT: Filter to only include preview lessons in preview mode
+                    const previewLessons = (section.lessons || []).filter((lesson: any) => lesson.isPreview === true);
+                    
+                    console.log('🔒 Filtered preview lessons:', {
+                        beforeFilter: section.lessons?.length || 0,
+                        afterFilter: previewLessons.length,
+                        previewLessons: previewLessons.map((l: any) => ({
+                            id: l._id,
+                            title: l.title,
+                            isPreview: l.isPreview
+                        }))
+                    });
+                    
+                    if (previewLessons.length > 0) {
+                        lessons = previewLessons.map((lesson: any) => {
+                            // In preview mode: allow YouTube URLs (always public)
+                            // Also allow Cloudinary URLs if lesson is marked as isPreview (instructor explicitly allows preview)
+                            const videoUrl = lesson.videoUrl || '';
+                            const isYouTubeUrl = videoUrl && (
+                                videoUrl.includes('youtube.com') || 
+                                videoUrl.includes('youtu.be')
+                            );
+                            const isCloudinaryUrl = videoUrl && videoUrl.includes('cloudinary.com');
+                            
+                            // Allow YouTube URLs always, and Cloudinary URLs if lesson is marked as preview
+                            // If instructor marked lesson as isPreview, they want to allow preview access
+                            const safeVideoUrl = (isYouTubeUrl || (isCloudinaryUrl && lesson.isPreview)) ? videoUrl : '';
+                            
+                            // Always log for debugging (even if videoUrl is empty)
+                            console.log('🔒 Preview lesson videoUrl processing:', {
+                                lessonId: lesson._id,
+                                lessonTitle: lesson.title,
+                                lessonType: lesson.type,
+                                isPreview: lesson.isPreview,
+                                originalVideoUrl: videoUrl || '(empty)',
+                                isYouTubeUrl,
+                                isCloudinaryUrl,
+                                safeVideoUrl: safeVideoUrl || '(empty)',
+                                note: videoUrl 
+                                    ? (isYouTubeUrl ? 'YouTube URL allowed' : 
+                                       (isCloudinaryUrl && lesson.isPreview ? 'Cloudinary URL allowed (isPreview=true)' : 
+                                        'URL blocked in preview'))
+                                    : 'No videoUrl in lesson data'
+                            });
+                            
+                            return {
+                                _id: lesson._id,
+                                title: lesson.title,
+                                description: '',
+                                type: lesson.type,
+                                content: '', // No content in preview mode
+                                videoUrl: safeVideoUrl, // Only YouTube URLs allowed in preview
+                                fileUrl: '', // No fileUrl in preview mode (Cloudinary URLs are sensitive)
+                                linkUrl: lesson.externalLink || '', // Allow external links
+                                externalLink: lesson.externalLink || '', // Allow external links
+                                duration: lesson.duration || lesson.estimatedTime || 0,
+                                estimatedTime: lesson.estimatedTime || lesson.duration || 0,
+                                order: lesson.order,
+                                isPublished: lesson.isPublished !== false,
+                                isFree: lesson.isPreview || false,
+                                isRequired: lesson.isRequired || false,
+                                isCompleted: false,
+                                isLocked: false, // Preview lessons are unlocked
+                                attachments: [],
+                                quizQuestions: lesson.type === 'quiz' ? [] : undefined, // No quiz questions in preview
+                                quizSettings: undefined, // No quiz settings in preview
+                                assignmentDetails: undefined // No assignment details in preview
+                            };
+                        });
+                    }
+                } else {
+                    // Normal mode: get full lesson details from getLessonsBySection
+                    const lessonsResponse = await getLessonsBySection(section._id);
 
-                    // Sort lessons by order
-                    lessons.sort((a, b) => a.order - b.order);
+                    if (lessonsResponse.success && lessonsResponse.data) {
+                        lessons = lessonsResponse.data.map((lesson: any) => ({
+                            _id: lesson._id,
+                            title: lesson.title,
+                            description: lesson.description,
+                            type: lesson.type,
+                            content: lesson.content,
+                            videoUrl: lesson.videoUrl,
+                            fileUrl: lesson.fileUrl,
+                            linkUrl: lesson.linkUrl,
+                            externalLink: lesson.externalLink,
+                            duration: lesson.duration,
+                            estimatedTime: lesson.estimatedTime,
+                            order: lesson.order,
+                            isPublished: lesson.isPublished,
+                            isFree: lesson.isFree,
+                            isRequired: lesson.isRequired,
+                            isCompleted: lesson.progress?.isCompleted || false, // Get from API progress data
+                            isLocked: false, // Will be updated based on course structure
+                            attachments: lesson.attachments,
+                            quizQuestions: lesson.quizQuestions,
+                            quizSettings: lesson.quizSettings, // ← ADDED: quiz settings for shuffle, time limit, etc.
+                            assignmentDetails: lesson.assignmentDetails
+                        }));
+                    }
+                }
 
+                // Sort lessons by order
+                lessons.sort((a, b) => a.order - b.order);
+
+                if (lessons.length > 0 || !previewMode) {
                     sectionsWithLessons.push({
                         _id: section._id,
                         title: section.title,
                         description: section.description,
                         order: section.order,
-                        isPublished: section.isPublished,
-                        duration: section.duration,
+                        isPublished: section.isPublished !== false,
+                        duration: section.duration || 0,
                         lessons,
                         isExpanded: section.order === 1 // Expand first section by default
                     });

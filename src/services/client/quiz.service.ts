@@ -19,7 +19,18 @@ export interface QuizAttempt {
   incorrect: number;
   unanswered: number;
   timeSpent: number;
+  startedAt?: Date;
   submittedAt: Date;
+  lessonId?: {
+    _id: string;
+    title: string;
+    lessonNumber?: number;
+  };
+  courseId?: {
+    _id: string;
+    title: string;
+    thumbnail?: string;
+  };
 }
 
 export interface QuizAttemptsSummary {
@@ -59,6 +70,7 @@ export const submitQuizAttempt = async (
     incorrect: number;
     unanswered: number;
     timeSpent: number;
+    startedAt?: Date;
   }
 ): Promise<ApiResponse<QuizAttempt>> => {
   const response = await api.post(`/client/lessons/${lessonId}/quiz/attempts`, attemptData);
@@ -70,5 +82,37 @@ export const submitQuizAttempt = async (
  */
 export const getQuizSettings = async (lessonId: string): Promise<ApiResponse<any>> => {
   const response = await api.get(`/client/lessons/${lessonId}/quiz/settings`);
+  return response.data;
+};
+
+/**
+ * Get quiz history for current user
+ */
+export interface QuizHistoryParams {
+  courseId?: string;
+  limit?: number;
+  page?: number;
+}
+
+export interface QuizHistoryResponse {
+  attempts: QuizAttempt[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const getQuizHistory = async (params?: QuizHistoryParams): Promise<ApiResponse<QuizHistoryResponse>> => {
+  const response = await api.get('/client/quiz/history', { params });
+  return response.data;
+};
+
+/**
+ * Get quiz attempt by ID
+ */
+export const getQuizAttemptById = async (attemptId: string): Promise<ApiResponse<QuizAttempt>> => {
+  const response = await api.get(`/client/quiz/history/${attemptId}`);
   return response.data;
 };
