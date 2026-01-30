@@ -103,6 +103,7 @@ const Login: React.FC = () => {
       // Optional: check config is enabled
       try {
         const cfg = await api.get('/auth/google/config');
+        console.log('[GOOGLE-OAUTH] config:', cfg?.data?.data);
         const enabled = !!cfg?.data?.data?.googleOAuth?.enabled;
         if (!enabled) {
           toast.error('Google OAuth chưa được cấu hình');
